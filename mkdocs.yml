@@ -1,39 +1,46 @@
 site_name: WaveXisMCP
 site_description: MCP server exposing the wavexis browser automation library to LLMs — 149 tools, 13 capability tiers, zero Node.js
-site_url: https://mathiaspaulenko.github.io/wavexis-mcp
+site_url: https://mathiaspaulenko.github.io/wavexis-mcp/
 repo_url: https://github.com/MathiasPaulenko/wavexis-mcp
 repo_name: MathiasPaulenko/wavexis-mcp
+edit_uri: edit/main/docs/
 
 theme:
   name: material
   features:
-    - navigation.tabs
     - navigation.sections
     - navigation.expand
+    - navigation.indexes
+    - navigation.top
     - search.suggest
+    - search.highlight
     - content.code.copy
+    - content.code.annotate
   palette:
     - scheme: default
       primary: indigo
-      accent: blue
+      accent: indigo
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
     - scheme: slate
       primary: indigo
-      accent: blue
+      accent: indigo
       toggle:
         icon: material/brightness-4
         name: Switch to light mode
+  icon:
+    repo: fontawesome/brands/github
 
 nav:
   - Home: index.md
-  - Quick Start: quickstart.md
-  - Configuration: configuration.md
-  - HTTP Transport: http-transport.md
-  - Docker: docker.md
-  - Resources & Prompts: resources-prompts.md
-  - Rate Limiting: rate-limiting.md
+  - Guide:
+      - Quick Start: quickstart.md
+      - Configuration: configuration.md
+      - HTTP Transport: http-transport.md
+      - Docker: docker.md
+      - Resources & Prompts: resources-prompts.md
+      - Rate Limiting: rate-limiting.md
   - Tools:
       - Core: tools/core.md
       - Network: tools/network.md
@@ -54,13 +61,32 @@ nav:
       - Testing: examples/testing.md
       - Multi-Action: examples/multi-action.md
 
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            show_source: true
+            show_signature_annotations: true
+            separate_signature: true
+            show_root_heading: true
+            show_root_full_path: false
+            members_order: source
+            docstring_style: google
+
 markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
   - pymdownx.highlight:
       anchor_linenums: true
-  - pymdownx.superfences
+  - pymdownx.inlinehilite
   - pymdownx.tabbed:
       alternate_style: true
-  - admonition
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - tables
   - attr_list
   - md_in_html
   - toc:
