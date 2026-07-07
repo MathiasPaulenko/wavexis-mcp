@@ -31,6 +31,8 @@ theme:
         name: Switch to light mode
   icon:
     repo: fontawesome/brands/github
+    logo: logo
+  favicon: assets/images/logo.svg
 
 nav:
   - Home: index.md

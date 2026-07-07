@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 256" width="1000" height="256">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3F51B5"/>
+      <stop offset="100%" stop-color="#1A237E"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Icon -->
+  <rect x="8" y="8" width="240" height="240" rx="56" ry="56" fill="url(#bg)"/>
+  <path d="M 56 108 Q 88 68 120 108 T 184 108 T 200 108"
+        fill="none" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" opacity="0.4"/>
+  <path d="M 56 138 Q 88 98 120 138 T 184 138 T 200 138"
+        fill="none" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round"/>
+
+  <!-- MCP node connectors in icon -->
+  <circle cx="88" cy="186" r="8" fill="#FFFFFF" opacity="0.9"/>
+  <circle cx="128" cy="186" r="8" fill="#FFFFFF" opacity="0.9"/>
+  <circle cx="168" cy="186" r="8" fill="#FFFFFF" opacity="0.9"/>
+  <line x1="96" y1="186" x2="120" y2="186" stroke="#FFFFFF" stroke-width="3" opacity="0.5"/>
+  <line x1="136" y1="186" x2="160" y2="186" stroke="#FFFFFF" stroke-width="3" opacity="0.5"/>
+
+  <!-- Wordmark -->
+  <text x="280" y="170" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif"
+        font-size="100" font-weight="700" fill="#1A237E" letter-spacing="-3">
+    wave<tspan fill="#3F51B5">xis</tspan><tspan fill="#5C6BC0" font-size="56" font-weight="600"> mcp</tspan>
+  </text>
+</svg>
