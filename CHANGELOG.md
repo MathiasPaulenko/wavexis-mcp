@@ -5,6 +5,22 @@ All notable changes to WaveXisMCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2025-07-07
+
+### Added
+
+- 2 new event subscription tools (W10):
+  - `wavexis_subscribe_events` — subscribe to real-time browser events (console, network, DOM mutations, dialogs, navigation)
+  - `wavexis_unsubscribe_events` — unsubscribe by subscription ID
+
+### Fixed
+
+- CI: docs deploy concurrency conflict when tag and branch push happen simultaneously (`cancel-in-progress: true`)
+
+### Changed
+
+- Bumped tool count from 156 to 158 in project description and docs
+
 ## [1.2.0] - 2025-07-07
 
 ### Added
