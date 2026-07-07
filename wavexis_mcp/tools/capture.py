@@ -85,9 +85,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
 
                 if input.selector:
                     data = await session_manager.call_backend(
-                        backend.screenshot_selector(
-                            input.selector, input.format, input.quality
-                        )
+                        backend.screenshot_selector(input.selector, input.format, input.quality)
                     )
                 else:
                     params = ScreenshotParams(
