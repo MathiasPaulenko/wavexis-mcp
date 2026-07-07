@@ -24,6 +24,110 @@ from wavexis_mcp.session import SessionManager
 _REF_COUNTER = 0
 
 
+def _extract_role(node: dict[str, Any]) -> str:
+    """Extract a human-readable role string from a CDP a11y node.
+
+    CDP nodes store role as ``{"type": "role", "value": "WebArea"}``-style
+    dicts.  Some backends may already return a plain string.
+
+    Args:
+        node: Raw CDP accessibility node.
+
+    Returns:
+        The role string, or ``"unknown"`` if not found.
+    """
+    role = node.get("role", "unknown")
+    if isinstance(role, dict):
+        return str(role.get("value", "unknown"))
+    return str(role)
+
+
+def _extract_name(node: dict[str, Any]) -> str:
+    """Extract a human-readable name string from a CDP a11y node.
+
+    CDP nodes store name as ``{"value": "Welcome"}``-style dicts.
+
+    Args:
+        node: Raw CDP accessibility node.
+
+    Returns:
+        The name string, or empty string if not found.
+    """
+    name = node.get("name", "")
+    if isinstance(name, dict):
+        return str(name.get("value", ""))
+    return str(name) if name else ""
+
+
+def _build_a11y_tree(raw: dict[str, Any] | list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Convert a raw CDP accessibility tree into a nested tree structure.
+
+    CDP's ``Accessibility.getFullAXTree`` returns a flat list of nodes
+    with ``nodeId`` and ``parentId`` references.  This function rebuilds
+    the parent-child hierarchy and normalises ``role``/``name`` fields
+    so that ``_format_a11y_tree`` can consume them uniformly.
+
+    Args:
+        raw: The raw response from ``backend.a11y_tree()`` — either a
+            dict with a ``"nodes"`` key (CDP flat list) or a pre-built
+            list of tree nodes.
+
+    Returns:
+        A list of tree node dicts with ``role``, ``name``, and
+        ``children`` keys.
+    """
+    nodes: list[dict[str, Any]]
+    if isinstance(raw, dict):
+        nodes = list(raw.get("nodes", []))
+    elif isinstance(raw, list):
+        return raw
+    else:
+        return []
+
+    if not nodes:
+        return []
+
+    by_id: dict[str, dict[str, Any]] = {}
+    root_ids: list[str] = []
+
+    for node in nodes:
+        node_id = str(node.get("nodeId", ""))
+        if not node_id:
+            continue
+        by_id[node_id] = {
+            "role": _extract_role(node),
+            "name": _extract_name(node),
+            "children": [],
+            "_visited": False,
+        }
+
+    for node in nodes:
+        node_id = str(node.get("nodeId", ""))
+        if not node_id or node_id not in by_id:
+            continue
+        parent_id = node.get("parentId")
+        child_ids = node.get("childIds", [])
+        if child_ids:
+            for cid in child_ids:
+                cid_str = str(cid)
+                if cid_str in by_id:
+                    by_id[node_id]["children"].append(by_id[cid_str])
+                    by_id[cid_str]["_visited"] = True
+        elif parent_id and str(parent_id) in by_id:
+            by_id[str(parent_id)]["children"].append(by_id[node_id])
+            by_id[node_id]["_visited"] = True
+        else:
+            root_ids.append(node_id)
+
+    if not root_ids:
+        root_ids = [nid for nid, n in by_id.items() if not n.get("_visited")]
+
+    if not root_ids and by_id:
+        root_ids = [next(iter(by_id))]
+
+    return [by_id[rid] for rid in root_ids if rid in by_id]
+
+
 def _format_a11y_tree(nodes: list[dict[str, Any]], level: int = 0) -> list[dict[str, Any]]:
     """Convert raw a11y tree nodes into LLM-friendly structure with refs.
 
@@ -129,10 +233,10 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             )
             try:
                 if input.url and not input.session_id:
-                    await backend.navigate(input.url)
-                raw = await backend.a11y_tree()
+                    await session_manager.call_backend(backend.navigate(input.url))
+                raw = await session_manager.call_backend(backend.a11y_tree())
                 _REF_COUNTER = 0
-                nodes = raw.get("children", [raw]) if isinstance(raw, dict) else raw
+                nodes = _build_a11y_tree(raw)
                 tree = _format_a11y_tree(nodes)
                 text = _tree_to_text(tree)
                 count = _count_nodes(tree)
@@ -224,8 +328,8 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             )
             try:
                 if input.url and not input.session_id:
-                    await backend.navigate(input.url)
-                result = await backend.axe_audit()
+                    await session_manager.call_backend(backend.navigate(input.url))
+                result = await session_manager.call_backend(backend.axe_audit())
                 return format_json_response(result)
             finally:
                 await session_manager.release_backend(backend, sid)

@@ -165,7 +165,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             session = session_manager.get(input.session_id)
             current_url = await session.backend.eval("window.location.href")
             current_url = str(current_url) if current_url else ""
-            passed = input.url_pattern in current_url
+            passed = input.url_pattern.lower() in current_url.lower()
 
             return format_json_response(
                 {

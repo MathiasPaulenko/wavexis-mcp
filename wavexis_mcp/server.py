@@ -203,7 +203,7 @@ def _register_act_tool(mcp: FastMCP, session_manager: SessionManager) -> None:
         session_manager: The shared session manager.
     """
     from wavexis_mcp.act import execute_act, match_instruction
-    from wavexis_mcp.tools.a11y import _format_a11y_tree
+    from wavexis_mcp.tools.a11y import _build_a11y_tree, _format_a11y_tree
 
     @mcp.tool(
         annotations=ToolAnnotations(
@@ -227,8 +227,8 @@ def _register_act_tool(mcp: FastMCP, session_manager: SessionManager) -> None:
         """
         try:
             session = session_manager.get(input.session_id)
-            raw = await session.backend.a11y_tree()
-            nodes = raw.get("children", [raw]) if isinstance(raw, dict) else raw
+            raw = await session_manager.call_backend(session.backend.a11y_tree())
+            nodes = _build_a11y_tree(raw)
             tree = _format_a11y_tree(nodes)
 
             match = match_instruction(input.instruction, tree)

@@ -98,7 +98,9 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """
         try:
             info = session_manager.info(input.session_id)
-            current_url = await session_manager.get_current_url(input.session_id)
+            current_url = await session_manager.call_backend(
+                session_manager.get_current_url(input.session_id)
+            )
             info["current_url"] = current_url
             return format_json_response(info)
         except Exception as e:

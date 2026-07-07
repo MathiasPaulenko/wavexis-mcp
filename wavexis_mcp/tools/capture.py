@@ -78,14 +78,16 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                         selector=input.wait_selector,
                         timeout=input.wait_timeout,
                     )
-                    await backend.navigate(input.url, wait)
+                    await session_manager.call_backend(backend.navigate(input.url, wait))
 
                 if input.js:
-                    await backend.eval(input.js, await_promise=True)
+                    await session_manager.call_backend(backend.eval(input.js, await_promise=True))
 
                 if input.selector:
-                    data = await backend.screenshot_selector(
-                        input.selector, input.format, input.quality
+                    data = await session_manager.call_backend(
+                        backend.screenshot_selector(
+                            input.selector, input.format, input.quality
+                        )
                     )
                 else:
                     params = ScreenshotParams(
@@ -97,7 +99,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                         selector=input.selector,
                         device=input.device,
                     )
-                    data = await backend.screenshot(params)
+                    data = await session_manager.call_backend(backend.screenshot(params))
 
                 if input.output_path:
                     result = save_to_file(data, input.output_path)

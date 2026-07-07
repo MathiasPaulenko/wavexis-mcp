@@ -46,7 +46,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """
         try:
             session = session_manager.get(input.session_id)
-            tabs = await session.backend.list_tabs()
+            tabs = await session_manager.call_backend(session.backend.list_tabs())
             return format_json_response({"tabs": tabs, "count": len(tabs)})
         except Exception as e:
             return format_error("wavexis_list_tabs", e)
@@ -70,7 +70,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """
         try:
             session = session_manager.get(input.session_id)
-            tab_id = await session.backend.new_tab(input.url)
+            tab_id = await session_manager.call_backend(session.backend.new_tab(input.url))
             return format_json_response({"tab_id": tab_id, "url": input.url})
         except Exception as e:
             return format_error("wavexis_new_tab", e)
@@ -94,7 +94,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """
         try:
             session = session_manager.get(input.session_id)
-            await session.backend.close_tab(input.tab_id)
+            await session_manager.call_backend(session.backend.close_tab(input.tab_id))
             return format_json_response({"status": "ok"})
         except Exception as e:
             return format_error("wavexis_close_tab", e)
@@ -118,7 +118,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """
         try:
             session = session_manager.get(input.session_id)
-            await session.backend.activate_tab(input.tab_id)
+            await session_manager.call_backend(session.backend.activate_tab(input.tab_id))
             return format_json_response({"status": "ok"})
         except Exception as e:
             return format_error("wavexis_activate_tab", e)

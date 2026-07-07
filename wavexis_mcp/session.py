@@ -8,6 +8,7 @@ and ephemeral backend creation for stateless calls.
 
 from __future__ import annotations
 
+import asyncio
 import contextlib
 import time
 import uuid
@@ -19,6 +20,8 @@ from wavexis.backend.manager import BackendManager
 from wavexis.config import BrowserOptions, WaitStrategy
 
 from wavexis_mcp.errors import SessionNotFoundError
+
+DEFAULT_BACKEND_TIMEOUT = 30.0
 
 
 @dataclass
@@ -143,6 +146,29 @@ class SessionManager:
         session.last_used = time.time()
         return session
 
+    @staticmethod
+    async def call_backend(
+        coro: Any,
+        timeout: float = DEFAULT_BACKEND_TIMEOUT,
+    ) -> Any:
+        """Await a backend coroutine with a timeout to prevent hangs.
+
+        If the backend call does not complete within *timeout* seconds,
+        an ``asyncio.TimeoutError`` is raised, which tool handlers catch
+        and convert to an error response.
+
+        Args:
+            coro: The coroutine to await.
+            timeout: Maximum wait time in seconds.
+
+        Returns:
+            The result of the coroutine.
+
+        Raises:
+            asyncio.TimeoutError: If the call exceeds *timeout*.
+        """
+        return await asyncio.wait_for(coro, timeout=timeout)
+
     def info(self, session_id: str) -> dict[str, Any]:
         """Return session metadata without touching the backend.
 
@@ -170,7 +196,7 @@ class SessionManager:
         """
         session = self.get(session_id)
         try:
-            url = await session.backend.eval("window.location.href")
+            url = await asyncio.wait_for(session.backend.eval("window.location.href"), timeout=10.0)
             return str(url) if url else ""
         except Exception:
             return ""
