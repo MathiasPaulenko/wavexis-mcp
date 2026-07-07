@@ -1,5 +1,5 @@
 site_name: WaveXisMCP
-site_description: MCP server exposing the wavexis browser automation library to LLMs — 149 tools, 13 capability tiers, zero Node.js
+site_description: MCP server exposing the wavexis browser automation library to LLMs — 163 tools, 13 capability tiers, zero Node.js
 site_url: https://mathiaspaulenko.github.io/wavexis-mcp/
 repo_url: https://github.com/MathiasPaulenko/wavexis-mcp
 repo_name: MathiasPaulenko/wavexis-mcp
@@ -12,10 +12,12 @@ theme:
     - navigation.expand
     - navigation.indexes
     - navigation.top
+    - navigation.tabs
     - search.suggest
     - search.highlight
     - content.code.copy
     - content.code.annotate
+    - content.tabs.link
   palette:
     - scheme: default
       primary: indigo
@@ -39,6 +41,7 @@ nav:
   - Guide:
       - Quick Start: quickstart.md
       - Configuration: configuration.md
+      - Architecture: architecture.md
       - HTTP Transport: http-transport.md
       - Docker: docker.md
       - Resources & Prompts: resources-prompts.md
@@ -91,5 +94,7 @@ markdown_extensions:
   - tables
   - attr_list
   - md_in_html
+  - def_list
+  - footnotes
   - toc:
       permalink: true

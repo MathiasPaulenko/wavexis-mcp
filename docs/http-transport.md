@@ -1,6 +1,13 @@
 # HTTP Transport
 
-WaveXisMCP supports two transports from a single codebase: **stdio** (default, for local development) and **HTTP** (for CI/CD, shared instances, and Docker deployment).
+WaveXisMCP supports two transports from a single codebase: **stdio** (default, for local development with LLM clients) and **HTTP** (for CI/CD, shared instances, and Docker deployment).
+
+## When to use HTTP vs stdio
+
+| Transport | Use case |
+|-----------|----------|
+| **stdio** (default) | Local development with Claude Desktop, Cursor, Windsurf, VS Code. The LLM client launches WaveXisMCP as a subprocess. |
+| **HTTP** | CI/CD pipelines, shared instances on a server, Docker deployment, or when multiple clients need to connect to the same WaveXisMCP instance. |
 
 ## Quick Start
 

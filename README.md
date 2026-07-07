@@ -19,13 +19,29 @@
 
 WaveXisMCP wraps the [wavexis](https://github.com/MathiasPaulenko/wavexis) browser automation library and exposes it as an [MCP server](https://modelcontextprotocol.io/). You don't need Node.js, Playwright, or a separate Chromium download — WaveXisMCP launches your existing Chrome or Edge installation directly.
 
+### How it works
+
+```text
+You (natural language)
+  → LLM decides which tool to call
+    → WaveXisMCP receives the tool call
+      → wavexis library executes it via CDP or BiDi
+        → Chrome/Edge performs the action
+      ← Result returned as JSON (text, base64, file path)
+    ← JSON passed back to LLM
+  ← LLM summarizes the result for you
+```
+
+The LLM never sees the browser directly. It only sees tool definitions (name, description, parameters) and JSON responses. This means any MCP-compatible LLM client works out of the box — no custom integrations needed.
+
 ### Core concepts
 
 - **Tool** — A single browser operation (screenshot, eval, click, etc.) exposed as an MCP tool that any LLM client can call.
 - **Session** — A persistent browser instance. Open a session, chain multiple tool calls, close when done. Avoids the overhead of launching a browser per action.
 - **Stateless mode** — Call any tool with a `url` parameter. The browser launches, executes, and closes automatically.
-- **Capability tiers** — 13 tiers from `core` (49 tools) to `all` (163 tools). Enable only what you need via `--caps`.
+- **Capability tiers** — 13 tiers from `core` (42 tools) to `all` (163 tools). Enable only what you need via `--caps`.
 - **Dual backend** — CDP (Chromium-native, via cdpwave) and BiDi (W3C cross-browser, via bidiwave) with per-session selection.
+- **Structured errors** — Every error includes a `suggestion` field that tells the LLM what to do next, enabling self-correction without human intervention.
 
 ## Install
 
@@ -127,7 +143,10 @@ The `wavexis_act` tool takes an a11y snapshot, matches the instruction to an ele
 | **Experimental** | `--caps=experimental` | 20 | Service workers, animations, WebAuthn, WebAudio, media, cast, bluetooth |
 | **Total** | `--caps=all` | **163** | |
 
-**Default**: `--caps=core` (49 tools). Enable all: `--caps=all`. Enable specific: `--caps=network,storage,emulation`.
+**Default**: `--caps=core` (42 tools). Enable all: `--caps=all`. Enable specific: `--caps=network,storage,emulation`.
+
+!!! tip
+    Start with `--caps core` and add tiers as needed. Each tier adds tool definitions to the LLM's context, which consumes tokens. For most tasks, `core,network,storage` (64 tools) is a good balance.
 
 ## Backends
 
@@ -259,6 +278,40 @@ WaveXisMCP (MCP server, 163 tools)
 ## Documentation
 
 Full docs at [mathiaspaulenko.github.io/wavexis-mcp](https://mathiaspaulenko.github.io/wavexis-mcp/).
+
+## Error handling
+
+All tools return structured error JSON on failure. Every error includes a `suggestion` field that guides the LLM toward the next action:
+
+```json
+{
+  "error": "Session 'abc-123' not found.",
+  "tool": "wavexis_navigate",
+  "type": "SessionNotFoundError",
+  "message": "Session 'abc-123' not found.",
+  "suggestion": "Call wavexis_session_open first to create a browser session."
+}
+```
+
+This enables the LLM to self-correct without human intervention — it reads the suggestion and calls the recommended tool.
+
+## Architecture
+
+WaveXisMCP sits at the top of a three-layer ecosystem:
+
+```text
+WaveXisMCP (MCP server, 163 tools)
+└─ wraps → wavexis (browser automation library)
+               ├─ cdpwave (CDP backend, Chromium-native)
+               └─ bidiwave (BiDi backend, W3C cross-browser)
+```
+
+- **cdpwave** — low-level async Python library for the Chrome DevTools Protocol. Direct WebSocket to Chrome/Edge. No driver binary needed.
+- **bidiwave** — low-level async Python library for the WebDriver BiDi protocol (W3C standard). Works with Firefox, Chrome, and Edge.
+- **wavexis** — high-level browser automation library that abstracts cdpwave and bidiwave behind a unified `AbstractBackend` interface.
+- **WaveXisMCP** — MCP server wrapping wavexis. Exposes each backend method as an MCP tool with Pydantic v2 input validation, JSON responses, and capability tier filtering.
+
+See [Architecture docs](https://mathiaspaulenko.github.io/wavexis-mcp/architecture/) for the full system design, data flow diagrams, and ADRs.
 
 ## Development
 
