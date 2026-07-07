@@ -10,6 +10,7 @@ import pytest
 from wavexis_mcp.models import (
     BrowserContextCloseInput,
     BrowserContextCreateInput,
+    BrowserContextListInput,
     MultiActionInput,
     RawBiDiInput,
     RawCDPInput,
@@ -287,3 +288,19 @@ async def test_browser_context_create_error(
     data = json.loads(result)
     assert "error" in data
     assert data["tool"] == "wavexis_browser_context_create"
+
+
+@pytest.mark.unit
+async def test_browser_context_list(
+    session_manager_with_mock: SessionManager, mock_session_id: str
+) -> None:
+    from mcp.server.fastmcp import FastMCP
+
+    mcp = FastMCP("test")
+    _register(mcp, session_manager_with_mock)
+
+    tool = mcp._tool_manager.get_tool("wavexis_browser_context_list")
+    result = await tool.fn(BrowserContextListInput(session_id=mock_session_id))
+    data = json.loads(result)
+    assert "contexts" in data
+    assert data["count"] == 2

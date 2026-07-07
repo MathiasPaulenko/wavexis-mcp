@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import json
+from unittest.mock import AsyncMock
 
 import pytest
 
 from wavexis_mcp.models import (
+    AnimationListInput,
     AnimationPauseInput,
     AnimationPlayInput,
     AnimationSetRateInput,
@@ -14,16 +16,21 @@ from wavexis_mcp.models import (
     BluetoothDeviceConnectInput,
     BluetoothDeviceDisconnectInput,
     BluetoothDeviceListInput,
+    CastListInput,
     CastStartInput,
     CastStopInput,
+    MediaGetMessagesInput,
+    MediaGetPlayersInput,
     MediaPlayerPauseInput,
     MediaPlayerPlayInput,
     MediaPlayerSeekInput,
     ServiceWorkerEmulateInput,
     ServiceWorkerListInput,
     ServiceWorkerUnregisterInput,
+    ServiceWorkerUpdateInput,
     WebAudioCaptureInput,
     WebAudioStopCaptureInput,
+    WebAuthnAddAuthenticatorInput,
     WebAuthnAddCredentialInput,
     WebAuthnGetCredentialInput,
     WebAuthnRemoveCredentialInput,
@@ -382,3 +389,115 @@ async def test_bluetooth_device_list(
     result = await tool.fn(BluetoothDeviceListInput(session_id=mock_session_id))
     data = json.loads(result)
     assert "devices" in data
+
+
+# ── New useful tools (6) ──
+
+
+@pytest.mark.unit
+async def test_animation_list(
+    session_manager_with_mock: SessionManager, mock_session_id: str
+) -> None:
+    from mcp.server.fastmcp import FastMCP
+
+    mcp = FastMCP("test")
+    _register(mcp, session_manager_with_mock)
+
+    session_manager_with_mock.get(mock_session_id).backend.animation_list = AsyncMock(
+        return_value=[{"id": "anim-1", "name": "fade", "duration": 500}]
+    )
+
+    tool = mcp._tool_manager.get_tool("wavexis_animation_list")
+    result = await tool.fn(AnimationListInput(session_id=mock_session_id))
+    data = json.loads(result)
+    assert "animations" in data
+    assert data["count"] == 1
+
+
+@pytest.mark.unit
+async def test_media_get_players(
+    session_manager_with_mock: SessionManager, mock_session_id: str
+) -> None:
+    from mcp.server.fastmcp import FastMCP
+
+    mcp = FastMCP("test")
+    _register(mcp, session_manager_with_mock)
+
+    session_manager_with_mock.get(mock_session_id).backend.media_get_players = AsyncMock(
+        return_value=[{"id": "p1", "url": "https://example.com/video.mp4"}]
+    )
+
+    tool = mcp._tool_manager.get_tool("wavexis_media_get_players")
+    result = await tool.fn(MediaGetPlayersInput(session_id=mock_session_id))
+    data = json.loads(result)
+    assert "players" in data
+    assert data["count"] == 1
+
+
+@pytest.mark.unit
+async def test_media_get_messages(
+    session_manager_with_mock: SessionManager, mock_session_id: str
+) -> None:
+    from mcp.server.fastmcp import FastMCP
+
+    mcp = FastMCP("test")
+    _register(mcp, session_manager_with_mock)
+
+    session_manager_with_mock.get(mock_session_id).backend.media_get_messages = AsyncMock(
+        return_value=[{"type": "error", "message": "buffering"}]
+    )
+
+    tool = mcp._tool_manager.get_tool("wavexis_media_get_messages")
+    result = await tool.fn(MediaGetMessagesInput(session_id=mock_session_id, player_id="p1"))
+    data = json.loads(result)
+    assert "messages" in data
+
+
+@pytest.mark.unit
+async def test_cast_list(session_manager_with_mock: SessionManager, mock_session_id: str) -> None:
+    from mcp.server.fastmcp import FastMCP
+
+    mcp = FastMCP("test")
+    _register(mcp, session_manager_with_mock)
+
+    session_manager_with_mock.get(mock_session_id).backend.cast_list = AsyncMock(
+        return_value=[{"name": "Chromecast-1"}]
+    )
+
+    tool = mcp._tool_manager.get_tool("wavexis_cast_list")
+    result = await tool.fn(CastListInput(session_id=mock_session_id))
+    data = json.loads(result)
+    assert "sinks" in data
+    assert data["count"] == 1
+
+
+@pytest.mark.unit
+async def test_sw_update(session_manager_with_mock: SessionManager, mock_session_id: str) -> None:
+    from mcp.server.fastmcp import FastMCP
+
+    mcp = FastMCP("test")
+    _register(mcp, session_manager_with_mock)
+
+    tool = mcp._tool_manager.get_tool("wavexis_service_worker_update")
+    result = await tool.fn(
+        ServiceWorkerUpdateInput(session_id=mock_session_id, registration_id="sw-1")
+    )
+    data = json.loads(result)
+    assert data["status"] == "ok"
+
+
+@pytest.mark.unit
+async def test_webauthn_add_virtual_authenticator(
+    session_manager_with_mock: SessionManager, mock_session_id: str
+) -> None:
+    from mcp.server.fastmcp import FastMCP
+
+    mcp = FastMCP("test")
+    _register(mcp, session_manager_with_mock)
+
+    tool = mcp._tool_manager.get_tool("wavexis_webauthn_add_authenticator")
+    result = await tool.fn(
+        WebAuthnAddAuthenticatorInput(session_id=mock_session_id, protocol="ctap2", transport="usb")
+    )
+    data = json.loads(result)
+    assert data["authenticator_id"] == "auth-1"

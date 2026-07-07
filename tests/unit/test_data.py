@@ -8,6 +8,7 @@ from unittest.mock import AsyncMock
 import pytest
 
 from wavexis_mcp.models import (
+    CoreWebVitalsInput,
     CrawlInput,
     ExtractInput,
     LighthouseInput,
@@ -142,3 +143,53 @@ async def test_visual_diff_not_implemented(
     )
     data = json.loads(result)
     assert data.get("status") == "not_implemented" or "error" in data
+
+
+@pytest.mark.unit
+async def test_core_web_vitals(
+    session_manager_with_mock: SessionManager, mock_session_id: str
+) -> None:
+    from mcp.server.fastmcp import FastMCP
+
+    mcp = FastMCP("test")
+    _register(mcp, session_manager_with_mock)
+
+    import sys
+    from unittest.mock import MagicMock, patch
+
+    mock_instance = MagicMock()
+    mock_instance._collect_cwv = AsyncMock(
+        return_value={
+            "metrics": {"lcp": 1200, "cls": 0.05, "inp": 100},
+            "ratings": {"lcp": "good", "cls": "good", "inp": "good"},
+            "score": 95,
+        }
+    )
+    mock_action_cls = MagicMock(return_value=mock_instance)
+
+    with patch.dict(
+        sys.modules,
+        {
+            "wavexis.actions.core_web_vitals": type(sys)("wavexis.actions.core_web_vitals"),
+            "wavexis.config": type(sys)("wavexis.config"),
+        },
+    ):
+        sys.modules["wavexis.actions.core_web_vitals"].CoreWebVitalsAction = mock_action_cls
+        sys.modules["wavexis.actions.core_web_vitals"].CoreWebVitalsParams = type(
+            "CoreWebVitalsParams", (), {"__init__": lambda self, **kw: None}
+        )
+        sys.modules["wavexis.config"].BrowserOptions = type(
+            "BrowserOptions", (), {"__init__": lambda self, **kw: None}
+        )
+        sys.modules["wavexis.config"].WaitStrategy = type(
+            "WaitStrategy", (), {"__init__": lambda self, **kw: None}
+        )
+
+        tool = mcp._tool_manager.get_tool("wavexis_core_web_vitals")
+        result = await tool.fn(
+            CoreWebVitalsInput(url="https://example.com", session_id=mock_session_id)
+        )
+    data = json.loads(result)
+    assert "metrics" in data
+    assert "ratings" in data
+    assert data["score"] == 95

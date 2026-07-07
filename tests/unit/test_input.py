@@ -13,9 +13,12 @@ from wavexis_mcp.models import (
     DragInput,
     FillFormInput,
     FillInput,
+    FindByTextInput,
     FormField,
     HoverInput,
     KeyPressInput,
+    NLClickInput,
+    NLFillInput,
     SelectOptionInput,
     SetFilesInput,
     TapInput,
@@ -232,5 +235,76 @@ async def test_uncheck(session_manager_with_mock: SessionManager, mock_session_i
 
     tool = mcp._tool_manager.get_tool("wavexis_uncheck")
     result = await tool.fn(CheckInput(selector="input[type=checkbox]", session_id=mock_session_id))
+    data = json.loads(result)
+    assert data["status"] == "ok"
+
+
+@pytest.mark.unit
+async def test_find_by_text(
+    session_manager_with_mock: SessionManager, mock_session_id: str
+) -> None:
+    from mcp.server.fastmcp import FastMCP
+
+    from wavexis_mcp.tools.input import register
+
+    mcp = FastMCP("test")
+    register(mcp, session_manager_with_mock)
+
+    tool = mcp._tool_manager.get_tool("wavexis_find_by_text")
+    result = await tool.fn(FindByTextInput(query="Submit", session_id=mock_session_id))
+    data = json.loads(result)
+    assert "selector" in data
+
+
+@pytest.mark.unit
+async def test_find_by_text_all(
+    session_manager_with_mock: SessionManager, mock_session_id: str
+) -> None:
+    from mcp.server.fastmcp import FastMCP
+
+    from wavexis_mcp.tools.input import register
+
+    mcp = FastMCP("test")
+    register(mcp, session_manager_with_mock)
+
+    session_manager_with_mock.get(mock_session_id).backend.find_by_text = AsyncMock(
+        return_value=["button#a", "button#b"]
+    )
+
+    tool = mcp._tool_manager.get_tool("wavexis_find_by_text")
+    result = await tool.fn(FindByTextInput(query="Submit", all=True, session_id=mock_session_id))
+    data = json.loads(result)
+    assert "selectors" in data
+    assert data["count"] == 2
+
+
+@pytest.mark.unit
+async def test_nl_click(session_manager_with_mock: SessionManager, mock_session_id: str) -> None:
+    from mcp.server.fastmcp import FastMCP
+
+    from wavexis_mcp.tools.input import register
+
+    mcp = FastMCP("test")
+    register(mcp, session_manager_with_mock)
+
+    tool = mcp._tool_manager.get_tool("wavexis_nl_click")
+    result = await tool.fn(NLClickInput(query="the submit button", session_id=mock_session_id))
+    data = json.loads(result)
+    assert data["status"] == "ok"
+
+
+@pytest.mark.unit
+async def test_nl_fill(session_manager_with_mock: SessionManager, mock_session_id: str) -> None:
+    from mcp.server.fastmcp import FastMCP
+
+    from wavexis_mcp.tools.input import register
+
+    mcp = FastMCP("test")
+    register(mcp, session_manager_with_mock)
+
+    tool = mcp._tool_manager.get_tool("wavexis_nl_fill")
+    result = await tool.fn(
+        NLFillInput(query="the email field", value="user@example.com", session_id=mock_session_id)
+    )
     data = json.loads(result)
     assert data["status"] == "ok"

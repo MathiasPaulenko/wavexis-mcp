@@ -12,6 +12,7 @@ from wavexis_mcp.models import (
     CaptureHARInput,
     InterceptRequestsInput,
     MockResponseInput,
+    ModifyResponseInput,
     NetworkRequestsInput,
     SetCacheDisabledInput,
     SetHeadersInput,
@@ -445,3 +446,27 @@ async def test_replay_har_error(
     data = json.loads(result)
     assert "error" in data
     assert data["tool"] == "wavexis_replay_har"
+
+
+@pytest.mark.unit
+async def test_modify_response(
+    session_manager_with_mock: SessionManager, mock_session_id: str
+) -> None:
+    from mcp.server.fastmcp import FastMCP
+
+    from wavexis_mcp.tools.network import register
+
+    mcp = FastMCP("test")
+    register(mcp, session_manager_with_mock)
+
+    tool = mcp._tool_manager.get_tool("wavexis_modify_response")
+    result = await tool.fn(
+        ModifyResponseInput(
+            session_id=mock_session_id,
+            pattern={"urlPattern": "*://api.example.com/*"},
+            modifications={"status": 200, "body": '{"ok": true}'},
+        )
+    )
+    data = json.loads(result)
+    assert data["status"] == "ok"
+    assert data["pattern"] == {"urlPattern": "*://api.example.com/*"}

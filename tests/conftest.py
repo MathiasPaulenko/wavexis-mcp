@@ -183,6 +183,12 @@ def mock_backend() -> AsyncMock:
     backend.bluetooth_emulate = AsyncMock()
     backend.bluetooth_stop = AsyncMock()
 
+    backend.find_by_text = AsyncMock(return_value="button:has-text('Submit')")
+    backend.nl_click = AsyncMock()
+    backend.nl_fill = AsyncMock()
+    backend.list_contexts = AsyncMock(return_value=["ctx-1", "ctx-2"])
+    backend.modify_response = AsyncMock()
+
     return backend
 
 

@@ -5,6 +5,21 @@ All notable changes to WaveXisMCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.2] - 2025-07-07
+
+### Added
+
+- 13 new unit tests covering all tools added in v1.5.0–v1.6.1:
+  - `test_browser_context_list` (workflows)
+  - `test_modify_response` (network)
+  - `test_animation_list`, `test_media_get_players`, `test_media_get_messages`, `test_cast_list`, `test_sw_update`, `test_webauthn_add_authenticator` (experimental)
+  - `test_core_web_vitals` (data)
+  - `test_find_by_text`, `test_find_by_text_all`, `test_nl_click`, `test_nl_fill` (input)
+
+### Changed
+
+- Test count: 321 → 334
+
 ## [1.6.1] - 2025-07-07
 
 ### Added
