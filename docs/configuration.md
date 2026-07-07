@@ -2,7 +2,7 @@
 
 ## Capability tiers
 
-WaveXisMCP organizes 149 tools into 13 capability tiers. Core is always enabled. Additional tiers are opt-in via `--caps`.
+WaveXisMCP organizes 156 tools into 13 capability tiers. Core is always enabled. Additional tiers are opt-in via `--caps`.
 
 | Tier | Flag | Tools | Key features |
 | --- | --- | --- | --- |
@@ -26,7 +26,7 @@ WaveXisMCP organizes 149 tools into 13 capability tiers. Core is always enabled.
 # Core only (default, 42 tools)
 wavexis-mcp
 
-# All tiers (149 tools)
+# All tiers (156 tools)
 wavexis-mcp --caps all
 
 # Specific tiers

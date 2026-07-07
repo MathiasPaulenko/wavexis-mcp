@@ -5,6 +5,23 @@ All notable changes to WaveXisMCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2025-07-07
+
+### Added
+
+- 7 new tools bridging wavexis backend methods not yet exposed in MCP (149 → 156 total):
+  - `wavexis_annotated_screenshot` — screenshot with numbered labels (@e1, @e2) overlaid on elements
+  - `wavexis_iframe_eval` — evaluate JavaScript inside an iframe
+  - `wavexis_iframe_click` — click an element inside an iframe
+  - `wavexis_iframe_fill` — fill an input inside an iframe
+  - `wavexis_shadow_eval` — evaluate JavaScript inside a shadow DOM tree
+  - `wavexis_shadow_click` — click an element inside a shadow DOM tree
+  - `wavexis_shadow_fill` — fill an input inside a shadow DOM tree
+
+### Changed
+
+- Bumped tool count from 149 to 156 in project description and README
+
 ## [1.1.0] - 2025-07-07
 
 ### Changed
