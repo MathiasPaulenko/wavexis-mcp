@@ -78,7 +78,14 @@ def _build_a11y_tree(raw: dict[str, Any] | list[dict[str, Any]]) -> list[dict[st
     """
     nodes: list[dict[str, Any]]
     if isinstance(raw, dict):
-        nodes = list(raw.get("nodes", []))
+        if "nodes" in raw:
+            nodes = list(raw["nodes"])
+        elif "children" in raw:
+            return [raw]
+        elif "role" in raw:
+            return [raw]
+        else:
+            return []
     elif isinstance(raw, list):
         return raw
     else:
