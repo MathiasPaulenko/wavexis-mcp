@@ -238,9 +238,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             auth_id = await session.backend.webauthn_add_virtual_authenticator(
                 input.protocol, input.transport
             )
-            return format_json_response(
-                {"authenticator_id": auth_id, "status": "ok"}
-            )
+            return format_json_response({"authenticator_id": auth_id, "status": "ok"})
         except Exception as e:
             return format_error("wavexis_webauthn_add_authenticator", e)
 

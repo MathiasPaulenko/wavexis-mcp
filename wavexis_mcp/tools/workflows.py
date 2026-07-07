@@ -278,8 +278,6 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         try:
             session = session_manager.get(input.session_id)
             contexts = await session.backend.list_contexts()
-            return format_json_response(
-                {"contexts": contexts, "count": len(contexts)}
-            )
+            return format_json_response({"contexts": contexts, "count": len(contexts)})
         except Exception as e:
             return format_error("wavexis_browser_context_list", e)
