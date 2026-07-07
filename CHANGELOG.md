@@ -5,6 +5,33 @@ All notable changes to WaveXisMCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2025-07-07
+
+### Changed
+
+- Project layout: moved from `src/wavexis_mcp/` to flat `wavexis_mcp/` (matches wavexis convention)
+- CI: consolidated `release.yml` with Trusted Publishing (OIDC) — separate build/publish/docker/release jobs
+- CI: `id-token: write` scoped to `publish-pypi` job only (least privilege)
+- Docs: `mkdocs.yml` aligned with wavexis style — sidebar navigation (no top tabs), `navigation.indexes`, `navigation.expand`
+- Docs: added `mkdocstrings` plugin for Python API auto-documentation
+- Docs: added `pymdownx.details`, `pymdownx.inlinehilite`, `pymdownx.tasklist`, `tables` extensions
+- Docker: consolidated into `release.yml` with semver tags, GHA cache, `docker/metadata-action`
+
+### Added
+
+- 56 new unit tests (261 → 321 total), coverage 81% → 87%
+  - `test_streaming.py`: 8 tests for StreamingHandler (0% → 100%)
+  - `test_javascript.py`: 6 tests for wavexis_eval (43% → 100%)
+  - `test_server_cli.py`: 14 tests for CLI parsing, help, main, wavexis_act (57% → 89%)
+  - `test_network.py`: +10 tests for W3/W6/W7 tools (62% → 83%)
+  - `test_workflows.py`: +8 tests for multi_action, browser context (67% → 93%)
+  - `test_resources.py`: +4 tests for error paths (84% → 100%)
+  - `test_act.py`: +8 tests for execute_act edge cases (89% → 98%)
+
+### Removed
+
+- `docker.yml` workflow (consolidated into `release.yml`)
+
 ## [1.0.1] - 2025-07-07
 
 ### Fixed
