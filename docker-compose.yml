@@ -1,0 +1,7 @@
+services:
+  wavexis-mcp:
+    build: .
+    ports:
+      - "8765:8765"
+    environment:
+      - WAVEXIS_BROWSER_PATH=/usr/bin/chromium
