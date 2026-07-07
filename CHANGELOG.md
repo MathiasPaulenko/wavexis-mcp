@@ -5,6 +5,13 @@ All notable changes to WaveXisMCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.1] - 2025-07-07
+
+### Fixed
+
+- CI: ruff format check failing on `experimental.py` and `workflows.py`
+- Release: Docker build failing with `lstat /dist: no such file or directory` (missing artifact download in docker job)
+
 ## [1.5.0] - 2025-07-07
 
 ### Added
