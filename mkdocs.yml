@@ -30,6 +30,10 @@ nav:
   - Home: index.md
   - Quick Start: quickstart.md
   - Configuration: configuration.md
+  - HTTP Transport: http-transport.md
+  - Docker: docker.md
+  - Resources & Prompts: resources-prompts.md
+  - Rate Limiting: rate-limiting.md
   - Tools:
       - Core: tools/core.md
       - Network: tools/network.md
@@ -57,7 +61,6 @@ markdown_extensions:
   - pymdownx.tabbed:
       alternate_style: true
   - admonition
-  - pymdownx.admonition
   - attr_list
   - md_in_html
   - toc:

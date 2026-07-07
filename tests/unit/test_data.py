@@ -155,4 +155,4 @@ async def test_visual_diff_not_implemented(
         )
     )
     data = json.loads(result)
-    assert data["status"] == "not_implemented" or "error" in data
+    assert data.get("status") == "not_implemented" or "error" in data
