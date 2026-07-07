@@ -1,0 +1,64 @@
+site_name: WaveXisMCP
+site_description: MCP server exposing the wavexis browser automation library to LLMs — 149 tools, 13 capability tiers, zero Node.js
+site_url: https://mathiaspaulenko.github.io/wavexis-mcp
+repo_url: https://github.com/MathiasPaulenko/wavexis-mcp
+repo_name: MathiasPaulenko/wavexis-mcp
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - search.suggest
+    - content.code.copy
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: blue
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: blue
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+nav:
+  - Home: index.md
+  - Quick Start: quickstart.md
+  - Configuration: configuration.md
+  - Tools:
+      - Core: tools/core.md
+      - Network: tools/network.md
+      - Storage: tools/storage.md
+      - Emulation: tools/emulation.md
+      - A11y: tools/a11y.md
+      - Interactions: tools/interactions.md
+      - DevTools: tools/devtools.md
+      - Vision: tools/vision.md
+      - Video: tools/video.md
+      - Testing: tools/testing.md
+      - Workflows: tools/workflows.md
+      - Data: tools/data.md
+      - Experimental: tools/experimental.md
+  - Examples:
+      - Screenshot: examples/screenshot.md
+      - Scrape: examples/scrape.md
+      - Testing: examples/testing.md
+      - Multi-Action: examples/multi-action.md
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - admonition
+  - pymdownx.admonition
+  - attr_list
+  - md_in_html
+  - toc:
+      permalink: true
