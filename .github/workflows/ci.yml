@@ -37,7 +37,7 @@ jobs:
         run: ruff check .
 
       - name: Mypy
-        run: mypy src/wavexis_mcp/
+        run: mypy wavexis_mcp/
 
       - name: Unit tests
         run: pytest tests/unit/ -v --cov=wavexis_mcp --cov-report=xml
