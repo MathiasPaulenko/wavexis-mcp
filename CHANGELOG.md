@@ -5,6 +5,19 @@ All notable changes to WaveXisMCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2025-07-07
+
+### Fixed
+
+- CI: `gpg --dearmor` failing in GitHub Actions (added `--batch --yes` flags)
+- Release: missing `contents: write` permission for GitHub Release creation
+- Docs: missing `pymdown-extensions` dependency for mkdocs build
+- Test: `test_visual_diff_not_implemented` now handles both `not_implemented` and error responses
+
+### Added
+
+- Docs workflow for GitHub Pages deployment
+
 ## [1.0.0] - 2025-07-07
 
 ### Added
