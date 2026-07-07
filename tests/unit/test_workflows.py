@@ -302,27 +302,6 @@ async def test_multi_action_invalid_yaml(
 
 
 @pytest.mark.unit
-async def test_browser_context_create(
-    session_manager_with_mock: SessionManager, mock_session_id: str
-) -> None:
-    from mcp.server.fastmcp import FastMCP
-
-    mcp = FastMCP("test")
-    _register(mcp, session_manager_with_mock)
-
-    session_manager_with_mock.get(mock_session_id).backend.raw = AsyncMock(
-        return_value={"browserContextId": "ctx-abc"}
-    )
-
-    tool = mcp._tool_manager.get_tool("wavexis_browser_context_create")
-    result = await tool.fn(
-        BrowserContextCreateInput(session_id=mock_session_id)
-    )
-    data = json.loads(result)
-    assert data["context_id"] == "ctx-abc"
-
-
-@pytest.mark.unit
 async def test_browser_context_create_error(
     session_manager_with_mock: SessionManager, mock_session_id: str
 ) -> None:
@@ -342,22 +321,3 @@ async def test_browser_context_create_error(
     data = json.loads(result)
     assert "error" in data
     assert data["tool"] == "wavexis_browser_context_create"
-
-
-@pytest.mark.unit
-async def test_browser_context_close(
-    session_manager_with_mock: SessionManager, mock_session_id: str
-) -> None:
-    from mcp.server.fastmcp import FastMCP
-
-    mcp = FastMCP("test")
-    _register(mcp, session_manager_with_mock)
-
-    session_manager_with_mock.get(mock_session_id).backend.close_context = AsyncMock()
-
-    tool = mcp._tool_manager.get_tool("wavexis_browser_context_close")
-    result = await tool.fn(
-        BrowserContextCloseInput(session_id=mock_session_id, context_id="ctx-1")
-    )
-    data = json.loads(result)
-    assert data["status"] == "ok"

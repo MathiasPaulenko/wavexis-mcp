@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import asyncio
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
 import pytest
 
@@ -46,7 +46,8 @@ async def test_start_stream_no_subscribe_method(
 ) -> None:
     handler = StreamingHandler(session_manager_with_mock)
     session = session_manager_with_mock.get(mock_session_id)
-    delattr(session.backend, "subscribe_events") if hasattr(session.backend, "subscribe_events") else None
+    if hasattr(session.backend, "subscribe_events"):
+        delattr(session.backend, "subscribe_events")
 
     stream_id = await handler.start_stream(mock_session_id, ["console"])
     assert stream_id == f"stream-{mock_session_id}"

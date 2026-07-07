@@ -9,7 +9,6 @@ import pytest
 
 from wavexis_mcp.session import SessionManager
 
-
 # ── _parse_args ──────────────────────────────────────────
 
 
@@ -125,8 +124,6 @@ def test_create_server_with_rate_limit() -> None:
 async def test_wavexis_act_no_match(
     session_manager_with_mock: SessionManager, mock_session_id: str
 ) -> None:
-    from mcp.server.fastmcp import FastMCP
-
     from wavexis_mcp.models import ActInput
     from wavexis_mcp.server import create_server
 
@@ -158,8 +155,6 @@ async def test_wavexis_act_no_match(
 async def test_wavexis_act_error(
     session_manager_with_mock: SessionManager, mock_session_id: str
 ) -> None:
-    from mcp.server.fastmcp import FastMCP
-
     from wavexis_mcp.models import ActInput
     from wavexis_mcp.server import create_server
 
@@ -206,12 +201,14 @@ def test_main_stdio(capsys) -> None:
             rate_limit=60,
             rate_burst=10,
         )
-        with patch.object(server_module, "_is_help_request", return_value=False):
-            with patch.object(server_module, "create_server") as mock_create:
-                mock_mcp = MagicMock()
-                mock_create.return_value = mock_mcp
-                server_module.main()
-                mock_mcp.run.assert_called_once_with(transport="stdio")
+        with (
+            patch.object(server_module, "_is_help_request", return_value=False),
+            patch.object(server_module, "create_server") as mock_create,
+        ):
+            mock_mcp = MagicMock()
+            mock_create.return_value = mock_mcp
+            server_module.main()
+            mock_mcp.run.assert_called_once_with(transport="stdio")
 
 
 @pytest.mark.unit
@@ -228,14 +225,16 @@ def test_main_http(capsys) -> None:
             rate_limit=60,
             rate_burst=10,
         )
-        with patch.object(server_module, "_is_help_request", return_value=False):
-            with patch.object(server_module, "create_server") as mock_create:
-                mock_mcp = MagicMock()
-                mock_create.return_value = mock_mcp
-                server_module.main()
-                assert mock_mcp.settings.host == "127.0.0.1"
-                assert mock_mcp.settings.port == 9999
-                mock_mcp.run.assert_called_once_with(transport="sse")
+        with (
+            patch.object(server_module, "_is_help_request", return_value=False),
+            patch.object(server_module, "create_server") as mock_create,
+        ):
+            mock_mcp = MagicMock()
+            mock_create.return_value = mock_mcp
+            server_module.main()
+            assert mock_mcp.settings.host == "127.0.0.1"
+            assert mock_mcp.settings.port == 9999
+            mock_mcp.run.assert_called_once_with(transport="sse")
 
 
 @pytest.mark.unit
@@ -252,9 +251,11 @@ def test_main_http_allow_remote(capsys) -> None:
             rate_limit=60,
             rate_burst=10,
         )
-        with patch.object(server_module, "_is_help_request", return_value=False):
-            with patch.object(server_module, "create_server") as mock_create:
-                mock_mcp = MagicMock()
-                mock_create.return_value = mock_mcp
-                server_module.main()
-                assert mock_mcp.settings.host == "0.0.0.0"
+        with (
+            patch.object(server_module, "_is_help_request", return_value=False),
+            patch.object(server_module, "create_server") as mock_create,
+        ):
+            mock_mcp = MagicMock()
+            mock_create.return_value = mock_mcp
+            server_module.main()
+            assert mock_mcp.settings.host == "0.0.0.0"
