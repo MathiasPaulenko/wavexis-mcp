@@ -1,4 +1,6 @@
-# WaveXisMCP
+<p align="center">
+  <img src="assets/images/logo-wide.svg" alt="WaveXisMCP" width="400">
+</p>
 
 MCP server that exposes the [wavexis](https://github.com/MathiasPaulenko/wavexis) browser automation library to LLMs.
 

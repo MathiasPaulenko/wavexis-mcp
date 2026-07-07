@@ -1,4 +1,6 @@
-# WaveXisMCP
+<p align="center">
+  <img src="docs/assets/images/logo-wide.svg" alt="WaveXisMCP" width="400">
+</p>
 
 MCP server that exposes the [wavexis](https://github.com/MathiasPaulenko/wavexis) browser automation library to LLMs. **149 tools** across **13 capability tiers**. 100% Python, no Node.js, no Chromium download — uses your existing Chrome/Edge.
 
@@ -234,7 +236,7 @@ git clone https://github.com/MathiasPaulenko/wavexis-mcp.git
 cd wavexis-mcp
 pip install -e ".[dev]"
 ruff check .
-mypy src/wavexis_mcp/
+mypy wavexis_mcp/
 pytest tests/ -v
 ```
 
