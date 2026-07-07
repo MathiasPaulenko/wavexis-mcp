@@ -1457,3 +1457,39 @@ class UnsubscribeEventsInput(BaseModel):
     """Input for unsubscribing from browser events (W10)."""
     session_id: str = Field(...)
     subscription_id: str = Field(..., description="Subscription ID from subscribe_events")
+
+
+# ── WebExtensions ───────────────────────────────────────────────
+
+
+class ExtensionInstallInput(BaseModel):
+    """Input for installing a browser extension."""
+    session_id: str = Field(...)
+    path: str = Field(..., description="Path to .crx file or unpacked extension directory")
+
+
+class ExtensionUninstallInput(BaseModel):
+    """Input for uninstalling a browser extension."""
+    session_id: str = Field(...)
+    extension_id: str = Field(..., description="Extension ID returned by extension_install")
+
+
+class ExtensionListInput(BaseModel):
+    """Input for listing installed browser extensions."""
+    session_id: str = Field(...)
+
+
+# ── Browser preferences ─────────────────────────────────────────
+
+
+class GetPrefInput(BaseModel):
+    """Input for getting a browser preference value."""
+    session_id: str = Field(...)
+    key: str = Field(..., description="Preference key (e.g. 'download.default_directory')")
+
+
+class SetPrefInput(BaseModel):
+    """Input for setting a browser preference value."""
+    session_id: str = Field(...)
+    key: str = Field(..., description="Preference key")
+    value: str = Field(..., description="Preference value to set")

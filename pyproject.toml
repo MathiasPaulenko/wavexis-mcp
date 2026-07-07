@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "wavexis-mcp"
-version = "1.3.0"
-description = "MCP server exposing the wavexis browser automation library to LLMs — 158 tools, 13 capability tiers, zero Node.js"
+version = "1.4.0"
+description = "MCP server exposing the wavexis browser automation library to LLMs — 163 tools, 13 capability tiers, zero Node.js"
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.11"

@@ -21,12 +21,17 @@ from wavexis_mcp.models import (
     BluetoothDeviceListInput,
     CastStartInput,
     CastStopInput,
+    ExtensionInstallInput,
+    ExtensionListInput,
+    ExtensionUninstallInput,
+    GetPrefInput,
     MediaPlayerPauseInput,
     MediaPlayerPlayInput,
     MediaPlayerSeekInput,
     ServiceWorkerEmulateInput,
     ServiceWorkerListInput,
     ServiceWorkerUnregisterInput,
+    SetPrefInput,
     WebAudioCaptureInput,
     WebAudioStopCaptureInput,
     WebAuthnAddCredentialInput,
@@ -556,3 +561,120 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             return format_json_response({"devices": []})
         except Exception as e:
             return format_error("wavexis_bluetooth_device_list", e)
+
+    # ── WebExtensions (3) ──
+
+    @mcp.tool(annotations=ToolAnnotations(
+        readOnlyHint=False,
+        destructiveHint=True,
+        idempotentHint=False,
+        openWorldHint=False,
+    ))
+    async def wavexis_extension_install(input: ExtensionInstallInput) -> str:
+        """Install a browser extension from a .crx or unpacked directory.
+
+        Args:
+            input: Extension install parameters (path).
+
+        Returns:
+            JSON string with ``extension_id``.
+        """
+        try:
+            session = session_manager.get(input.session_id)
+            ext_id = await session.backend.extension_install(input.path)
+            return format_json_response({"extension_id": ext_id, "status": "installed"})
+        except Exception as e:
+            return format_error("wavexis_extension_install", e)
+
+    @mcp.tool(annotations=ToolAnnotations(
+        readOnlyHint=False,
+        destructiveHint=True,
+        idempotentHint=True,
+        openWorldHint=False,
+    ))
+    async def wavexis_extension_uninstall(input: ExtensionUninstallInput) -> str:
+        """Uninstall a browser extension by ID.
+
+        Args:
+            input: Extension uninstall parameters (extension_id).
+
+        Returns:
+            JSON string with status ``"ok"``.
+        """
+        try:
+            session = session_manager.get(input.session_id)
+            await session.backend.extension_uninstall(input.extension_id)
+            return format_json_response({"status": "ok"})
+        except Exception as e:
+            return format_error("wavexis_extension_uninstall", e)
+
+    @mcp.tool(annotations=ToolAnnotations(
+        readOnlyHint=True,
+        destructiveHint=False,
+        idempotentHint=True,
+        openWorldHint=False,
+    ))
+    async def wavexis_extension_list(input: ExtensionListInput) -> str:
+        """List installed browser extensions.
+
+        Args:
+            input: Session reference parameters.
+
+        Returns:
+            JSON string with ``extensions`` list and ``count``.
+        """
+        try:
+            session = session_manager.get(input.session_id)
+            extensions = await session.backend.extension_list()
+            return format_json_response({
+                "extensions": extensions,
+                "count": len(extensions),
+            })
+        except Exception as e:
+            return format_error("wavexis_extension_list", e)
+
+    # ── Browser preferences (2) ──
+
+    @mcp.tool(annotations=ToolAnnotations(
+        readOnlyHint=True,
+        destructiveHint=False,
+        idempotentHint=True,
+        openWorldHint=False,
+    ))
+    async def wavexis_get_pref(input: GetPrefInput) -> str:
+        """Get a browser preference value by key.
+
+        Args:
+            input: Preference parameters (key).
+
+        Returns:
+            JSON string with ``key`` and ``value``.
+        """
+        try:
+            session = session_manager.get(input.session_id)
+            value = await session.backend.get_pref(input.key)
+            return format_json_response({"key": input.key, "value": value})
+        except Exception as e:
+            return format_error("wavexis_get_pref", e)
+
+    @mcp.tool(annotations=ToolAnnotations(
+        readOnlyHint=False,
+        destructiveHint=False,
+        idempotentHint=True,
+        openWorldHint=False,
+    ))
+    async def wavexis_set_pref(input: SetPrefInput) -> str:
+        """Set a browser preference value.
+
+        Args:
+            input: Preference parameters (key, value).
+
+        Returns:
+            JSON string with status ``"ok"``.
+        """
+        try:
+            session = session_manager.get(input.session_id)
+            await session.backend.set_pref(input.key, input.value)
+            return format_json_response({"status": "ok", "key": input.key})
+        except Exception as e:
+            return format_error("wavexis_set_pref", e)

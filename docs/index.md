@@ -4,12 +4,12 @@
 
 MCP server that exposes the [wavexis](https://github.com/MathiasPaulenko/wavexis) browser automation library to LLMs.
 
-**158 tools** across **13 capability tiers**. 100% Python, no Node.js, no Chromium download — uses your existing Chrome/Edge.
+**163 tools** across **13 capability tiers**. 100% Python, no Node.js, no Chromium download — uses your existing Chrome/Edge.
 
 ## Key features
 
 - **Zero install** — uses your local Chrome/Edge, no 200MB Chromium download (~5MB package)
-- **158 tools** — the most comprehensive browser automation MCP
+- **163 tools** — the most comprehensive browser automation MCP
 - **Dual backend** — CDP (Chromium-native) + BiDi (W3C cross-browser) with per-session selection
 - **13 capability tiers** — enable only what you need via `--caps`
 - **Python-native** — no Node.js runtime required
@@ -26,7 +26,7 @@ MCP server that exposes the [wavexis](https://github.com/MathiasPaulenko/wavexis
 ## Ecosystem
 
 ```text
-WaveXisMCP (MCP server, 158 tools)
+WaveXisMCP (MCP server, 163 tools)
 └─ wraps → wavexis (browser automation library)
                ├─ cdpwave (CDP backend, Chromium-native)
                └─ bidiwave (BiDi backend, W3C cross-browser)

@@ -5,6 +5,21 @@ All notable changes to WaveXisMCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2025-07-07
+
+### Added
+
+- 5 new experimental/niche tools:
+  - `wavexis_extension_install` — install a browser extension from .crx or unpacked directory
+  - `wavexis_extension_uninstall` — uninstall a browser extension by ID
+  - `wavexis_extension_list` — list installed browser extensions
+  - `wavexis_get_pref` — get a browser preference value by key
+  - `wavexis_set_pref` — set a browser preference value
+
+### Changed
+
+- Bumped tool count from 158 to 163 in project description and docs
+
 ## [1.3.0] - 2025-07-07
 
 ### Added
