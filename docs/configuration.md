@@ -1,14 +1,14 @@
 # Configuration
 
-WaveXisMCP organizes 172 tools into 13 capability tiers. Core is always enabled. Additional tiers are opt-in via `--caps`.
+WaveXisMCP organizes 175 tools into 13 capability tiers. Core is always enabled. Additional tiers are opt-in via `--caps`.
 
 ## Capability tiers
 
-Capability tiers are the primary way to control which tools are exposed to the LLM. Each tier groups related tools by domain. This matters because LLMs have context windows — exposing 172 tool definitions consumes tokens. For simple tasks, 42 core tools is plenty. For complex automation, enable everything with `--caps all`.
+Capability tiers are the primary way to control which tools are exposed to the LLM. Each tier groups related tools by domain. This matters because LLMs have context windows — exposing 175 tool definitions consumes tokens. For simple tasks, 45 core tools is plenty. For complex automation, enable everything with `--caps all`.
 
 | Tier | Flag | Tools | Key features |
 | --- | --- | --- | --- |
-| **Core** | always on | 42 | Session, navigation, screenshot, PDF, scrape, eval, DOM, input, cookies, tabs |
+| **Core** | always on | 45 | Session, navigation, screenshot, PDF, scrape, eval, DOM, input, cookies, tabs, NL interaction |
 | **Network** | `--caps=network` | 10 | Headers, UA, block, throttle, cache, HAR, intercept, mock, modify req/resp, request list |
 | **Storage** | `--caps=storage` | 13 | localStorage, sessionStorage, cache storage, IndexedDB, state save/restore |
 | **Emulation** | `--caps=emulation` | 9 | Device, viewport, geolocation, timezone, dark mode, locale, CPU, touch, sensors |
@@ -21,11 +21,11 @@ Capability tiers are the primary way to control which tools are exposed to the L
 | **Workflows** | `--caps=workflows` | 6 | Multi-action YAML, raw CDP/BiDi, browser context CRUD |
 | **Data** | `--caps=data` | 7 | Codegen, Lighthouse audit, extract, websocket intercept, crawl, visual diff, core web vitals |
 | **Experimental** | `--caps=experimental` | 26 | Service workers, animations, WebAuthn, WebAudio, media, cast, bluetooth, extensions, prefs |
-| **Total** | `--caps=all` | **172** | |
+| **Total** | `--caps=all` | **175** | |
 
 ### Tier details
 
-#### Core (42 tools, always on)
+#### Core (45 tools, always on)
 
 The foundation. Covers session management, navigation, screenshots, PDF generation, page scraping, JavaScript evaluation, DOM manipulation, user input (click, type, fill, hover, drag, key press), cookies, and tab management. These tools are always available regardless of `--caps` settings.
 
@@ -80,10 +80,10 @@ Niche and experimental features. Service worker management (list, unregister, up
 ## --caps flag
 
 ```bash
-# Core only (default, 42 tools)
+# Core only (default, 45 tools)
 wavexis-mcp
 
-# All tiers (172 tools)
+# All tiers (175 tools)
 wavexis-mcp --caps all
 
 # Specific tiers

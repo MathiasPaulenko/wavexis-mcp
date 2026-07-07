@@ -5,6 +5,20 @@ All notable changes to WaveXisMCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.1] - 2025-07-07
+
+### Added
+
+- 3 new optional NL interaction tools (172 → 175 total):
+  - `wavexis_find_by_text` — find element(s) by visible text content (core tier)
+  - `wavexis_nl_click` — click an element by natural language query (core tier)
+  - `wavexis_nl_fill` — fill an element by natural language query (core tier)
+
+### Changed
+
+- Bumped tool count from 172 to 175 in pyproject.toml, README, and docs
+- Updated core tier count: 42 → 45
+
 ## [1.6.0] - 2025-07-07
 
 ### Added

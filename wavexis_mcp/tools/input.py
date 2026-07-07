@@ -17,8 +17,11 @@ from wavexis_mcp.models import (
     DragInput,
     FillFormInput,
     FillInput,
+    FindByTextInput,
     HoverInput,
     KeyPressInput,
+    NLClickInput,
+    NLFillInput,
     SelectOptionInput,
     SetFilesInput,
     TapInput,
@@ -419,3 +422,77 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             return format_json_response({"status": "ok"})
         except Exception as e:
             return format_error("wavexis_uncheck", e)
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
+    async def wavexis_find_by_text(input: FindByTextInput) -> str:
+        """Find element(s) by visible text content.
+
+        Args:
+            input: Find parameters (query, all).
+
+        Returns:
+            JSON string with ``selector`` (first match) or ``selectors`` list.
+        """
+        try:
+            session = session_manager.get(input.session_id)
+            result = await session.backend.find_by_text(input.query, all=input.all)
+            if isinstance(result, list):
+                return format_json_response({"selectors": result, "count": len(result)})
+            return format_json_response({"selector": result})
+        except Exception as e:
+            return format_error("wavexis_find_by_text", e)
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=True,
+            idempotentHint=False,
+            openWorldHint=True,
+        )
+    )
+    async def wavexis_nl_click(input: NLClickInput) -> str:
+        """Click an element described in natural language.
+
+        Args:
+            input: NL click parameters (query, auto_wait).
+
+        Returns:
+            JSON string with status ``"ok"``.
+        """
+        try:
+            session = session_manager.get(input.session_id)
+            await session.backend.nl_click(input.query, auto_wait=input.auto_wait)
+            return format_json_response({"status": "ok"})
+        except Exception as e:
+            return format_error("wavexis_nl_click", e)
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=True,
+            idempotentHint=False,
+            openWorldHint=True,
+        )
+    )
+    async def wavexis_nl_fill(input: NLFillInput) -> str:
+        """Fill an element described in natural language.
+
+        Args:
+            input: NL fill parameters (query, value, auto_wait).
+
+        Returns:
+            JSON string with status ``"ok"``.
+        """
+        try:
+            session = session_manager.get(input.session_id)
+            await session.backend.nl_fill(input.query, input.value, auto_wait=input.auto_wait)
+            return format_json_response({"status": "ok"})
+        except Exception as e:
+            return format_error("wavexis_nl_fill", e)

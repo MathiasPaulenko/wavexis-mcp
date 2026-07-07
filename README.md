@@ -2,7 +2,7 @@
   <img src="docs/assets/images/logo-wide.svg" alt="WaveXisMCP" width="480">
 </p>
 
-<h3 align="center">MCP server — 172 browser automation tools for LLMs</h3>
+<h3 align="center">MCP server — 175 browser automation tools for LLMs</h3>
 
 ---
 
@@ -13,7 +13,7 @@
 [![License](https://img.shields.io/github/license/MathiasPaulenko/wavexis-mcp.svg)](https://github.com/MathiasPaulenko/wavexis-mcp/blob/main/LICENSE)
 [![Docs](https://img.shields.io/badge/docs-mkdocs-blue.svg)](https://mathiaspaulenko.github.io/wavexis-mcp/)
 
-> MCP server that exposes the [wavexis](https://github.com/MathiasPaulenko/wavexis) browser automation library to LLMs. 172 tools across 13 capability tiers. No Node.js, no Chromium download — uses your existing Chrome/Edge. 100% Python.
+> MCP server that exposes the [wavexis](https://github.com/MathiasPaulenko/wavexis) browser automation library to LLMs. 175 tools across 13 capability tiers. No Node.js, no Chromium download — uses your existing Chrome/Edge. 100% Python.
 
 ## Why WaveXisMCP?
 
@@ -39,7 +39,7 @@ The LLM never sees the browser directly. It only sees tool definitions (name, de
 - **Tool** — A single browser operation (screenshot, eval, click, etc.) exposed as an MCP tool that any LLM client can call.
 - **Session** — A persistent browser instance. Open a session, chain multiple tool calls, close when done. Avoids the overhead of launching a browser per action.
 - **Stateless mode** — Call any tool with a `url` parameter. The browser launches, executes, and closes automatically.
-- **Capability tiers** — 13 tiers from `core` (42 tools) to `all` (172 tools). Enable only what you need via `--caps`.
+- **Capability tiers** — 13 tiers from `core` (45 tools) to `all` (175 tools). Enable only what you need via `--caps`.
 - **Dual backend** — CDP (Chromium-native, via cdpwave) and BiDi (W3C cross-browser, via bidiwave) with per-session selection.
 - **Structured errors** — Every error includes a `suggestion` field that tells the LLM what to do next, enabling self-correction without human intervention.
 
@@ -128,7 +128,7 @@ The `wavexis_act` tool takes an a11y snapshot, matches the instruction to an ele
 
 | Tier | Flag | Tools | Key features |
 |------|------|-------|--------------|
-| **Core** | always on | 42 | Session, navigation, screenshot, PDF, scrape, eval, DOM, input, cookies, tabs |
+| **Core** | always on | 45 | Session, navigation, screenshot, PDF, scrape, eval, DOM, input, cookies, tabs, NL interaction |
 | **Network** | `--caps=network` | 10 | Headers, UA, block, throttle, cache, HAR, intercept, mock, modify req/resp, request list |
 | **Storage** | `--caps=storage` | 13 | localStorage, sessionStorage, cache storage, IndexedDB, state save/restore |
 | **Emulation** | `--caps=emulation` | 9 | Device, viewport, geolocation, timezone, dark mode, locale, CPU, touch, sensors |
@@ -141,12 +141,12 @@ The `wavexis_act` tool takes an a11y snapshot, matches the instruction to an ele
 | **Workflows** | `--caps=workflows` | 6 | Multi-action YAML, raw CDP/BiDi, browser context CRUD |
 | **Data** | `--caps=data` | 7 | Codegen, Lighthouse audit, extract, websocket intercept, crawl, visual diff, core web vitals |
 | **Experimental** | `--caps=experimental` | 26 | Service workers, animations, WebAuthn, WebAudio, media, cast, bluetooth, extensions, prefs |
-| **Total** | `--caps=all` | **172** | |
+| **Total** | `--caps=all` | **175** | |
 
-**Default**: `--caps=core` (42 tools). Enable all: `--caps=all`. Enable specific: `--caps=network,storage,emulation`.
+**Default**: `--caps=core` (45 tools). Enable all: `--caps=all`. Enable specific: `--caps=network,storage,emulation`.
 
 !!! tip
-    Start with `--caps core` and add tiers as needed. Each tier adds tool definitions to the LLM's context, which consumes tokens. For most tasks, `core,network,storage` (64 tools) is a good balance.
+    Start with `--caps core` and add tiers as needed. Each tier adds tool definitions to the LLM's context, which consumes tokens. For most tasks, `core,network,storage` (67 tools) is a good balance.
 
 ## Backends
 
@@ -248,7 +248,7 @@ See [Docker docs](https://mathiaspaulenko.github.io/wavexis-mcp/docker/) for det
 ## Ecosystem
 
 ```text
-WaveXisMCP (MCP server, 172 tools)
+WaveXisMCP (MCP server, 175 tools)
 └─ wraps → wavexis (browser automation library)
                ├─ cdpwave (CDP backend, Chromium-native)
                └─ bidiwave (BiDi backend, W3C cross-browser)
@@ -262,7 +262,7 @@ WaveXisMCP (MCP server, 172 tools)
 | Node.js required | Yes | **No** |
 | Downloads Chromium | Yes (~200MB) | **No (uses existing Chrome/Edge)** |
 | Install size | ~200MB+ | **~5MB** |
-| Total tools | ~70 | **172** |
+| Total tools | ~70 | **175** |
 | Capability tiers | Yes (`--caps`) | **Yes (13 tiers)** |
 | Dual protocol | No | **CDP + BiDi** |
 | Backend selection | No | **Yes (per session)** |
@@ -300,7 +300,7 @@ This enables the LLM to self-correct without human intervention — it reads the
 WaveXisMCP sits at the top of a three-layer ecosystem:
 
 ```text
-WaveXisMCP (MCP server, 172 tools)
+WaveXisMCP (MCP server, 175 tools)
 └─ wraps → wavexis (browser automation library)
                ├─ cdpwave (CDP backend, Chromium-native)
                └─ bidiwave (BiDi backend, W3C cross-browser)

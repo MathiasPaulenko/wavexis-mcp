@@ -304,6 +304,33 @@ class FillInput(BaseModel):
     backend: str = Field(default="cdp")
 
 
+class FindByTextInput(BaseModel):
+    """Input for finding elements by visible text content."""
+
+    query: str = Field(..., description="Text to search for in visible page content")
+    all: bool = Field(default=False, description="Return all matches (True) or first match (False)")
+    session_id: str = Field(...)
+
+
+class NLClickInput(BaseModel):
+    """Input for clicking an element by natural language query."""
+
+    query: str = Field(..., description="Natural language description of the element to click")
+    auto_wait: bool = Field(
+        default=True, description="Wait for element to be ready before clicking"
+    )
+    session_id: str = Field(...)
+
+
+class NLFillInput(BaseModel):
+    """Input for filling an element by natural language query."""
+
+    query: str = Field(..., description="Natural language description of the element to fill")
+    value: str = Field(..., description="Value to fill")
+    auto_wait: bool = Field(default=True, description="Wait for element to be ready before filling")
+    session_id: str = Field(...)
+
+
 class FormField(BaseModel):
     """A single form field descriptor for ``FillFormInput``."""
 
