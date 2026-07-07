@@ -17,7 +17,13 @@ from wavexis_mcp.formatter import (
     format_json_response,
     save_to_file,
 )
-from wavexis_mcp.models import PDFInput, ScrapeInput, ScreencastInput, ScreenshotInput
+from wavexis_mcp.models import (
+    AnnotatedScreenshotInput,
+    PDFInput,
+    ScrapeInput,
+    ScreencastInput,
+    ScreenshotInput,
+)
 from wavexis_mcp.session import SessionManager
 
 
@@ -268,3 +274,44 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                 await session_manager.release_backend(backend, sid)
         except Exception as e:
             return format_error("wavexis_screencast", e)
+
+    @mcp.tool(annotations=ToolAnnotations(
+        readOnlyHint=True,
+        destructiveHint=False,
+        idempotentHint=True,
+        openWorldHint=True,
+    ))
+    async def wavexis_annotated_screenshot(input: AnnotatedScreenshotInput) -> str:
+        """Take a screenshot with numbered labels overlaid on elements.
+
+        Injects overlay divs with labels @e1, @e2, ... on each element
+        matching the provided selectors, captures a screenshot, removes
+        the overlays, and returns the image plus a label-to-selector map.
+
+        Args:
+            input: Annotated screenshot parameters (selectors, format).
+
+        Returns:
+            JSON string with base64 image data or file path, plus ``labels`` map.
+        """
+        try:
+            session = session_manager.get(input.session_id)
+            data, label_map = await session.backend.annotated_screenshot(
+                input.selectors, format=input.format
+            )
+
+            if input.output_path:
+                result = save_to_file(data, input.output_path)
+                result["status"] = "ok"
+                result["labels"] = label_map
+                return format_json_response(result)
+
+            return format_json_response({
+                "status": "ok",
+                "format": input.format,
+                "base64": encode_base64(data),
+                "size_bytes": len(data),
+                "labels": label_map,
+            })
+        except Exception as e:
+            return format_error("wavexis_annotated_screenshot", e)

@@ -1361,3 +1361,79 @@ class ActInput(BaseModel):
     )
     session_id: str = Field(...)
     max_retries: int = Field(default=3, ge=1, le=10)
+
+
+# ── Annotated screenshot ────────────────────────────────────────
+
+
+class AnnotatedScreenshotInput(BaseModel):
+    """Input for taking a screenshot with numbered labels on elements."""
+    session_id: str = Field(...)
+    selectors: list[str] = Field(
+        ..., min_length=1, description="CSS selectors to annotate with labels"
+    )
+    format: str = Field(default="png", description="Image format: 'png' or 'jpeg'")
+    output_path: str | None = Field(default=None)
+
+
+# ── iframe ──────────────────────────────────────────────────────
+
+
+class IframeEvalInput(BaseModel):
+    """Input for evaluating JS inside an iframe."""
+    session_id: str = Field(...)
+    iframe_selector: str = Field(..., description="CSS selector for the <iframe> element")
+    expression: str = Field(..., description="JavaScript expression to evaluate")
+    await_promise: bool = Field(default=False)
+
+
+class IframeClickInput(BaseModel):
+    """Input for clicking an element inside an iframe."""
+    session_id: str = Field(...)
+    iframe_selector: str = Field(..., description="CSS selector for the <iframe> element")
+    selector: str = Field(..., description="CSS selector inside the iframe")
+
+
+class IframeFillInput(BaseModel):
+    """Input for filling an input inside an iframe."""
+    session_id: str = Field(...)
+    iframe_selector: str = Field(..., description="CSS selector for the <iframe> element")
+    selector: str = Field(..., description="CSS selector inside the iframe")
+    value: str = Field(..., description="Value to set in the input field")
+
+
+# ── Shadow DOM ──────────────────────────────────────────────────
+
+
+class ShadowEvalInput(BaseModel):
+    """Input for evaluating JS inside a shadow DOM tree."""
+    session_id: str = Field(...)
+    selectors: list[str] = Field(
+        ...,
+        min_length=1,
+        description="CSS selectors piercing shadow boundaries (selectors[0] in document, "
+        "selectors[1] in selectors[0].shadowRoot, etc.)",
+    )
+    expression: str = Field(..., description="JavaScript expression to evaluate")
+    await_promise: bool = Field(default=False)
+
+
+class ShadowClickInput(BaseModel):
+    """Input for clicking an element inside a shadow DOM tree."""
+    session_id: str = Field(...)
+    selectors: list[str] = Field(
+        ...,
+        min_length=1,
+        description="CSS selectors piercing shadow boundaries",
+    )
+
+
+class ShadowFillInput(BaseModel):
+    """Input for filling an input inside a shadow DOM tree."""
+    session_id: str = Field(...)
+    selectors: list[str] = Field(
+        ...,
+        min_length=1,
+        description="CSS selectors piercing shadow boundaries",
+    )
+    value: str = Field(..., description="Value to set in the input field")

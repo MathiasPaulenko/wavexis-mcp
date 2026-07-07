@@ -21,6 +21,12 @@ from wavexis_mcp.models import (
     DOMScrollInput,
     DOMSetAttrInput,
     DOMSnapshotInput,
+    IframeClickInput,
+    IframeEvalInput,
+    IframeFillInput,
+    ShadowClickInput,
+    ShadowEvalInput,
+    ShadowFillInput,
 )
 from wavexis_mcp.session import SessionManager
 
@@ -263,3 +269,162 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             return format_json_response({"snapshot": snapshot, "documents": docs})
         except Exception as e:
             return format_error("wavexis_dom_snapshot", e)
+
+    # ── iframe ──────────────────────────────────────────────
+
+    @mcp.tool(annotations=ToolAnnotations(
+        readOnlyHint=True,
+        destructiveHint=False,
+        idempotentHint=True,
+        openWorldHint=True,
+    ))
+    async def wavexis_iframe_eval(input: IframeEvalInput) -> str:
+        """Evaluate a JavaScript expression inside an iframe.
+
+        Args:
+            input: iframe eval parameters (iframe_selector, expression).
+
+        Returns:
+            JSON string with ``result``.
+        """
+        try:
+            session = session_manager.get(input.session_id)
+            result = await session.backend.iframe_eval(
+                input.iframe_selector,
+                input.expression,
+                await_promise=input.await_promise,
+            )
+            return format_json_response({"result": result})
+        except Exception as e:
+            return format_error("wavexis_iframe_eval", e)
+
+    @mcp.tool(annotations=ToolAnnotations(
+        readOnlyHint=False,
+        destructiveHint=True,
+        idempotentHint=False,
+        openWorldHint=True,
+    ))
+    async def wavexis_iframe_click(input: IframeClickInput) -> str:
+        """Click an element inside an iframe.
+
+        Args:
+            input: iframe click parameters (iframe_selector, selector).
+
+        Returns:
+            JSON string with status ``"ok"``.
+        """
+        try:
+            session = session_manager.get(input.session_id)
+            await session.backend.iframe_click(
+                input.iframe_selector,
+                input.selector,
+            )
+            return format_json_response({"status": "ok"})
+        except Exception as e:
+            return format_error("wavexis_iframe_click", e)
+
+    @mcp.tool(annotations=ToolAnnotations(
+        readOnlyHint=False,
+        destructiveHint=True,
+        idempotentHint=False,
+        openWorldHint=True,
+    ))
+    async def wavexis_iframe_fill(input: IframeFillInput) -> str:
+        """Fill an input element inside an iframe.
+
+        Args:
+            input: iframe fill parameters (iframe_selector, selector, value).
+
+        Returns:
+            JSON string with status ``"ok"``.
+        """
+        try:
+            session = session_manager.get(input.session_id)
+            await session.backend.iframe_fill(
+                input.iframe_selector,
+                input.selector,
+                input.value,
+            )
+            return format_json_response({"status": "ok"})
+        except Exception as e:
+            return format_error("wavexis_iframe_fill", e)
+
+    # ── Shadow DOM ──────────────────────────────────────────
+
+    @mcp.tool(annotations=ToolAnnotations(
+        readOnlyHint=True,
+        destructiveHint=False,
+        idempotentHint=True,
+        openWorldHint=True,
+    ))
+    async def wavexis_shadow_eval(input: ShadowEvalInput) -> str:
+        """Evaluate a JavaScript expression inside a shadow DOM tree.
+
+        Pierces shadow boundaries using the provided selector chain.
+        selectors[0] is in the main document, selectors[1] in
+        selectors[0].shadowRoot, and so on.
+
+        Args:
+            input: Shadow eval parameters (selectors, expression).
+
+        Returns:
+            JSON string with ``result``.
+        """
+        try:
+            session = session_manager.get(input.session_id)
+            result = await session.backend.shadow_eval(
+                input.selectors,
+                input.expression,
+                await_promise=input.await_promise,
+            )
+            return format_json_response({"result": result})
+        except Exception as e:
+            return format_error("wavexis_shadow_eval", e)
+
+    @mcp.tool(annotations=ToolAnnotations(
+        readOnlyHint=False,
+        destructiveHint=True,
+        idempotentHint=False,
+        openWorldHint=True,
+    ))
+    async def wavexis_shadow_click(input: ShadowClickInput) -> str:
+        """Click an element inside a shadow DOM tree.
+
+        Pierces shadow boundaries using the provided selector chain.
+
+        Args:
+            input: Shadow click parameters (selectors).
+
+        Returns:
+            JSON string with status ``"ok"``.
+        """
+        try:
+            session = session_manager.get(input.session_id)
+            await session.backend.shadow_click(input.selectors)
+            return format_json_response({"status": "ok"})
+        except Exception as e:
+            return format_error("wavexis_shadow_click", e)
+
+    @mcp.tool(annotations=ToolAnnotations(
+        readOnlyHint=False,
+        destructiveHint=True,
+        idempotentHint=False,
+        openWorldHint=True,
+    ))
+    async def wavexis_shadow_fill(input: ShadowFillInput) -> str:
+        """Fill an input element inside a shadow DOM tree.
+
+        Pierces shadow boundaries using the provided selector chain.
+
+        Args:
+            input: Shadow fill parameters (selectors, value).
+
+        Returns:
+            JSON string with status ``"ok"``.
+        """
+        try:
+            session = session_manager.get(input.session_id)
+            await session.backend.shadow_fill(input.selectors, input.value)
+            return format_json_response({"status": "ok"})
+        except Exception as e:
+            return format_error("wavexis_shadow_fill", e)
