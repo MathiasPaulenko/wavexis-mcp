@@ -42,6 +42,8 @@ from wavexis_mcp.models import (
     SetWindowBoundsInput,
     StartCombinedTraceInput,
     StopCombinedTraceInput,
+    SubscribeEventsInput,
+    UnsubscribeEventsInput,
 )
 from wavexis_mcp.session import SessionManager
 
@@ -764,3 +766,61 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             return format_json_response({"trace": trace, "status": "stopped"})
         except Exception as e:
             return format_error("wavexis_stop_combined_trace", e)
+
+    # ── Event subscription (W10) ──
+
+    @mcp.tool(annotations=ToolAnnotations(
+        readOnlyHint=False,
+        destructiveHint=False,
+        idempotentHint=False,
+        openWorldHint=False,
+    ))
+    async def wavexis_subscribe_events(input: SubscribeEventsInput) -> str:
+        """Subscribe to real-time browser events (W10).
+
+        Event types: console, network_request, network_response,
+        dom_mutation, dialog, navigation.  Events are collected
+        internally and can be retrieved via console_messages or
+        network_requests tools while the subscription is active.
+
+        Args:
+            input: Subscription parameters (event_types).
+
+        Returns:
+            JSON string with ``subscription_id``.
+        """
+        try:
+            session = session_manager.get(input.session_id)
+            sub_id = await session.backend.subscribe_events(
+                input.event_types,
+                callback=None,
+            )
+            return format_json_response({
+                "subscription_id": sub_id,
+                "event_types": input.event_types,
+                "status": "subscribed",
+            })
+        except Exception as e:
+            return format_error("wavexis_subscribe_events", e)
+
+    @mcp.tool(annotations=ToolAnnotations(
+        readOnlyHint=False,
+        destructiveHint=False,
+        idempotentHint=True,
+        openWorldHint=False,
+    ))
+    async def wavexis_unsubscribe_events(input: UnsubscribeEventsInput) -> str:
+        """Unsubscribe from browser events by subscription ID (W10).
+
+        Args:
+            input: Unsubscribe parameters (subscription_id).
+
+        Returns:
+            JSON string with status ``"ok"``.
+        """
+        try:
+            session = session_manager.get(input.session_id)
+            await session.backend.unsubscribe_events(input.subscription_id)
+            return format_json_response({"status": "ok"})
+        except Exception as e:
+            return format_error("wavexis_unsubscribe_events", e)

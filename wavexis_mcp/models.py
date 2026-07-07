@@ -1437,3 +1437,23 @@ class ShadowFillInput(BaseModel):
         description="CSS selectors piercing shadow boundaries",
     )
     value: str = Field(..., description="Value to set in the input field")
+
+
+# ── Event subscription (W10) ────────────────────────────────────
+
+
+class SubscribeEventsInput(BaseModel):
+    """Input for subscribing to real-time browser events (W10)."""
+    session_id: str = Field(...)
+    event_types: list[str] = Field(
+        ...,
+        min_length=1,
+        description="Event types: 'console', 'network_request', 'network_response', "
+        "'dom_mutation', 'dialog', 'navigation'",
+    )
+
+
+class UnsubscribeEventsInput(BaseModel):
+    """Input for unsubscribing from browser events (W10)."""
+    session_id: str = Field(...)
+    subscription_id: str = Field(..., description="Subscription ID from subscribe_events")
