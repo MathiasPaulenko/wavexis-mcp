@@ -1,57 +1,57 @@
 # Configuration
 
-WaveXisMCP organizes 175 tools into 13 capability tiers. Core is always enabled. Additional tiers are opt-in via `--caps`.
+WaveXisMCP organizes 195 tools into 13 capability tiers. Core is always enabled. Additional tiers are opt-in via `--caps`.
 
 ## Capability tiers
 
-Capability tiers are the primary way to control which tools are exposed to the LLM. Each tier groups related tools by domain. This matters because LLMs have context windows — exposing 175 tool definitions consumes tokens. For simple tasks, 45 core tools is plenty. For complex automation, enable everything with `--caps all`.
+Capability tiers are the primary way to control which tools are exposed to the LLM. Each tier groups related tools by domain. This matters because LLMs have context windows — exposing 195 tool definitions consumes tokens. For simple tasks, 56 core tools is plenty. For complex automation, enable everything with `--caps all`.
 
 | Tier | Flag | Tools | Key features |
 | --- | --- | --- | --- |
-| **Core** | always on | 45 | Session, navigation, screenshot, PDF, scrape, eval, DOM, input, cookies, tabs, NL interaction |
-| **Network** | `--caps=network` | 10 | Headers, UA, block, throttle, cache, HAR, intercept, mock, modify req/resp, request list |
-| **Storage** | `--caps=storage` | 13 | localStorage, sessionStorage, cache storage, IndexedDB, state save/restore |
+| **Core** | always on | 56 | Session, navigation, screenshot, PDF, scrape, eval, DOM, input, cookies, tabs, NL interaction, iframe, shadow DOM, events |
+| **Network** | `--caps=network` | 14 | Headers, UA, block, throttle, cache, HAR, intercept, mock, modify req/resp, request body, replay HAR, request list |
+| **Storage** | `--caps=storage` | 18 | localStorage, sessionStorage, cache storage, IndexedDB, state save/restore |
 | **Emulation** | `--caps=emulation` | 9 | Device, viewport, geolocation, timezone, dark mode, locale, CPU, touch, sensors |
-| **A11y** | `--caps=a11y` | 3 | Accessibility tree snapshot (LLM-friendly element refs) |
+| **A11y** | `--caps=a11y` | 4 | Accessibility tree snapshot, node traversal, axe-core audit |
 | **Interactions** | `--caps=interactions` | 5 | Dialogs, downloads, permissions |
-| **DevTools** | `--caps=devtools` | 23 | Performance, CSS, debugging, overlay, console, security, window mgmt |
+| **DevTools** | `--caps=devtools` | 31 | Performance, CSS, debugging, overlay, console, security, window mgmt, combined trace, annotated screenshot |
 | **Vision** | `--caps=vision` | 6 | Coordinate-based mouse (pixel-precise) |
 | **Video** | `--caps=video` | 4 | Video recording, chapters, action overlay |
 | **Testing** | `--caps=testing` | 4 | Assertions, locator generation |
 | **Workflows** | `--caps=workflows` | 6 | Multi-action YAML, raw CDP/BiDi, browser context CRUD |
 | **Data** | `--caps=data` | 7 | Codegen, Lighthouse audit, extract, websocket intercept, crawl, visual diff, core web vitals |
-| **Experimental** | `--caps=experimental` | 26 | Service workers, animations, WebAuthn, WebAudio, media, cast, bluetooth, extensions, prefs |
-| **Total** | `--caps=all` | **175** | |
+| **Experimental** | `--caps=experimental` | 31 | Service workers, animations, WebAuthn, WebAudio, media, cast, bluetooth, extensions, prefs |
+| **Total** | `--caps=all` | **195** | |
 
 ### Tier details
 
-#### Core (45 tools, always on)
+#### Core (56 tools, always on)
 
-The foundation. Covers session management, navigation, screenshots, PDF generation, page scraping, JavaScript evaluation, DOM manipulation, user input (click, type, fill, hover, drag, key press), cookies, and tab management. These tools are always available regardless of `--caps` settings.
+The foundation. Covers session management, navigation, screenshots, PDF generation, page scraping, JavaScript evaluation, DOM manipulation, user input (click, type, fill, hover, drag, key press), cookies, tab management, iframe interactions, shadow DOM piercing, event subscription, and natural language interaction (find-by-text, NL click/fill). These tools are always available regardless of `--caps` settings.
 
-#### Network (10 tools)
+#### Network (14 tools)
 
-Control over HTTP traffic. Set custom headers, override User-Agent, block requests by URL pattern, throttle network speed, disable cache, capture HAR files, intercept and modify requests in-flight, mock responses, modify responses in-flight, and list all network requests made by the page. Essential for testing API interactions, simulating slow connections, and debugging network issues.
+Control over HTTP traffic. Set custom headers, override User-Agent, block requests by URL pattern, throttle network speed, disable cache, capture HAR files, intercept and modify requests in-flight, mock responses, modify responses in-flight, get request/response bodies, replay HAR files, and list all network requests made by the page. Essential for testing API interactions, simulating slow connections, and debugging network issues.
 
-#### Storage (13 tools)
+#### Storage (18 tools)
 
-Read and write browser storage. Full localStorage and sessionStorage CRUD, Cache Storage listing and deletion, and storage state save/restore (exports cookies + all storage as JSON for later restoration). Useful for preserving authentication state between sessions or testing storage-dependent features.
+Read and write browser storage. Full localStorage and sessionStorage CRUD, Cache Storage listing/entries/deletion, IndexedDB listing/data retrieval/clearing, and storage state save/restore (exports cookies + all storage as JSON for later restoration). Useful for preserving authentication state between sessions or testing storage-dependent features.
 
 #### Emulation (9 tools)
 
 Simulate devices and environments. Emulate specific devices (iPhone 15, Pixel 8, etc.) with correct viewport, user agent, and touch events. Override geolocation, timezone, dark mode, locale, CPU throttling, and sensor values (accelerometer, gyroscope). Essential for responsive testing and geo-dependent features.
 
-#### A11y (3 tools)
+#### A11y (4 tools)
 
-Accessibility tree inspection. Capture the full accessibility tree with LLM-friendly element references (e.g., `el-1`, `el-2`) that can be passed to other tools. Get specific nodes by ID and traverse ancestors. The foundation for `wavexis_act` (natural language interaction).
+Accessibility tree inspection. Capture the full accessibility tree with LLM-friendly element references (e.g., `el-1`, `el-2`) that can be passed to other tools. Get specific nodes by ID, traverse ancestors, and run axe-core accessibility audits. The foundation for `wavexis_act` (natural language interaction).
 
 #### Interactions (5 tools)
 
 Handle browser-level interactions that aren't DOM clicks. Accept/dismiss JavaScript dialogs (alert, confirm, prompt), intercept file downloads, grant browser permissions (geolocation, notifications, camera, microphone), and reset permissions. Essential for testing pages with popups or permission flows.
 
-#### DevTools (23 tools)
+#### DevTools (31 tools)
 
-Chrome DevTools protocol exposed as tools. Performance metrics (LCP, FCP, CLS, TTFB), CPU profiling, heap snapshots, JS/CSS coverage, CSS style inspection, JavaScript debugging (breakpoints, step over/into/out, pause/resume), event listener inspection, element highlighting, console capture, security state, and window bounds control. The most powerful tier for debugging and optimization.
+Chrome DevTools protocol exposed as tools. Performance metrics (LCP, FCP, CLS, TTFB), CPU profiling, heap snapshots, JS/CSS coverage, combined trace+perf, CSS style inspection, JavaScript debugging (breakpoints, step over/into/out, pause/resume), event listener inspection, element highlighting, console capture, browser logs, security state, window bounds control, and annotated screenshots with element labels. The most powerful tier for debugging and optimization.
 
 #### Vision (6 tools)
 
@@ -65,25 +65,25 @@ Browser video recording. Start/stop recording, add chapter markers at specific t
 
 Assertion-based testing. Assert element visibility, text presence, and URL matching. Generate robust CSS selectors for elements (tries ID, data-testid, class, nth-child). These tools return pass/fail results as JSON, making them ideal for automated test pipelines.
 
-#### Workflows (5 tools)
+#### Workflows (6 tools)
 
-Advanced automation. Execute multi-action YAML sequences in a single tool call (navigate → wait → click → fill → screenshot). Send raw CDP or BiDi commands as an escape hatch for any browser feature not covered by a dedicated tool. Create and close isolated browser contexts for parallel sessions.
+Advanced automation. Execute multi-action YAML sequences in a single tool call (navigate → wait → click → fill → screenshot). Send raw CDP or BiDi commands as an escape hatch for any browser feature not covered by a dedicated tool. Create, list, and close isolated browser contexts for parallel sessions.
 
 #### Data (7 tools)
 
 Data extraction and analysis. Record browser actions to YAML (codegen for test generation), run Lighthouse audits (performance, accessibility, SEO, best-practices), extract structured data via CSS selectors, intercept WebSocket messages, crawl multiple URLs with depth control, compare screenshots for visual regression testing, and measure Core Web Vitals (LCP, CLS, INP) with ratings and score.
 
-#### Experimental (26 tools)
+#### Experimental (31 tools)
 
-Niche and experimental features. Service worker management (list, unregister, update), animation control (list, pause, play, seek), WebAuthn virtual authenticators, WebAudio context inspection, media player monitoring, Cast (Chromecast) control, Bluetooth emulation, browser extension management (install, uninstall, list), and browser preference get/set. These tools cover edge cases that most users won't need but are invaluable when they do.
+Niche and experimental features. Service worker management (list, unregister, update, emulate), animation control (list, pause, play, set rate), WebAuthn virtual authenticators, WebAudio context inspection, media player monitoring, Cast (Chromecast) control, Bluetooth emulation (adapter, device connect/disconnect/list), browser extension management (install, uninstall, list), and browser preference get/set. These tools cover edge cases that most users won't need but are invaluable when they do.
 
 ## --caps flag
 
 ```bash
-# Core only (default, 45 tools)
+# Core only (default, 56 tools)
 wavexis-mcp
 
-# All tiers (175 tools)
+# All tiers (195 tools)
 wavexis-mcp --caps all
 
 # Specific tiers
@@ -97,7 +97,7 @@ wavexis-mcp --caps=devtools,a11y
 ```
 
 !!! tip "Choosing tiers"
-    Start with `--caps core` and add tiers as needed. Each tier adds tool definitions to the LLM's context, which consumes tokens. For most tasks, `core,network,storage` (64 tools) is a good balance. Use `all` only when you need maximum capability.
+    Start with `--caps core` and add tiers as needed. Each tier adds tool definitions to the LLM's context, which consumes tokens. For most tasks, `core,network,storage` (88 tools) is a good balance. Use `all` only when you need maximum capability.
 
 ## CLI flags
 

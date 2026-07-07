@@ -1,10 +1,10 @@
-# Experimental Tools (26)
+# Experimental Tools (31)
 
 Enable with `--caps=experimental`.
 
 Experimental tools cover niche and advanced browser features that most users won't need daily but are invaluable when they do. This tier includes service worker management, animation control, WebAuthn virtual authenticators, WebAudio inspection, media player monitoring, Cast (Chromecast) control, Bluetooth emulation, browser extension management, and browser preference get/set.
 
-These tools map directly to Chrome DevTools Protocol domains that are considered experimental or non-standard. The experimental tier includes 26 tools across 9 categories.
+These tools map directly to Chrome DevTools Protocol domains that are considered experimental or non-standard. The experimental tier includes 31 tools across 9 categories.
 
 ## Service Workers
 

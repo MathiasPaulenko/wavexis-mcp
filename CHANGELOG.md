@@ -5,12 +5,21 @@ All notable changes to WaveXisMCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.4] - 2025-07-08
+
+### Changed
+
+- Documentation: updated all tool counts from 175 to 195 across README, docs, and pyproject.toml
+- Documentation: updated tier counts (core 45→56, network 10→14, storage 13→18, a11y 3→4, devtools 23→31, experimental 26→31)
+- Documentation: added missing tools to tier reference tables (iframe, shadow DOM, events, IndexedDB, combined trace, annotated screenshot, axe audit, modify request/response, HAR replay, browser context list, and more)
+- Documentation: fixed tab tool names in core.md to match actual registered names
+
 ## [1.6.3] - 2025-07-08
 
 ### Added
 
 - 2 unit tests for `wavexis_annotated_screenshot` (base64 + file output modes)
-- Test audit: 100% tool coverage — all 175 tools now have tests
+- Test audit: 100% tool coverage — all 195 tools now have tests
 
 ### Changed
 

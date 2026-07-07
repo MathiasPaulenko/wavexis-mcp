@@ -1,4 +1,4 @@
-# DevTools Tools (23)
+# DevTools Tools (31)
 
 Enable with `--caps=devtools`.
 
@@ -16,6 +16,8 @@ Performance tools measure and record how the page behaves at runtime. Capture Co
 | `wavexis_perf_heap_snapshot` | `session_id` | Capture a heap snapshot. Returns heap data including object types, sizes, and references. Useful for finding memory leaks. |
 | `wavexis_perf_coverage` | `session_id` | Get JavaScript coverage. Returns which functions were executed and which were not. Useful for identifying dead code. |
 | `wavexis_perf_css_coverage` | `session_id` | Get CSS coverage. Returns which CSS rules were used. Useful for removing unused CSS. |
+| `wavexis_start_combined_trace` | `session_id`, `categories` | Start a combined performance + trace recording. `categories`: list of trace categories. Returns a trace file with both perf metrics and timeline data. |
+| `wavexis_stop_combined_trace` | `session_id`, `output_path` | Stop a combined trace recording and save the file. Returns the trace file path and duration. |
 
 !!! example "Check Core Web Vitals"
     ```text
@@ -69,7 +71,15 @@ Capture console output and browser logs. Useful for debugging JavaScript errors 
 | Tool | Parameters | Description |
 | --- | --- | --- |
 | `wavexis_capture_console` | `session_id`, `level` | Capture console messages. `level`: `log`, `info`, `warning`, `error`, `debug`, or `all` (default). Returns messages with type, text, and stack trace. |
+| `wavexis_console_messages` | `session_id`, `level` | Get console messages since session start or last call. `level`: filter by severity. Returns messages with timestamp, type, and text. |
 | `wavexis_capture_logs` | `session_id`, `level` | Capture browser-level logs. Includes network errors, SSL warnings, and deprecation notices. |
+| `wavexis_browser_logs` | `session_id`, `level` | Get browser-level logs since session start or last call. Similar to `capture_logs` but returns all accumulated logs. |
+
+## Capture
+
+| Tool | Parameters | Description |
+| --- | --- | --- |
+| `wavexis_annotated_screenshot` | `session_id`, `selectors`, `format`, `output_path` | Take a screenshot with numbered labels (@e1, @e2, ...) overlaid on elements matching the provided selectors. Returns the image plus a label-to-selector map. |
 
 ## Security
 

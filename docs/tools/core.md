@@ -1,8 +1,8 @@
-# Core Tools (45)
+# Core Tools (56)
 
 Always enabled. No `--caps` flag needed.
 
-Core tools cover the essential browser automation workflow: open a session, navigate, interact with the page, capture output, and close. These 45 tools are always registered regardless of which capability tiers you enable.
+Core tools cover the essential browser automation workflow: open a session, navigate, interact with the page, capture output, and close. These 56 tools are always registered regardless of which capability tiers you enable.
 
 ## Session management
 
@@ -13,8 +13,6 @@ Sessions are persistent browser instances. Open a session once, chain multiple t
 | `wavexis_session_open` | `backend`, `headless`, `user_data_dir` | Open a browser session. Returns `session_id`. Choose `cdp` (default, Chromium-native) or `bidi` (W3C cross-browser). Set `headless=false` to see the browser window. |
 | `wavexis_session_close` | `session_id` | Close a session and kill the browser process. Always call this when done to free resources. |
 | `wavexis_session_info` | `session_id` | Get session metadata: backend type, created timestamp, current URL, tab count. |
-| `wavexis_session_list` | — | List all active sessions with their IDs and metadata. |
-| `wavexis_session_cleanup` | — | Close all active sessions. Useful for cleanup after errors or at end of a workflow. |
 
 !!! example "Session lifecycle"
     ```text
@@ -101,11 +99,30 @@ Read and manipulate the DOM. Query elements by CSS selector, get/set HTML and te
 | `wavexis_dom_html` | `session_id`, `selector`, `outer` | Get HTML of an element. `outer=true` includes the element itself; `false` returns only inner HTML. |
 | `wavexis_dom_text` | `session_id`, `selector` | Get text content of an element (innerText). |
 | `wavexis_dom_query` | `session_id`, `selector`, `all` | Query elements by CSS selector. `all=true` returns all matches; `false` returns first match only. Returns element refs and metadata. |
+| `wavexis_dom_get` | `session_id`, `selector` | Get an element's properties: tag name, attributes, bounding box, visible text, and HTML. |
+| `wavexis_dom_get_attr` | `session_id`, `selector`, `name` | Get a specific attribute value from an element. Returns `null` if the attribute doesn't exist. |
+| `wavexis_dom_snapshot` | `session_id` | Capture a full DOM snapshot of the current page. Returns the serialized DOM as HTML. |
 | `wavexis_dom_set_attr` | `session_id`, `selector`, `name`, `value` | Set an attribute on an element. |
 | `wavexis_dom_remove_attr` | `session_id`, `selector`, `name` | Remove an attribute from an element. |
 | `wavexis_dom_remove` | `session_id`, `selector` | Remove an element from the DOM. |
 | `wavexis_dom_focus` | `session_id`, `selector` | Focus an element. Triggers `focus` event and makes it the active element. |
 | `wavexis_dom_scroll` | `session_id`, `selector`, `x`, `y`, `behavior` | Scroll to element (`selector`) or coordinates (`x`, `y`). `behavior`: `smooth` or `instant`. |
+
+## Shadow DOM
+
+| Tool | Parameters | Description |
+| --- | --- | --- |
+| `wavexis_shadow_click` | `session_id`, `selector` | Click an element inside a shadow DOM. Pierces shadow boundaries automatically. |
+| `wavexis_shadow_eval` | `session_id`, `expression` | Evaluate JavaScript inside a shadow DOM context. Useful for interacting with web components. |
+| `wavexis_shadow_fill` | `session_id`, `selector`, `value` | Fill an input field inside a shadow DOM. Pierces shadow boundaries automatically. |
+
+## iframe
+
+| Tool | Parameters | Description |
+| --- | --- | --- |
+| `wavexis_iframe_click` | `session_id`, `frame_selector`, `selector` | Click an element inside an iframe. `frame_selector`: CSS selector for the iframe element. `selector`: CSS selector for the target inside the iframe. |
+| `wavexis_iframe_eval` | `session_id`, `frame_selector`, `expression` | Evaluate JavaScript inside an iframe context. |
+| `wavexis_iframe_fill` | `session_id`, `frame_selector`, `selector`, `value` | Fill an input field inside an iframe. |
 
 !!! example "Query all buttons"
     ```text
@@ -164,10 +181,10 @@ Manage browser tabs. Each tab is a separate page context. Opening a new tab crea
 
 | Tool | Parameters | Description |
 | --- | --- | --- |
-| `wavexis_tabs_list` | `session_id` | List all open tabs with their IDs, URLs, and titles. |
-| `wavexis_tabs_new` | `session_id`, `url` | Open a new tab and navigate to `url`. Returns the new tab ID. |
-| `wavexis_tabs_close` | `session_id`, `tab_id` | Close a specific tab by ID. |
-| `wavexis_tabs_activate` | `session_id`, `tab_id` | Switch to a specific tab. Subsequent tool calls operate on the activated tab. |
+| `wavexis_list_tabs` | `session_id` | List all open tabs with their IDs, URLs, and titles. |
+| `wavexis_new_tab` | `session_id`, `url` | Open a new tab and navigate to `url`. Returns the new tab ID. |
+| `wavexis_close_tab` | `session_id`, `tab_id` | Close a specific tab by ID. |
+| `wavexis_activate_tab` | `session_id`, `tab_id` | Switch to a specific tab. Subsequent tool calls operate on the activated tab. |
 
 ## Utility
 
@@ -175,3 +192,25 @@ Manage browser tabs. Each tab is a separate page context. Opening a new tab crea
 | --- | --- | --- |
 | `wavexis_browser_version` | `session_id` | Get the browser's version string. Useful for compatibility checks. |
 | `wavexis_backends` | — | List available backends (`cdp`, `bidi`) and whether they're installed. |
+
+## Events
+
+| Tool | Parameters | Description |
+| --- | --- | --- |
+| `wavexis_subscribe_events` | `session_id`, `events` | Subscribe to browser events. `events`: list of CDP event names (e.g., `['Page.frameNavigated', 'Network.requestWillBeSent']`). |
+| `wavexis_unsubscribe_events` | `session_id`, `events` | Unsubscribe from previously subscribed events. |
+
+## Natural language interaction
+
+| Tool | Parameters | Description |
+| --- | --- | --- |
+| `wavexis_act` | `session_id`, `instruction` | Interact with a page using natural language. Takes an a11y snapshot, matches the instruction to an element by keyword scoring, and executes the action (click, type, fill, hover). No external LLM calls. |
+| `wavexis_find_by_text` | `session_id`, `query`, `all` | Find element(s) by visible text content. `all=true` returns all matches; `false` returns first match only. Returns CSS selector(s). |
+| `wavexis_nl_click` | `session_id`, `query`, `auto_wait` | Click an element by natural language description. Uses heuristic matching against the accessibility tree. |
+| `wavexis_nl_fill` | `session_id`, `query`, `value`, `auto_wait` | Fill an element by natural language description. Uses heuristic matching against the accessibility tree. |
+
+## Annotated screenshot
+
+| Tool | Parameters | Description |
+| --- | --- | --- |
+| `wavexis_annotated_screenshot` | `session_id`, `selectors`, `format`, `output_path` | Take a screenshot with numbered labels overlaid on elements matching the provided selectors. Returns the image plus a label-to-selector map. Useful for LLMs to identify elements visually. |

@@ -1,4 +1,4 @@
-# Workflows Tools (5)
+# Workflows Tools (6)
 
 Enable with `--caps=workflows`.
 
@@ -26,6 +26,7 @@ Browser contexts are isolated environments within the same browser instance. Eac
 | Tool | Parameters | Description |
 | --- | --- | --- |
 | `wavexis_browser_context_create` | `session_id` | Create an isolated browser context. Returns `context_id`. |
+| `wavexis_browser_context_list` | `session_id` | List all browser contexts in the current session. Returns context IDs and their metadata. |
 | `wavexis_browser_context_close` | `session_id`, `context_id` | Close a browser context and free its resources. |
 
 !!! example "Multi-action workflow"

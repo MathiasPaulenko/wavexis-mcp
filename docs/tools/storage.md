@@ -1,4 +1,4 @@
-# Storage Tools (13)
+# Storage Tools (18)
 
 Enable with `--caps=storage`.
 
@@ -37,7 +37,18 @@ Stores `Request`/`Response` pairs for use by Service Workers. Used by PWAs for o
 | Tool | Parameters | Description |
 | --- | --- | --- |
 | `wavexis_cache_storage_list` | `session_id` | List all Cache Storage entries (cache names and their contents). |
+| `wavexis_cache_storage_entries` | `session_id`, `cache_name` | List all entries (request/response pairs) in a specific cache. Returns URLs, statuses, and content types. |
 | `wavexis_cache_storage_delete` | `session_id`, `cache_name` | Delete a specific cache by name. |
+
+## IndexedDB
+
+Client-side object database for structured data. Used by PWAs and complex web apps.
+
+| Tool | Parameters | Description |
+| --- | --- | --- |
+| `wavexis_indexeddb_list` | `session_id` | List all IndexedDB databases and their object stores. Returns database name, version, and store names. |
+| `wavexis_indexeddb_get_data` | `session_id`, `database`, `store` | Get all records from an IndexedDB object store. Returns key-value pairs. |
+| `wavexis_indexeddb_clear` | `session_id`, `database`, `store` | Clear all records in an IndexedDB object store. |
 
 ## State save/restore
 

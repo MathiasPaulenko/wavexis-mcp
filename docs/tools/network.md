@@ -1,4 +1,4 @@
-# Network Tools (9)
+# Network Tools (14)
 
 Enable with `--caps=network`.
 
@@ -16,6 +16,11 @@ Essential for testing API interactions, simulating slow connections, debugging n
 | `wavexis_capture_har` | `session_id`, `output_path` | Start capturing a HAR (HTTP Archive) file. Call again to stop and save. HAR files record all network requests with timing, headers, and bodies. |
 | `wavexis_intercept_requests` | `session_id`, `enabled` | Enable/disable request interception. When enabled, requests are paused before sending and can be modified with `wavexis_modify_request`. |
 | `wavexis_mock_response` | `session_id`, `url_pattern`, `status`, `headers`, `body` | Mock a response for a URL pattern. The browser receives the mocked response without hitting the network. `status`: HTTP status code (default 200). |
+| `wavexis_modify_request` | `session_id`, `pattern`, `modifications` | Modify a request in-flight. `pattern`: URL pattern to match. `modifications`: dict with `headers`, `method`, `postData` overrides. Requires interception enabled. |
+| `wavexis_modify_response` | `session_id`, `pattern`, `modifications` | Modify a response in-flight. `pattern`: URL pattern to match. `modifications`: dict with `status`, `headers`, `body` overrides. Requires interception enabled. |
+| `wavexis_get_request_body` | `session_id`, `request_id` | Get the body of a captured request by its ID. Returns the raw body as base64 or text. |
+| `wavexis_get_response_body` | `session_id`, `request_id` | Get the body of a captured response by its ID. Returns the raw body as base64 or text. |
+| `wavexis_replay_har` | `session_id`, `har_path` | Replay a previously captured HAR file. The browser replays all requests from the HAR, serving cached responses instead of hitting the network. |
 | `wavexis_network_requests` | `session_id`, `filter` | List captured network requests. Optional `filter` regex to match URLs. Returns method, URL, status, timing, and resource type. |
 
 !!! example "Throttle to 3G and block analytics"
