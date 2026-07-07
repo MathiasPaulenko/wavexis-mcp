@@ -188,6 +188,9 @@ def mock_backend() -> AsyncMock:
     backend.nl_fill = AsyncMock()
     backend.list_contexts = AsyncMock(return_value=["ctx-1", "ctx-2"])
     backend.modify_response = AsyncMock()
+    backend.annotated_screenshot = AsyncMock(
+        return_value=(b"\x89PNG\r\n\x1a\n", {"@e1": "button#submit"})
+    )
 
     return backend
 

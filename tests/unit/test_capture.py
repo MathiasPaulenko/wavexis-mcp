@@ -7,7 +7,13 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from wavexis_mcp.models import PDFInput, ScrapeInput, ScreencastInput, ScreenshotInput
+from wavexis_mcp.models import (
+    AnnotatedScreenshotInput,
+    PDFInput,
+    ScrapeInput,
+    ScreencastInput,
+    ScreenshotInput,
+)
 from wavexis_mcp.session import SessionManager
 
 
@@ -101,3 +107,53 @@ async def test_screencast(mock_backend: AsyncMock) -> None:
     result = await tool.fn(ScreencastInput(url="https://example.com", duration=1.0))
     data = json.loads(result)
     assert data["count"] >= 1
+
+
+@pytest.mark.unit
+async def test_annotated_screenshot(
+    session_manager_with_mock: SessionManager, mock_session_id: str
+) -> None:
+    from mcp.server.fastmcp import FastMCP
+
+    from wavexis_mcp.tools.capture import register
+
+    mcp = FastMCP("test")
+    register(mcp, session_manager_with_mock)
+
+    tool = mcp._tool_manager.get_tool("wavexis_annotated_screenshot")
+    result = await tool.fn(
+        AnnotatedScreenshotInput(
+            session_id=mock_session_id,
+            selectors=["button#submit", "input#email"],
+        )
+    )
+    data = json.loads(result)
+    assert data["status"] == "ok"
+    assert "base64" in data
+    assert data["labels"] == {"@e1": "button#submit"}
+
+
+@pytest.mark.unit
+async def test_annotated_screenshot_file(
+    session_manager_with_mock: SessionManager, mock_session_id: str, tmp_path
+) -> None:
+    from mcp.server.fastmcp import FastMCP
+
+    from wavexis_mcp.tools.capture import register
+
+    mcp = FastMCP("test")
+    register(mcp, session_manager_with_mock)
+
+    out = tmp_path / "annotated.png"
+    tool = mcp._tool_manager.get_tool("wavexis_annotated_screenshot")
+    result = await tool.fn(
+        AnnotatedScreenshotInput(
+            session_id=mock_session_id,
+            selectors=["button#submit"],
+            output_path=str(out),
+        )
+    )
+    data = json.loads(result)
+    assert data["status"] == "ok"
+    assert data["labels"] == {"@e1": "button#submit"}
+    assert out.exists()

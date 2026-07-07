@@ -5,6 +5,17 @@ All notable changes to WaveXisMCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.3] - 2025-07-08
+
+### Added
+
+- 2 unit tests for `wavexis_annotated_screenshot` (base64 + file output modes)
+- Test audit: 100% tool coverage — all 175 tools now have tests
+
+### Changed
+
+- Test count: 334 → 336
+
 ## [1.6.2] - 2025-07-07
 
 ### Added
