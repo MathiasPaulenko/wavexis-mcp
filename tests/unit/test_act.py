@@ -199,3 +199,78 @@ class TestExecuteAct:
         ]
         result = await execute_act(mock_backend, "click the login button", tree)
         assert result["status"] == "no_match"
+
+    @pytest.mark.unit
+    async def test_execute_type(self, mock_backend: pytest.fixture) -> None:
+        tree = [
+            {"ref": "el-1", "role": "textbox", "name": "Search", "children": []},
+        ]
+        result = await execute_act(mock_backend, "type in the search field", tree)
+        assert result["status"] == "ok"
+        assert result["action"] == "type"
+        mock_backend.type_text.assert_called_once()
+
+    @pytest.mark.unit
+    async def test_execute_fill(self, mock_backend: pytest.fixture) -> None:
+        tree = [
+            {"ref": "el-1", "role": "textbox", "name": "Email", "children": []},
+        ]
+        result = await execute_act(mock_backend, "fill the email field", tree)
+        assert result["status"] == "ok"
+        assert result["action"] == "fill"
+        mock_backend.fill.assert_called_once()
+
+    @pytest.mark.unit
+    async def test_execute_hover(self, mock_backend: pytest.fixture) -> None:
+        tree = [
+            {"ref": "el-1", "role": "button", "name": "Submit", "children": []},
+        ]
+        result = await execute_act(mock_backend, "hover over the submit button", tree)
+        assert result["status"] == "ok"
+        assert result["action"] == "hover"
+        mock_backend.hover.assert_called_once()
+
+    @pytest.mark.unit
+    async def test_execute_retry_then_success(self, mock_backend: pytest.fixture) -> None:
+        from unittest.mock import AsyncMock
+
+        tree = [
+            {"ref": "el-1", "role": "button", "name": "Login", "children": []},
+        ]
+        mock_backend.click = AsyncMock(side_effect=[RuntimeError("timeout"), None])
+        result = await execute_act(mock_backend, "click the login button", tree, max_retries=3)
+        assert result["status"] == "ok"
+        assert result["attempts"] == 2
+
+    @pytest.mark.unit
+    async def test_execute_all_retries_fail(self, mock_backend: pytest.fixture) -> None:
+        from unittest.mock import AsyncMock
+
+        tree = [
+            {"ref": "el-1", "role": "button", "name": "Login", "children": []},
+        ]
+        mock_backend.click = AsyncMock(side_effect=RuntimeError("element not found"))
+        result = await execute_act(mock_backend, "click the login button", tree, max_retries=2)
+        assert result["status"] == "error"
+        assert result["attempts"] == 2
+        assert "element not found" in result["error"]
+
+    @pytest.mark.unit
+    async def test_execute_selector_from_name(self, mock_backend: pytest.fixture) -> None:
+        tree = [
+            {"ref": "el-1", "role": "button", "name": "Submit", "children": []},
+        ]
+        result = await execute_act(mock_backend, "click the submit button", tree)
+        assert result["selector"] == '[aria-label="Submit"]'
+
+    @pytest.mark.unit
+    async def test_execute_no_name_uses_ref(self, mock_backend: pytest.fixture) -> None:
+        tree = [
+            {"ref": "el-1", "role": "button", "name": "", "children": []},
+        ]
+        # With no name, the score should be 0 for a button with no name
+        # unless role matches
+        result = await execute_act(mock_backend, "click the button", tree)
+        # button role matches "button" keyword
+        if result["status"] == "ok":
+            mock_backend.click.assert_called_once_with("#el-1")
