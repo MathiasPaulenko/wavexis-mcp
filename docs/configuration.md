@@ -69,11 +69,11 @@ Assertion-based testing. Assert element visibility, text presence, and URL match
 
 Advanced automation. Execute multi-action YAML sequences in a single tool call (navigate → wait → click → fill → screenshot). Send raw CDP or BiDi commands as an escape hatch for any browser feature not covered by a dedicated tool. Create and close isolated browser contexts for parallel sessions.
 
-#### Data (6 tools)
+#### Data (7 tools)
 
-Data extraction and analysis. Record browser actions to YAML (codegen for test generation), run Lighthouse audits (performance, accessibility, SEO, best-practices), extract structured data via CSS selectors, intercept WebSocket messages, crawl multiple URLs with depth control, and compare screenshots for visual regression testing.
+Data extraction and analysis. Record browser actions to YAML (codegen for test generation), run Lighthouse audits (performance, accessibility, SEO, best-practices), extract structured data via CSS selectors, intercept WebSocket messages, crawl multiple URLs with depth control, compare screenshots for visual regression testing, and measure Core Web Vitals (LCP, CLS, INP) with ratings and score.
 
-#### Experimental (20 tools)
+#### Experimental (26 tools)
 
 Niche and experimental features. Service worker management (list, unregister, update), animation control (list, pause, play, seek), WebAuthn virtual authenticators, WebAudio context inspection, media player monitoring, Cast (Chromecast) control, Bluetooth emulation, browser extension management (install, uninstall, list), and browser preference get/set. These tools cover edge cases that most users won't need but are invaluable when they do.
 

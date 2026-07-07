@@ -1,8 +1,8 @@
-# Data Tools (6)
+# Data Tools (7)
 
 Enable with `--caps=data`.
 
-Data tools focus on extraction and analysis. Record browser actions to YAML (codegen for test generation), run Lighthouse audits, extract structured data via CSS selectors, intercept WebSocket messages, crawl multiple URLs with depth control, and compare screenshots for visual regression testing.
+Data tools focus on extraction and analysis. Record browser actions to YAML (codegen for test generation), run Lighthouse audits, extract structured data via CSS selectors, intercept WebSocket messages, crawl multiple URLs with depth control, compare screenshots for visual regression testing, and measure Core Web Vitals.
 
 | Tool | Parameters | Description |
 | --- | --- | --- |
@@ -12,6 +12,7 @@ Data tools focus on extraction and analysis. Record browser actions to YAML (cod
 | `wavexis_websocket_intercept` | `session_id`, `url_pattern`, `direction` | Intercept WebSocket messages. `url_pattern`: glob to match WS URLs. `direction`: `send`, `receive`, or `both`. Returns messages as JSON. |
 | `wavexis_crawl` | `session_id`, `start_url`, `max_depth`, `max_pages`, `selector`, `same_origin` | Crawl multiple URLs starting from `start_url`. Follows links up to `max_depth` levels. `max_pages`: limit. `selector`: extract only this element from each page. `same_origin`: only follow same-origin links. |
 | `wavexis_visual_diff` | `session_id`, `baseline`, `current`, `threshold` | Compare two screenshots for visual regression. `baseline`/`current`: file paths or base64. `threshold`: pixel difference tolerance (0-1). Returns diff image and pass/fail. |
+| `wavexis_core_web_vitals` | `url`, `session_id`, `observe_ms`, `budgets`, `headless`, `backend` | Measure Core Web Vitals (LCP, CLS, INP, FCP, TTFB, TBT, Load) with ratings and score. Optional budgets for pass/fail checks. |
 
 !!! example "Run a Lighthouse audit"
     ```text

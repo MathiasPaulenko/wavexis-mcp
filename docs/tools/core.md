@@ -1,8 +1,8 @@
-# Core Tools (42)
+# Core Tools (45)
 
 Always enabled. No `--caps` flag needed.
 
-Core tools cover the essential browser automation workflow: open a session, navigate, interact with the page, capture output, and close. These 42 tools are always registered regardless of which capability tiers you enable.
+Core tools cover the essential browser automation workflow: open a session, navigate, interact with the page, capture output, and close. These 45 tools are always registered regardless of which capability tiers you enable.
 
 ## Session management
 
@@ -131,6 +131,9 @@ Simulate user interactions. Click, type, fill, select, hover, drag, key press, t
 | `wavexis_set_files` | `session_id`, `selector`, `files` | Set file input. `files`: list of file paths. Works with `<input type="file">`. |
 | `wavexis_check` | `session_id`, `selector` | Check a checkbox. No-op if already checked. |
 | `wavexis_uncheck` | `session_id`, `selector` | Uncheck a checkbox. No-op if already unchecked. |
+| `wavexis_find_by_text` | `session_id`, `query`, `all` | Find element(s) by visible text content. `all=true` returns all matches; `false` returns first match only. Returns CSS selector(s). |
+| `wavexis_nl_click` | `session_id`, `query`, `auto_wait` | Click an element by natural language description. Uses heuristic matching against the accessibility tree. |
+| `wavexis_nl_fill` | `session_id`, `query`, `value`, `auto_wait` | Fill an element by natural language description. Uses heuristic matching against the accessibility tree. |
 
 !!! example "Fill a login form"
     ```text
