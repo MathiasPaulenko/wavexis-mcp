@@ -20,6 +20,7 @@ from wavexis_mcp.models import (
     InterceptRequestsInput,
     MockResponseInput,
     ModifyRequestInput,
+    ModifyResponseInput,
     NetworkRequestsInput,
     ReplayHARInput,
     SetCacheDisabledInput,
@@ -394,6 +395,30 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             return format_json_response({"status": "ok", "pattern": input.pattern})
         except Exception as e:
             return format_error("wavexis_modify_request", e)
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=False,
+            openWorldHint=False,
+        )
+    )
+    async def wavexis_modify_response(input: ModifyResponseInput) -> str:
+        """Intercept and modify responses matching a pattern in-flight.
+
+        Args:
+            input: Modification parameters (pattern, modifications).
+
+        Returns:
+            JSON string with status ``"ok"``.
+        """
+        try:
+            session = session_manager.get(input.session_id)
+            await session.backend.modify_response(input.pattern, input.modifications)
+            return format_json_response({"status": "ok", "pattern": input.pattern})
+        except Exception as e:
+            return format_error("wavexis_modify_response", e)
 
     @mcp.tool(
         annotations=ToolAnnotations(

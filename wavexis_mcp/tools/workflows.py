@@ -16,6 +16,7 @@ from wavexis_mcp.formatter import format_error, format_json_response
 from wavexis_mcp.models import (
     BrowserContextCloseInput,
     BrowserContextCreateInput,
+    BrowserContextListInput,
     MultiActionInput,
     RawBiDiInput,
     RawCDPInput,
@@ -254,3 +255,31 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             return format_json_response({"status": "ok"})
         except Exception as e:
             return format_error("wavexis_browser_context_close", e)
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
+    async def wavexis_browser_context_list(
+        input: BrowserContextListInput,
+    ) -> str:
+        """List all browser contexts in a session.
+
+        Args:
+            input: List contexts parameters (session_id).
+
+        Returns:
+            JSON string with ``contexts`` list and ``count``.
+        """
+        try:
+            session = session_manager.get(input.session_id)
+            contexts = await session.backend.list_contexts()
+            return format_json_response(
+                {"contexts": contexts, "count": len(contexts)}
+            )
+        except Exception as e:
+            return format_error("wavexis_browser_context_list", e)

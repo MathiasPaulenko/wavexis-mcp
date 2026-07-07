@@ -5,6 +5,20 @@ All notable changes to WaveXisMCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2025-07-07
+
+### Added
+
+- 3 new critical tools bridging missing backend methods (163 → 166 total):
+  - `wavexis_browser_context_list` — list all browser contexts in a session (workflows tier)
+  - `wavexis_modify_response` — intercept and modify HTTP responses in-flight (network tier)
+  - `wavexis_webauthn_add_authenticator` — add a virtual WebAuthn authenticator for testing (experimental tier)
+
+### Changed
+
+- Bumped tool count from 163 to 166 in pyproject.toml, README, and docs
+- Updated tier counts: Network 9→10, Workflows 5→6, Experimental 20→21
+
 ## [1.4.0] - 2025-07-07
 
 ### Added

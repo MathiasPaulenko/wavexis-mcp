@@ -34,6 +34,7 @@ from wavexis_mcp.models import (
     SetPrefInput,
     WebAudioCaptureInput,
     WebAudioStopCaptureInput,
+    WebAuthnAddAuthenticatorInput,
     WebAuthnAddCredentialInput,
     WebAuthnGetCredentialInput,
     WebAuthnRemoveCredentialInput,
@@ -211,7 +212,37 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_animation_set_rate", e)
 
-    # ── WebAuthn (3) ──
+    # ── WebAuthn (4) ──
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=False,
+            openWorldHint=False,
+        )
+    )
+    async def wavexis_webauthn_add_authenticator(
+        input: WebAuthnAddAuthenticatorInput,
+    ) -> str:
+        """Add a virtual WebAuthn authenticator for testing.
+
+        Args:
+            input: Authenticator parameters (session_id, protocol, transport).
+
+        Returns:
+            JSON string with ``authenticator_id``.
+        """
+        try:
+            session = session_manager.get(input.session_id)
+            auth_id = await session.backend.webauthn_add_virtual_authenticator(
+                input.protocol, input.transport
+            )
+            return format_json_response(
+                {"authenticator_id": auth_id, "status": "ok"}
+            )
+        except Exception as e:
+            return format_error("wavexis_webauthn_add_authenticator", e)
 
     @mcp.tool(
         annotations=ToolAnnotations(

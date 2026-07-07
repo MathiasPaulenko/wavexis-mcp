@@ -1,15 +1,15 @@
 # Configuration
 
-WaveXisMCP organizes 163 tools into 13 capability tiers. Core is always enabled. Additional tiers are opt-in via `--caps`.
+WaveXisMCP organizes 166 tools into 13 capability tiers. Core is always enabled. Additional tiers are opt-in via `--caps`.
 
 ## Capability tiers
 
-Capability tiers are the primary way to control which tools are exposed to the LLM. Each tier groups related tools by domain. This matters because LLMs have context windows — exposing 163 tool definitions consumes tokens. For simple tasks, 42 core tools is plenty. For complex automation, enable everything with `--caps all`.
+Capability tiers are the primary way to control which tools are exposed to the LLM. Each tier groups related tools by domain. This matters because LLMs have context windows — exposing 166 tool definitions consumes tokens. For simple tasks, 42 core tools is plenty. For complex automation, enable everything with `--caps all`.
 
 | Tier | Flag | Tools | Key features |
 | --- | --- | --- | --- |
 | **Core** | always on | 42 | Session, navigation, screenshot, PDF, scrape, eval, DOM, input, cookies, tabs |
-| **Network** | `--caps=network` | 9 | Headers, UA, block, throttle, cache, HAR, intercept, mock, request list |
+| **Network** | `--caps=network` | 10 | Headers, UA, block, throttle, cache, HAR, intercept, mock, modify req/resp, request list |
 | **Storage** | `--caps=storage` | 13 | localStorage, sessionStorage, cache storage, IndexedDB, state save/restore |
 | **Emulation** | `--caps=emulation` | 9 | Device, viewport, geolocation, timezone, dark mode, locale, CPU, touch, sensors |
 | **A11y** | `--caps=a11y` | 3 | Accessibility tree snapshot (LLM-friendly element refs) |
@@ -18,10 +18,10 @@ Capability tiers are the primary way to control which tools are exposed to the L
 | **Vision** | `--caps=vision` | 6 | Coordinate-based mouse (pixel-precise) |
 | **Video** | `--caps=video` | 4 | Video recording, chapters, action overlay |
 | **Testing** | `--caps=testing` | 4 | Assertions, locator generation |
-| **Workflows** | `--caps=workflows` | 5 | Multi-action YAML, raw CDP/BiDi, browser contexts |
+| **Workflows** | `--caps=workflows` | 6 | Multi-action YAML, raw CDP/BiDi, browser context CRUD |
 | **Data** | `--caps=data` | 6 | Codegen, Lighthouse audit, extract, websocket intercept, crawl, visual diff |
-| **Experimental** | `--caps=experimental` | 20 | Service workers, animations, WebAuthn, WebAudio, media, cast, bluetooth, extensions, prefs |
-| **Total** | `--caps=all` | **163** | |
+| **Experimental** | `--caps=experimental` | 21 | Service workers, animations, WebAuthn, WebAudio, media, cast, bluetooth, extensions, prefs |
+| **Total** | `--caps=all` | **166** | |
 
 ### Tier details
 
@@ -29,9 +29,9 @@ Capability tiers are the primary way to control which tools are exposed to the L
 
 The foundation. Covers session management, navigation, screenshots, PDF generation, page scraping, JavaScript evaluation, DOM manipulation, user input (click, type, fill, hover, drag, key press), cookies, and tab management. These tools are always available regardless of `--caps` settings.
 
-#### Network (9 tools)
+#### Network (10 tools)
 
-Control over HTTP traffic. Set custom headers, override User-Agent, block requests by URL pattern, throttle network speed, disable cache, capture HAR files, intercept and modify requests in-flight, mock responses, and list all network requests made by the page. Essential for testing API interactions, simulating slow connections, and debugging network issues.
+Control over HTTP traffic. Set custom headers, override User-Agent, block requests by URL pattern, throttle network speed, disable cache, capture HAR files, intercept and modify requests in-flight, mock responses, modify responses in-flight, and list all network requests made by the page. Essential for testing API interactions, simulating slow connections, and debugging network issues.
 
 #### Storage (13 tools)
 
@@ -83,7 +83,7 @@ Niche and experimental features. Service worker management (list, unregister, up
 # Core only (default, 42 tools)
 wavexis-mcp
 
-# All tiers (163 tools)
+# All tiers (166 tools)
 wavexis-mcp --caps all
 
 # Specific tiers

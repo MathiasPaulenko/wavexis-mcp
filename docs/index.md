@@ -4,7 +4,7 @@
 
 MCP server that exposes the [wavexis](https://github.com/MathiasPaulenko/wavexis) browser automation library to LLMs.
 
-**163 tools** across **13 capability tiers**. 100% Python, no Node.js, no Chromium download — uses your existing Chrome/Edge.
+**166 tools** across **13 capability tiers**. 100% Python, no Node.js, no Chromium download — uses your existing Chrome/Edge.
 
 ---
 
@@ -34,7 +34,7 @@ The LLM never sees the browser directly. It only sees tool definitions (name, de
 | Language | TypeScript / Node.js | **Python** |
 | Chromium download | ~200MB bundled | **Uses your existing Chrome/Edge** |
 | Install size | ~200MB+ | **~5MB** |
-| Tool count | ~70 | **163** |
+| Tool count | ~70 | **166** |
 | Capability tiers | Flat | **13 tiers, opt-in via `--caps`** |
 | Protocol | CDP only | **CDP + BiDi (cross-browser)** |
 | Raw protocol access | No | **Yes (`wavexis_raw_cdp`, `wavexis_raw_bidi`)** |
@@ -48,7 +48,7 @@ The LLM never sees the browser directly. It only sees tool definitions (name, de
 ## Key features
 
 - **Zero install** — uses your local Chrome/Edge, no 200MB Chromium download (~5MB package)
-- **163 tools** — the most comprehensive browser automation MCP server
+- **166 tools** — the most comprehensive browser automation MCP server
 - **Dual backend** — CDP (Chromium-native, via cdpwave) and BiDi (W3C cross-browser, via bidiwave) with per-session selection
 - **13 capability tiers** — enable only what you need via `--caps` to keep tool lists manageable for the LLM
 - **Python-native** — no Node.js runtime required, pure Python 3.11+
@@ -60,7 +60,7 @@ The LLM never sees the browser directly. It only sees tool definitions (name, de
 ## Ecosystem
 
 ```text
-WaveXisMCP (MCP server, 163 tools)
+WaveXisMCP (MCP server, 166 tools)
 └─ wraps → wavexis (browser automation library)
                ├─ cdpwave (CDP backend, Chromium-native)
                └─ bidiwave (BiDi backend, W3C cross-browser)
@@ -80,7 +80,7 @@ WaveXisMCP sits at the top of a three-layer ecosystem:
 - [Architecture](architecture.md) — system design, data flow, ADRs
 - [HTTP Transport](http-transport.md) — running as an HTTP server
 - [Docker](docker.md) — containerized deployment
-- [Tools reference](tools/core.md) — all 163 tools documented by tier
+- [Tools reference](tools/core.md) — all 166 tools documented by tier
 - [Examples](examples/screenshot.md) — real-world usage patterns
 
 ## License

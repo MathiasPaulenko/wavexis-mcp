@@ -1207,6 +1207,12 @@ class BrowserContextCloseInput(BaseModel):
     context_id: str = Field(...)
 
 
+class BrowserContextListInput(BaseModel):
+    """Input for listing browser contexts."""
+
+    session_id: str = Field(...)
+
+
 # ── Data ─────────────────────────────────────────────────────────
 
 
@@ -1345,6 +1351,20 @@ class AnimationSetRateInput(BaseModel):
     playback_rate: float = Field(default=1.0, ge=0.0, description="Playback rate multiplier")
 
 
+class WebAuthnAddAuthenticatorInput(BaseModel):
+    """Input for adding a virtual WebAuthn authenticator."""
+
+    session_id: str = Field(...)
+    protocol: str = Field(
+        default="ctap2",
+        description="Authenticator protocol: 'ctap2' or 'u2f'",
+    )
+    transport: str = Field(
+        default="usb",
+        description="Transport type: 'usb', 'nfc', 'ble', 'internal'",
+    )
+
+
 class WebAuthnAddCredentialInput(BaseModel):
     """Input for adding a WebAuthn credential."""
 
@@ -1466,6 +1486,19 @@ class ModifyRequestInput(BaseModel):
     modifications: dict[str, Any] = Field(
         default_factory=dict,
         description="Modifications: headers, url, method, post_data",
+    )
+
+
+class ModifyResponseInput(BaseModel):
+    """Input for modifying responses in-flight."""
+
+    session_id: str = Field(...)
+    pattern: dict[str, Any] = Field(
+        ..., description="Interception pattern (urlPattern, resourceType, requestStage)"
+    )
+    modifications: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Modifications: status, headers, body",
     )
 
 
