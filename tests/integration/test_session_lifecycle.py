@@ -37,9 +37,7 @@ async def test_session_lifecycle(mock_backend: object) -> None:
         session_id = data["session_id"]
 
         nav_tool = mcp._tool_manager.get_tool("wavexis_navigate")
-        result = await nav_tool.fn(
-            NavigateInput(url="https://example.com", session_id=session_id)
-        )
+        result = await nav_tool.fn(NavigateInput(url="https://example.com", session_id=session_id))
         nav_data = json.loads(result)
         assert nav_data["status"] == "ok"
 

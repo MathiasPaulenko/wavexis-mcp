@@ -21,6 +21,7 @@ class TestPrompts:
             def decorator(func):
                 registered[func.__name__] = func
                 return func
+
             return decorator
 
         mcp.prompt = capture_prompt
@@ -44,6 +45,7 @@ class TestPrompts:
             def decorator(func):
                 registered[func.__name__] = func
                 return func
+
             return decorator
 
         mcp.prompt = capture_prompt
@@ -66,6 +68,7 @@ class TestPrompts:
             def decorator(func):
                 registered[func.__name__] = func
                 return func
+
             return decorator
 
         mcp.prompt = capture_prompt
@@ -90,6 +93,7 @@ class TestPrompts:
             def decorator(func):
                 registered[func.__name__] = func
                 return func
+
             return decorator
 
         mcp.prompt = capture_prompt
@@ -112,6 +116,7 @@ class TestPrompts:
             def decorator(func):
                 registered[func.__name__] = func
                 return func
+
             return decorator
 
         mcp.prompt = capture_prompt

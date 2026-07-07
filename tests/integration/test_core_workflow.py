@@ -43,9 +43,7 @@ async def test_session_navigate_screenshot_close() -> None:
 
     try:
         nav_tool = mcp._tool_manager.get_tool("wavexis_navigate")
-        result = await nav_tool.fn(
-            NavigateInput(url="https://example.com", session_id=session_id)
-        )
+        result = await nav_tool.fn(NavigateInput(url="https://example.com", session_id=session_id))
         data = json.loads(result)
         assert data["status"] == "ok"
 

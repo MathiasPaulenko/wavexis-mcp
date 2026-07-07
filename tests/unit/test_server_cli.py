@@ -132,6 +132,7 @@ async def test_wavexis_act_no_match(
     )
 
     from wavexis_mcp import server as server_module
+
     original = server_module._session_manager
     server_module._session_manager = session_manager_with_mock
     try:
@@ -168,6 +169,7 @@ async def test_wavexis_act_error(
         pytest.skip("wavexis_act not available with core caps")
 
     from wavexis_mcp import server as server_module
+
     original = server_module._session_manager
     server_module._session_manager = session_manager_with_mock
     try:

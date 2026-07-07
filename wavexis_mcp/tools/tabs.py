@@ -27,12 +27,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         session_manager: The shared session manager.
     """
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_list_tabs(input: ListTabsInput) -> str:
         """List all open browser tabs.
 
@@ -49,12 +51,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_list_tabs", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=False,
-        openWorldHint=True,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=False,
+            openWorldHint=True,
+        )
+    )
     async def wavexis_new_tab(input: NewTabInput) -> str:
         """Create a new browser tab.
 
@@ -71,12 +75,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_new_tab", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=True,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=True,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_close_tab(input: CloseTabInput) -> str:
         """Close a tab by its ID.
 
@@ -93,12 +99,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_close_tab", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_activate_tab(input: ActivateTabInput) -> str:
         """Activate (focus) a tab by its ID.
 

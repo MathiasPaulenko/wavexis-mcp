@@ -28,9 +28,7 @@ async def test_dialog_accept(
     register(mcp, session_manager_with_mock)
 
     tool = mcp._tool_manager.get_tool("wavexis_dialog_accept")
-    result = await tool.fn(
-        DialogAcceptInput(prompt_text="yes", session_id=mock_session_id)
-    )
+    result = await tool.fn(DialogAcceptInput(prompt_text="yes", session_id=mock_session_id))
     data = json.loads(result)
     assert data["status"] == "ok"
 
@@ -64,9 +62,7 @@ async def test_intercept_download_base64(
     register(mcp, session_manager_with_mock)
 
     tool = mcp._tool_manager.get_tool("wavexis_intercept_download")
-    result = await tool.fn(
-        InterceptDownloadInput(pattern=".*\\.pdf", session_id=mock_session_id)
-    )
+    result = await tool.fn(InterceptDownloadInput(pattern=".*\\.pdf", session_id=mock_session_id))
     data = json.loads(result)
     assert data["status"] == "ok"
     assert data["size_bytes"] > 0

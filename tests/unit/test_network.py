@@ -22,9 +22,7 @@ from wavexis_mcp.session import SessionManager
 
 
 @pytest.mark.unit
-async def test_set_headers(
-    session_manager_with_mock: SessionManager, mock_session_id: str
-) -> None:
+async def test_set_headers(session_manager_with_mock: SessionManager, mock_session_id: str) -> None:
     from mcp.server.fastmcp import FastMCP
 
     from wavexis_mcp.tools.network import register
@@ -33,9 +31,7 @@ async def test_set_headers(
     register(mcp, session_manager_with_mock)
 
     tool = mcp._tool_manager.get_tool("wavexis_set_headers")
-    result = await tool.fn(
-        SetHeadersInput(headers={"X-Test": "true"}, session_id=mock_session_id)
-    )
+    result = await tool.fn(SetHeadersInput(headers={"X-Test": "true"}, session_id=mock_session_id))
     data = json.loads(result)
     assert data["status"] == "ok"
 
@@ -52,9 +48,7 @@ async def test_set_user_agent(
     register(mcp, session_manager_with_mock)
 
     tool = mcp._tool_manager.get_tool("wavexis_set_user_agent")
-    result = await tool.fn(
-        SetUserAgentInput(user_agent="TestBot/1.0", session_id=mock_session_id)
-    )
+    result = await tool.fn(SetUserAgentInput(user_agent="TestBot/1.0", session_id=mock_session_id))
     data = json.loads(result)
     assert data["status"] == "ok"
 
@@ -90,9 +84,7 @@ async def test_throttle_network_preset(
     register(mcp, session_manager_with_mock)
 
     tool = mcp._tool_manager.get_tool("wavexis_throttle_network")
-    result = await tool.fn(
-        ThrottleNetworkInput(session_id=mock_session_id, preset="3g")
-    )
+    result = await tool.fn(ThrottleNetworkInput(session_id=mock_session_id, preset="3g"))
     data = json.loads(result)
     assert data["status"] == "ok"
 
@@ -133,9 +125,7 @@ async def test_set_cache_disabled(
     register(mcp, session_manager_with_mock)
 
     tool = mcp._tool_manager.get_tool("wavexis_set_cache_disabled")
-    result = await tool.fn(
-        SetCacheDisabledInput(session_id=mock_session_id, disabled=True)
-    )
+    result = await tool.fn(SetCacheDisabledInput(session_id=mock_session_id, disabled=True))
     data = json.loads(result)
     assert data["status"] == "ok"
     assert data["cache_disabled"] is True
@@ -225,9 +215,7 @@ async def test_network_requests_pagination(
     )
 
     tool = mcp._tool_manager.get_tool("wavexis_network_requests")
-    result = await tool.fn(
-        NetworkRequestsInput(session_id=mock_session_id, limit=3, offset=2)
-    )
+    result = await tool.fn(NetworkRequestsInput(session_id=mock_session_id, limit=3, offset=2))
     data = json.loads(result)
     assert data["count"] == 3
     assert data["total"] == 10
@@ -250,9 +238,7 @@ async def test_get_request_body_found(
     )
 
     tool = mcp._tool_manager.get_tool("wavexis_get_request_body")
-    result = await tool.fn(
-        GetRequestBodyInput(session_id=mock_session_id, request_id="req-123")
-    )
+    result = await tool.fn(GetRequestBodyInput(session_id=mock_session_id, request_id="req-123"))
     data = json.loads(result)
     assert data["found"] is True
     assert data["body"] == '{"key": "value"}'
@@ -275,9 +261,7 @@ async def test_get_request_body_not_found(
     )
 
     tool = mcp._tool_manager.get_tool("wavexis_get_request_body")
-    result = await tool.fn(
-        GetRequestBodyInput(session_id=mock_session_id, request_id="req-999")
-    )
+    result = await tool.fn(GetRequestBodyInput(session_id=mock_session_id, request_id="req-999"))
     data = json.loads(result)
     assert data["found"] is False
     assert data["body"] is None
@@ -300,9 +284,7 @@ async def test_get_response_body_found(
     )
 
     tool = mcp._tool_manager.get_tool("wavexis_get_response_body")
-    result = await tool.fn(
-        GetResponseBodyInput(session_id=mock_session_id, request_id="resp-123")
-    )
+    result = await tool.fn(GetResponseBodyInput(session_id=mock_session_id, request_id="resp-123"))
     data = json.loads(result)
     assert data["found"] is True
     assert data["body"] == "<html>OK</html>"
@@ -325,9 +307,7 @@ async def test_get_response_body_not_found(
     )
 
     tool = mcp._tool_manager.get_tool("wavexis_get_response_body")
-    result = await tool.fn(
-        GetResponseBodyInput(session_id=mock_session_id, request_id="resp-999")
-    )
+    result = await tool.fn(GetResponseBodyInput(session_id=mock_session_id, request_id="resp-999"))
     data = json.loads(result)
     assert data["found"] is False
 
@@ -389,9 +369,7 @@ async def test_modify_request_error(
 
 
 @pytest.mark.unit
-async def test_replay_har(
-    session_manager_with_mock: SessionManager, mock_session_id: str
-) -> None:
+async def test_replay_har(session_manager_with_mock: SessionManager, mock_session_id: str) -> None:
     from mcp.server.fastmcp import FastMCP
 
     from wavexis_mcp.models import ReplayHARInput

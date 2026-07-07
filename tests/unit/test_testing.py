@@ -31,9 +31,7 @@ async def test_assert_visible_pass(
     mcp = FastMCP("test")
     _register(mcp, session_manager_with_mock)
 
-    session_manager_with_mock.get(mock_session_id).backend.eval = AsyncMock(
-        return_value=True
-    )
+    session_manager_with_mock.get(mock_session_id).backend.eval = AsyncMock(return_value=True)
 
     tool = mcp._tool_manager.get_tool("wavexis_assert_visible")
     result = await tool.fn(
@@ -53,9 +51,7 @@ async def test_assert_visible_fail(
     mcp = FastMCP("test")
     _register(mcp, session_manager_with_mock)
 
-    session_manager_with_mock.get(mock_session_id).backend.eval = AsyncMock(
-        return_value=False
-    )
+    session_manager_with_mock.get(mock_session_id).backend.eval = AsyncMock(return_value=False)
 
     tool = mcp._tool_manager.get_tool("wavexis_assert_visible")
     result = await tool.fn(
@@ -75,9 +71,7 @@ async def test_assert_text_visible_pass(
     mcp = FastMCP("test")
     _register(mcp, session_manager_with_mock)
 
-    session_manager_with_mock.get(mock_session_id).backend.eval = AsyncMock(
-        return_value=True
-    )
+    session_manager_with_mock.get(mock_session_id).backend.eval = AsyncMock(return_value=True)
 
     tool = mcp._tool_manager.get_tool("wavexis_assert_text_visible")
     result = await tool.fn(
@@ -97,15 +91,11 @@ async def test_assert_text_visible_fail(
     mcp = FastMCP("test")
     _register(mcp, session_manager_with_mock)
 
-    session_manager_with_mock.get(mock_session_id).backend.eval = AsyncMock(
-        return_value=False
-    )
+    session_manager_with_mock.get(mock_session_id).backend.eval = AsyncMock(return_value=False)
 
     tool = mcp._tool_manager.get_tool("wavexis_assert_text_visible")
     result = await tool.fn(
-        AssertTextVisibleInput(
-            session_id=mock_session_id, text="Missing", timeout=100
-        )
+        AssertTextVisibleInput(session_id=mock_session_id, text="Missing", timeout=100)
     )
     data = json.loads(result)
     assert data["passed"] is False
@@ -125,9 +115,7 @@ async def test_assert_url_pass(
     )
 
     tool = mcp._tool_manager.get_tool("wavexis_assert_url")
-    result = await tool.fn(
-        AssertURLInput(session_id=mock_session_id, url_pattern="example.com")
-    )
+    result = await tool.fn(AssertURLInput(session_id=mock_session_id, url_pattern="example.com"))
     data = json.loads(result)
     assert data["passed"] is True
     assert data["url"] == "https://example.com/page"
@@ -147,9 +135,7 @@ async def test_assert_url_fail(
     )
 
     tool = mcp._tool_manager.get_tool("wavexis_assert_url")
-    result = await tool.fn(
-        AssertURLInput(session_id=mock_session_id, url_pattern="example.com")
-    )
+    result = await tool.fn(AssertURLInput(session_id=mock_session_id, url_pattern="example.com"))
     data = json.loads(result)
     assert data["passed"] is False
 

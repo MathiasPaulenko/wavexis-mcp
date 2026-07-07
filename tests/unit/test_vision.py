@@ -27,9 +27,7 @@ def _register(mcp, mgr):
 
 
 @pytest.mark.unit
-async def test_mouse_move(
-    session_manager_with_mock: SessionManager, mock_session_id: str
-) -> None:
+async def test_mouse_move(session_manager_with_mock: SessionManager, mock_session_id: str) -> None:
     from mcp.server.fastmcp import FastMCP
 
     mcp = FastMCP("test")
@@ -66,9 +64,7 @@ async def test_mouse_move_xy(
 
 
 @pytest.mark.unit
-async def test_mouse_down(
-    session_manager_with_mock: SessionManager, mock_session_id: str
-) -> None:
+async def test_mouse_down(session_manager_with_mock: SessionManager, mock_session_id: str) -> None:
     from mcp.server.fastmcp import FastMCP
 
     mcp = FastMCP("test")
@@ -84,9 +80,7 @@ async def test_mouse_down(
 
 
 @pytest.mark.unit
-async def test_mouse_up(
-    session_manager_with_mock: SessionManager, mock_session_id: str
-) -> None:
+async def test_mouse_up(session_manager_with_mock: SessionManager, mock_session_id: str) -> None:
     from mcp.server.fastmcp import FastMCP
 
     mcp = FastMCP("test")
@@ -134,9 +128,7 @@ async def test_mouse_double_click_xy(
     _register(mcp, session_manager_with_mock)
 
     tool = mcp._tool_manager.get_tool("wavexis_mouse_double_click_xy")
-    result = await tool.fn(
-        MouseDoubleClickXYInput(session_id=mock_session_id, x=150, y=150)
-    )
+    result = await tool.fn(MouseDoubleClickXYInput(session_id=mock_session_id, x=150, y=150))
     data = json.loads(result)
     assert data["status"] == "ok"
     assert data["x"] == 150

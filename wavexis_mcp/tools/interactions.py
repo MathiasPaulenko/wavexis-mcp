@@ -42,12 +42,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         session_manager: The shared session manager.
     """
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_dialog_accept(input: DialogAcceptInput) -> str:
         """Accept a JavaScript dialog (alert, confirm, prompt).
 
@@ -64,12 +66,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_dialog_accept", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_dialog_dismiss(input: DialogDismissInput) -> str:
         """Dismiss a JavaScript dialog.
 
@@ -86,12 +90,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_dialog_dismiss", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=True,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
     async def wavexis_intercept_download(input: InterceptDownloadInput) -> str:
         """Intercept a download matching a URL pattern.
 
@@ -106,25 +112,31 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             data = await session.backend.intercept_download(input.pattern)
             if input.output_path:
                 await asyncio.to_thread(_write_bytes, input.output_path, data)
-                return format_json_response({
-                    "path": input.output_path,
+                return format_json_response(
+                    {
+                        "path": input.output_path,
+                        "size_bytes": len(data),
+                    }
+                )
+            return format_json_response(
+                {
+                    "status": "ok",
+                    "filename": os.path.basename(input.pattern),
                     "size_bytes": len(data),
-                })
-            return format_json_response({
-                "status": "ok",
-                "filename": os.path.basename(input.pattern),
-                "size_bytes": len(data),
-                "base64": encode_base64(data),
-            })
+                    "base64": encode_base64(data),
+                }
+            )
         except Exception as e:
             return format_error("wavexis_intercept_download", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_grant_permission(input: GrantPermissionInput) -> str:
         """Grant a browser permission (geolocation, notifications, etc.).
 
@@ -141,12 +153,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_grant_permission", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=True,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=True,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_reset_permissions(input: ResetPermissionsInput) -> str:
         """Reset all granted permissions.
 

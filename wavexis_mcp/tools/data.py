@@ -33,12 +33,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         session_manager: The shared session manager.
     """
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=False,
-        openWorldHint=True,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=False,
+            openWorldHint=True,
+        )
+    )
     async def wavexis_record(input: RecordInput) -> str:
         """Record browser interactions and generate a YAML workflow.
 
@@ -73,23 +75,27 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                     f"      expression: document.title\n"
                 )
 
-                return format_json_response({
-                    "yaml": yaml_text,
-                    "events_captured": 2,
-                    "duration_s": input.duration,
-                    "title": title,
-                })
+                return format_json_response(
+                    {
+                        "yaml": yaml_text,
+                        "events_captured": 2,
+                        "duration_s": input.duration,
+                        "title": title,
+                    }
+                )
             finally:
                 await session_manager.release_backend(backend, sid)
         except Exception as e:
             return format_error("wavexis_record", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=True,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
     async def wavexis_lighthouse(input: LighthouseInput) -> str:
         """Run a Lighthouse-style audit on a URL.
 
@@ -150,21 +156,25 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                         "console_errors": [],
                     }
 
-                return format_json_response({
-                    "url": input.url,
-                    "categories": cats,
-                })
+                return format_json_response(
+                    {
+                        "url": input.url,
+                        "categories": cats,
+                    }
+                )
             finally:
                 await session_manager.release_backend(backend, sid)
         except Exception as e:
             return format_error("wavexis_lighthouse", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=True,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
     async def wavexis_extract(input: ExtractInput) -> str:
         """Extract structured data from a page using a CSS selector schema.
 
@@ -190,9 +200,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
 
                 if input.selector:
                     escaped_scope = input.selector.replace("'", "\\'")
-                    count_js = (
-                        f"document.querySelectorAll('{escaped_scope}').length"
-                    )
+                    count_js = f"document.querySelectorAll('{escaped_scope}').length"
                     count = await backend.eval(count_js, await_promise=True)
                     count = int(count) if count else 0
 
@@ -223,21 +231,25 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                         row[field] = str(val) if val else ""
                     data.append(row)
 
-                return format_json_response({
-                    "data": data,
-                    "rows": len(data),
-                })
+                return format_json_response(
+                    {
+                        "data": data,
+                        "rows": len(data),
+                    }
+                )
             finally:
                 await session_manager.release_backend(backend, sid)
         except Exception as e:
             return format_error("wavexis_extract", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=False,
-        openWorldHint=True,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=False,
+            openWorldHint=True,
+        )
+    )
     async def wavexis_websocket_intercept(input: WebsocketInterceptInput) -> str:
         """Capture WebSocket frames on a page.
 
@@ -262,25 +274,29 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                 await backend.raw("Network.enable", {})
                 await asyncio.sleep(input.duration_ms / 1000)
 
-                return format_json_response({
-                    "url": input.url,
-                    "sent": [],
-                    "received": [],
-                    "errors": [],
-                    "frames_sent": 0,
-                    "frames_received": 0,
-                })
+                return format_json_response(
+                    {
+                        "url": input.url,
+                        "sent": [],
+                        "received": [],
+                        "errors": [],
+                        "frames_sent": 0,
+                        "frames_received": 0,
+                    }
+                )
             finally:
                 await session_manager.release_backend(backend, sid)
         except Exception as e:
             return format_error("wavexis_websocket_intercept", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=True,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
     async def wavexis_crawl(input: CrawlInput) -> str:
         """Crawl a website starting from a URL.
 
@@ -325,12 +341,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                     links = await backend.eval(links_js, await_promise=True)
                     links = links if isinstance(links, list) else []
 
-                    pages.append({
-                        "url": url,
-                        "title": title,
-                        "depth": depth,
-                        "links_found": len(links),
-                    })
+                    pages.append(
+                        {
+                            "url": url,
+                            "title": title,
+                            "depth": depth,
+                            "links_found": len(links),
+                        }
+                    )
 
                     if depth < input.max_depth:
                         for link in links:
@@ -344,22 +362,26 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                                         continue
                                 queue.append((link, depth + 1))
 
-                return format_json_response({
-                    "pages": pages,
-                    "pages_crawled": len(pages),
-                    "total_links_found": sum(p["links_found"] for p in pages),
-                })
+                return format_json_response(
+                    {
+                        "pages": pages,
+                        "pages_crawled": len(pages),
+                        "total_links_found": sum(p["links_found"] for p in pages),
+                    }
+                )
             finally:
                 await session_manager.release_backend(backend, sid)
         except Exception as e:
             return format_error("wavexis_crawl", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=True,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
     async def wavexis_visual_diff(input: VisualDiffInput) -> str:
         """Compare a screenshot against a baseline image.
 
@@ -373,10 +395,12 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             try:
                 from wavexis.actions.visual_diff import VisualDiffAction
             except ImportError:
-                return format_json_response({
-                    "status": "not_implemented",
-                    "message": "Requires wavexis W12 visual_diff action",
-                })
+                return format_json_response(
+                    {
+                        "status": "not_implemented",
+                        "message": "Requires wavexis W12 visual_diff action",
+                    }
+                )
 
             backend, sid = await session_manager.acquire_backend(
                 input.session_id,

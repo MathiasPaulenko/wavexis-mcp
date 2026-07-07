@@ -15,9 +15,7 @@ from wavexis_mcp.models import (
 
 
 @pytest.mark.unit
-async def test_list_tabs(
-    session_manager_with_mock, mock_session_id: str
-) -> None:
+async def test_list_tabs(session_manager_with_mock, mock_session_id: str) -> None:
     from mcp.server.fastmcp import FastMCP
 
     from wavexis_mcp.tools.tabs import register
@@ -33,9 +31,7 @@ async def test_list_tabs(
 
 
 @pytest.mark.unit
-async def test_new_tab(
-    session_manager_with_mock, mock_session_id: str
-) -> None:
+async def test_new_tab(session_manager_with_mock, mock_session_id: str) -> None:
     from mcp.server.fastmcp import FastMCP
 
     from wavexis_mcp.tools.tabs import register
@@ -50,9 +46,7 @@ async def test_new_tab(
 
 
 @pytest.mark.unit
-async def test_close_tab(
-    session_manager_with_mock, mock_session_id: str
-) -> None:
+async def test_close_tab(session_manager_with_mock, mock_session_id: str) -> None:
     from mcp.server.fastmcp import FastMCP
 
     from wavexis_mcp.tools.tabs import register
@@ -67,9 +61,7 @@ async def test_close_tab(
 
 
 @pytest.mark.unit
-async def test_activate_tab(
-    session_manager_with_mock, mock_session_id: str
-) -> None:
+async def test_activate_tab(session_manager_with_mock, mock_session_id: str) -> None:
     from mcp.server.fastmcp import FastMCP
 
     from wavexis_mcp.tools.tabs import register

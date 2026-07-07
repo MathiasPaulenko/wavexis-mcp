@@ -18,18 +18,14 @@ def _register(mcp, mgr):
 
 
 @pytest.mark.unit
-async def test_eval_basic(
-    session_manager_with_mock: SessionManager, mock_session_id: str
-) -> None:
+async def test_eval_basic(session_manager_with_mock: SessionManager, mock_session_id: str) -> None:
     from mcp.server.fastmcp import FastMCP
 
     mcp = FastMCP("test")
     _register(mcp, session_manager_with_mock)
 
     tool = mcp._tool_manager.get_tool("wavexis_eval")
-    result = await tool.fn(
-        EvalInput(expression="1 + 2", session_id=mock_session_id)
-    )
+    result = await tool.fn(EvalInput(expression="1 + 2", session_id=mock_session_id))
     data = json.loads(result)
     assert data["result"] == "result"
     assert data["type"] == "str"
@@ -69,9 +65,7 @@ async def test_eval_none_result(
     session_manager_with_mock.get(mock_session_id).backend.eval = AsyncMock(return_value=None)
 
     tool = mcp._tool_manager.get_tool("wavexis_eval")
-    result = await tool.fn(
-        EvalInput(expression="undefined_var", session_id=mock_session_id)
-    )
+    result = await tool.fn(EvalInput(expression="undefined_var", session_id=mock_session_id))
     data = json.loads(result)
     assert data["result"] is None
     assert data["type"] == "undefined"
@@ -99,9 +93,7 @@ async def test_eval_await_promise(
 
 
 @pytest.mark.unit
-async def test_eval_error(
-    session_manager_with_mock: SessionManager, mock_session_id: str
-) -> None:
+async def test_eval_error(session_manager_with_mock: SessionManager, mock_session_id: str) -> None:
     from mcp.server.fastmcp import FastMCP
 
     mcp = FastMCP("test")
@@ -112,9 +104,7 @@ async def test_eval_error(
     )
 
     tool = mcp._tool_manager.get_tool("wavexis_eval")
-    result = await tool.fn(
-        EvalInput(expression="throw new Error()", session_id=mock_session_id)
-    )
+    result = await tool.fn(EvalInput(expression="throw new Error()", session_id=mock_session_id))
     data = json.loads(result)
     assert "error" in data
     assert data["tool"] == "wavexis_eval"

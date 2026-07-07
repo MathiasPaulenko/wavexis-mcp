@@ -30,12 +30,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         session_manager: The shared session manager.
     """
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=True,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
     async def wavexis_mouse_move(input: MouseMoveInput) -> str:
         """Move the mouse to an element matching a CSS selector.
 
@@ -52,12 +54,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_mouse_move", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=True,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
     async def wavexis_mouse_move_xy(input: MouseMoveXYInput) -> str:
         """Move the mouse to absolute pixel coordinates.
 
@@ -73,20 +77,24 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                 "Input.dispatchMouseEvent",
                 {"type": "mouseMoved", "x": input.x, "y": input.y},
             )
-            return format_json_response({
-                "status": "ok",
-                "x": input.x,
-                "y": input.y,
-            })
+            return format_json_response(
+                {
+                    "status": "ok",
+                    "x": input.x,
+                    "y": input.y,
+                }
+            )
         except Exception as e:
             return format_error("wavexis_mouse_move_xy", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=True,
-        idempotentHint=False,
-        openWorldHint=True,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=True,
+            idempotentHint=False,
+            openWorldHint=True,
+        )
+    )
     async def wavexis_mouse_down(input: MouseDownInput) -> str:
         """Press a mouse button at the given coordinates.
 
@@ -112,12 +120,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_mouse_down", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=True,
-        idempotentHint=False,
-        openWorldHint=True,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=True,
+            idempotentHint=False,
+            openWorldHint=True,
+        )
+    )
     async def wavexis_mouse_up(input: MouseUpInput) -> str:
         """Release a mouse button at the given coordinates.
 
@@ -143,12 +153,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_mouse_up", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=True,
-        idempotentHint=False,
-        openWorldHint=True,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=True,
+            idempotentHint=False,
+            openWorldHint=True,
+        )
+    )
     async def wavexis_mouse_click_xy(input: MouseClickXYInput) -> str:
         """Click at absolute pixel coordinates (press + release).
 
@@ -181,21 +193,25 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                         "clickCount": 1,
                     },
                 )
-            return format_json_response({
-                "status": "ok",
-                "x": input.x,
-                "y": input.y,
-                "click_count": input.click_count,
-            })
+            return format_json_response(
+                {
+                    "status": "ok",
+                    "x": input.x,
+                    "y": input.y,
+                    "click_count": input.click_count,
+                }
+            )
         except Exception as e:
             return format_error("wavexis_mouse_click_xy", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=True,
-        idempotentHint=False,
-        openWorldHint=True,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=True,
+            idempotentHint=False,
+            openWorldHint=True,
+        )
+    )
     async def wavexis_mouse_double_click_xy(input: MouseDoubleClickXYInput) -> str:
         """Double-click at absolute pixel coordinates.
 
@@ -228,10 +244,12 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                         "clickCount": 2,
                     },
                 )
-            return format_json_response({
-                "status": "ok",
-                "x": input.x,
-                "y": input.y,
-            })
+            return format_json_response(
+                {
+                    "status": "ok",
+                    "x": input.x,
+                    "y": input.y,
+                }
+            )
         except Exception as e:
             return format_error("wavexis_mouse_double_click_xy", e)

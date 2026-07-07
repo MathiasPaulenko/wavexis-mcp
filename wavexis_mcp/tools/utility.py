@@ -22,12 +22,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         session_manager: The shared session manager.
     """
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_browser_version(input: BrowserVersionInput) -> str:
         """Get the browser version string.
 
@@ -44,20 +46,20 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             )
             try:
                 version = await backend.browser_version()
-                return format_json_response(
-                    {"version": version, "backend": input.backend}
-                )
+                return format_json_response({"version": version, "backend": input.backend})
             finally:
                 await session_manager.release_backend(backend, sid)
         except Exception as e:
             return format_error("wavexis_browser_version", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_backends() -> str:
         """List available browser backends and their versions.
 
@@ -70,8 +72,6 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             mgr = BackendManager()
             available = mgr.list_available()
             versions = mgr.install_check()
-            return format_json_response(
-                {"backends": versions, "available": available}
-            )
+            return format_json_response({"backends": versions, "available": available})
         except Exception as e:
             return format_error("wavexis_backends", e)

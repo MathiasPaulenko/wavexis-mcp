@@ -28,12 +28,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         session_manager: The shared session manager.
     """
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=True,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
     async def wavexis_cookies_get(input: CookiesGetInput) -> str:
         """Get all cookies for the current page.
 
@@ -60,12 +62,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_cookies_get", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=False,
-        openWorldHint=True,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=False,
+            openWorldHint=True,
+        )
+    )
     async def wavexis_cookies_set(input: CookiesSetInput) -> str:
         """Set a cookie in the browser.
 
@@ -85,27 +89,31 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                 if input.url:
                     wait = session_manager.make_wait(timeout=input.wait_timeout)
                     await backend.navigate(input.url, wait)
-                await backend.set_cookie(CookieParams(
-                    name=input.name,
-                    value=input.value,
-                    domain=input.domain,
-                    path=input.path,
-                    secure=input.secure,
-                    http_only=input.http_only,
-                    same_site=input.same_site,
-                ))
+                await backend.set_cookie(
+                    CookieParams(
+                        name=input.name,
+                        value=input.value,
+                        domain=input.domain,
+                        path=input.path,
+                        secure=input.secure,
+                        http_only=input.http_only,
+                        same_site=input.same_site,
+                    )
+                )
                 return format_json_response({"status": "ok"})
             finally:
                 await session_manager.release_backend(backend, sid)
         except Exception as e:
             return format_error("wavexis_cookies_set", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=True,
-        idempotentHint=True,
-        openWorldHint=True,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=True,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
     async def wavexis_cookies_delete(input: CookiesDeleteInput) -> str:
         """Delete cookies matching name and domain.
 
@@ -132,12 +140,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_cookies_delete", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=True,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=True,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_cookies_clear(input: CookiesClearInput) -> str:
         """Clear all browser cookies.
 

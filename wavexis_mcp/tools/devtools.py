@@ -71,12 +71,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
 
     # ── Performance (6) ──
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=True,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
     async def wavexis_perf_metrics(input: PerfMetricsInput) -> str:
         """Get performance metrics (LCP, FCP, CLS, TTFB, DOMNodes, etc.).
 
@@ -93,12 +95,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_perf_metrics", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=True,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
     async def wavexis_perf_trace(input: PerfTraceInput) -> str:
         """Capture a performance trace.
 
@@ -118,12 +122,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_perf_trace", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=True,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
     async def wavexis_perf_profile(input: PerfProfileInput) -> str:
         """Capture a CPU profile.
 
@@ -143,12 +149,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_perf_profile", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=True,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
     async def wavexis_perf_heap_snapshot(input: PerfHeapSnapshotInput) -> str:
         """Capture a heap snapshot.
 
@@ -168,12 +176,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_perf_heap_snapshot", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=True,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
     async def wavexis_perf_coverage(input: PerfCoverageInput) -> str:
         """Get JavaScript code coverage.
 
@@ -194,12 +204,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_perf_coverage", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=True,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
     async def wavexis_perf_css_coverage(input: PerfCSSCoverageInput) -> str:
         """Get CSS code coverage.
 
@@ -218,12 +230,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
 
     # ── CSS (4) ──
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_css_get_styles(input: CSSGetStylesInput) -> str:
         """Get inline and matched CSS styles for an element.
 
@@ -240,12 +254,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_css_get_styles", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_css_get_stylesheets(input: CSSGetStylesheetsInput) -> str:
         """List all stylesheets loaded by the page.
 
@@ -258,19 +274,23 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         try:
             session = session_manager.get(input.session_id)
             stylesheets = await session.backend.css_get_stylesheets()
-            return format_json_response({
-                "stylesheets": stylesheets,
-                "count": len(stylesheets),
-            })
+            return format_json_response(
+                {
+                    "stylesheets": stylesheets,
+                    "count": len(stylesheets),
+                }
+            )
         except Exception as e:
             return format_error("wavexis_css_get_stylesheets", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_css_get_rules(input: CSSGetRulesInput) -> str:
         """Get CSS rules from a specific stylesheet.
 
@@ -283,20 +303,24 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         try:
             session = session_manager.get(input.session_id)
             rules = await session.backend.css_get_rules(input.stylesheet_id)
-            return format_json_response({
-                "stylesheet_id": input.stylesheet_id,
-                "rules": rules,
-                "count": len(rules),
-            })
+            return format_json_response(
+                {
+                    "stylesheet_id": input.stylesheet_id,
+                    "rules": rules,
+                    "count": len(rules),
+                }
+            )
         except Exception as e:
             return format_error("wavexis_css_get_rules", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=True,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
     async def wavexis_css_get_computed(input: CSSGetComputedInput) -> str:
         """Get computed styles for an element.
 
@@ -315,12 +339,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
 
     # ── Debugging (9) ──
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=False,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=False,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_debug_set_breakpoint(input: DebugSetBreakpointInput) -> str:
         """Set a breakpoint by URL and line number.
 
@@ -339,12 +365,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_debug_set_breakpoint", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=False,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=False,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_debug_set_breakpoint_function(
         input: DebugSetBreakpointFunctionInput,
     ) -> str:
@@ -358,19 +386,19 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """
         try:
             session = session_manager.get(input.session_id)
-            bp_id = await session.backend.debug_set_breakpoint_function(
-                input.function_name
-            )
+            bp_id = await session.backend.debug_set_breakpoint_function(input.function_name)
             return format_json_response({"breakpoint_id": bp_id})
         except Exception as e:
             return format_error("wavexis_debug_set_breakpoint_function", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=True,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=True,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_debug_remove_breakpoint(input: DebugRemoveBreakpointInput) -> str:
         """Remove a breakpoint by ID.
 
@@ -387,12 +415,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_debug_remove_breakpoint", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_debug_step_over(input: DebugStepInput) -> str:
         """Step over in the debugger.
 
@@ -409,12 +439,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_debug_step_over", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_debug_step_into(input: DebugStepInput) -> str:
         """Step into in the debugger.
 
@@ -431,12 +463,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_debug_step_into", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_debug_step_out(input: DebugStepInput) -> str:
         """Step out in the debugger.
 
@@ -453,12 +487,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_debug_step_out", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_debug_pause(input: DebugPauseInput) -> str:
         """Pause script execution.
 
@@ -475,12 +511,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_debug_pause", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_debug_resume(input: DebugPauseInput) -> str:
         """Resume script execution.
 
@@ -497,12 +535,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_debug_resume", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=True,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
     async def wavexis_debug_get_listeners(input: DebugGetListenersInput) -> str:
         """Get event listeners attached to an element.
 
@@ -521,12 +561,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
 
     # ── Overlay (2) ──
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_overlay_highlight(input: OverlayHighlightInput) -> str:
         """Highlight an element with a colored overlay.
 
@@ -543,12 +585,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_overlay_highlight", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=True,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=True,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_overlay_clear(input: OverlayClearInput) -> str:
         """Clear all overlay highlights.
 
@@ -567,12 +611,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
 
     # ── Console & Logs (2) ──
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=True,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
     async def wavexis_console_messages(input: ConsoleMessagesInput) -> str:
         """Get console messages with pagination.
 
@@ -589,20 +635,24 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                 messages = messages[-50:]
             total = len(messages)
             paginated = messages[input.offset : input.offset + input.limit]
-            return format_json_response({
-                "messages": paginated,
-                "count": len(paginated),
-                "total": total,
-            })
+            return format_json_response(
+                {
+                    "messages": paginated,
+                    "count": len(paginated),
+                    "total": total,
+                }
+            )
         except Exception as e:
             return format_error("wavexis_console_messages", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_browser_logs(input: BrowserLogsInput) -> str:
         """Get browser-level log entries.
 
@@ -621,12 +671,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
 
     # ── Security (2) ──
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=True,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
     async def wavexis_get_security_state(input: GetSecurityStateInput) -> str:
         """Get the page security state.
 
@@ -643,12 +695,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_get_security_state", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=True,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=True,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_ignore_cert_errors(input: IgnoreCertErrorsInput) -> str:
         """Enable or disable certificate error ignoring.
 
@@ -667,12 +721,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
 
     # ── Window (2) ──
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_get_window_bounds(input: GetWindowBoundsInput) -> str:
         """Get the browser window bounds.
 
@@ -689,12 +745,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_get_window_bounds", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_set_window_bounds(input: SetWindowBoundsInput) -> str:
         """Set the browser window bounds.
 
@@ -706,25 +764,27 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """
         try:
             session = session_manager.get(input.session_id)
-            await session.backend.set_window_bounds(
-                input.width, input.height, input.x, input.y
+            await session.backend.set_window_bounds(input.width, input.height, input.x, input.y)
+            return format_json_response(
+                {
+                    "status": "ok",
+                    "width": input.width,
+                    "height": input.height,
+                    "x": input.x,
+                    "y": input.y,
+                }
             )
-            return format_json_response({
-                "status": "ok",
-                "width": input.width,
-                "height": input.height,
-                "x": input.x,
-                "y": input.y,
-            })
         except Exception as e:
             return format_error("wavexis_set_window_bounds", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=False,
-        openWorldHint=True,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=False,
+            openWorldHint=True,
+        )
+    )
     async def wavexis_start_combined_trace(input: StartCombinedTraceInput) -> str:
         """Start a combined trace capturing screenshots, network, and console (W8).
 
@@ -745,12 +805,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_start_combined_trace", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=True,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
     async def wavexis_stop_combined_trace(input: StopCombinedTraceInput) -> str:
         """Stop a combined trace and return collected data (W8).
 
@@ -769,12 +831,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
 
     # ── Event subscription (W10) ──
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=False,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=False,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_subscribe_events(input: SubscribeEventsInput) -> str:
         """Subscribe to real-time browser events (W10).
 
@@ -795,20 +859,24 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                 input.event_types,
                 callback=None,
             )
-            return format_json_response({
-                "subscription_id": sub_id,
-                "event_types": input.event_types,
-                "status": "subscribed",
-            })
+            return format_json_response(
+                {
+                    "subscription_id": sub_id,
+                    "event_types": input.event_types,
+                    "status": "subscribed",
+                }
+            )
         except Exception as e:
             return format_error("wavexis_subscribe_events", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_unsubscribe_events(input: UnsubscribeEventsInput) -> str:
         """Unsubscribe from browser events by subscription ID (W10).
 

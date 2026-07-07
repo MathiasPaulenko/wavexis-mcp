@@ -62,9 +62,7 @@ async def test_network_storage_emulation_workflow() -> None:
         assert data["status"] == "ok"
 
         nav_tool = mcp._tool_manager.get_tool("wavexis_navigate")
-        result = await nav_tool.fn(
-            NavigateInput(url="https://example.com", session_id=session_id)
-        )
+        result = await nav_tool.fn(NavigateInput(url="https://example.com", session_id=session_id))
         data = json.loads(result)
         assert data["status"] == "ok"
 
@@ -77,24 +75,18 @@ async def test_network_storage_emulation_workflow() -> None:
 
         ls_set_tool = mcp._tool_manager.get_tool("wavexis_localstorage_set")
         result = await ls_set_tool.fn(
-            LocalStorageSetInput(
-                key="test_key", value="test_value", session_id=session_id
-            )
+            LocalStorageSetInput(key="test_key", value="test_value", session_id=session_id)
         )
         data = json.loads(result)
         assert data["status"] == "ok"
 
         ls_get_tool = mcp._tool_manager.get_tool("wavexis_localstorage_get")
-        result = await ls_get_tool.fn(
-            LocalStorageGetInput(key="test_key", session_id=session_id)
-        )
+        result = await ls_get_tool.fn(LocalStorageGetInput(key="test_key", session_id=session_id))
         data = json.loads(result)
         assert data["value"] == "test_value"
 
         device_tool = mcp._tool_manager.get_tool("wavexis_emulate_device")
-        result = await device_tool.fn(
-            EmulateDeviceInput(device="iphone-15", session_id=session_id)
-        )
+        result = await device_tool.fn(EmulateDeviceInput(device="iphone-15", session_id=session_id))
         data = json.loads(result)
         assert data["status"] == "ok"
     finally:

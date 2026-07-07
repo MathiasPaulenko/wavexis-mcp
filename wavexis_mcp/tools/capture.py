@@ -46,12 +46,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         session_manager: The shared session manager.
     """
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=True,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
     async def wavexis_screenshot(input: ScreenshotInput) -> str:
         """Take a screenshot of a web page or element.
 
@@ -102,23 +104,27 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                     result["status"] = "ok"
                     return format_json_response(result)
 
-                return format_json_response({
-                    "status": "ok",
-                    "format": input.format,
-                    "base64": encode_base64(data),
-                    "size_bytes": len(data),
-                })
+                return format_json_response(
+                    {
+                        "status": "ok",
+                        "format": input.format,
+                        "base64": encode_base64(data),
+                        "size_bytes": len(data),
+                    }
+                )
             finally:
                 await session_manager.release_backend(backend, sid)
         except Exception as e:
             return format_error("wavexis_screenshot", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=True,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
     async def wavexis_pdf(input: PDFInput) -> str:
         """Generate a PDF of a web page.
 
@@ -158,22 +164,26 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                     result["status"] = "ok"
                     return format_json_response(result)
 
-                return format_json_response({
-                    "status": "ok",
-                    "base64": encode_base64(data),
-                    "size_bytes": len(data),
-                })
+                return format_json_response(
+                    {
+                        "status": "ok",
+                        "base64": encode_base64(data),
+                        "size_bytes": len(data),
+                    }
+                )
             finally:
                 await session_manager.release_backend(backend, sid)
         except Exception as e:
             return format_error("wavexis_pdf", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=True,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
     async def wavexis_scrape(input: ScrapeInput) -> str:
         """Scrape multiple URLs by evaluating a JS expression on each page.
 
@@ -204,21 +214,25 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                     await session_manager.release_backend(backend, sid)
 
             paginated = results[input.offset : input.offset + input.limit]
-            return format_json_response({
-                "results": paginated,
-                "format": input.output_format,
-                "count": len(paginated),
-                "total": len(results),
-            })
+            return format_json_response(
+                {
+                    "results": paginated,
+                    "format": input.output_format,
+                    "count": len(paginated),
+                    "total": len(results),
+                }
+            )
         except Exception as e:
             return format_error("wavexis_scrape", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=True,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
     async def wavexis_screencast(input: ScreencastInput) -> str:
         """Capture a sequence of screenshots (frame-by-frame).
 
@@ -255,32 +269,34 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
 
                     os.makedirs(input.output_dir, exist_ok=True)
                     for i, frame in enumerate(frames):
-                        frame_path = os.path.join(
-                            input.output_dir, f"frame_{i:04d}.{input.format}"
-                        )
-                        await asyncio.to_thread(
-                            _write_frame, frame_path, frame
-                        )
-                    return format_json_response({
-                        "dir": input.output_dir,
-                        "count": len(frames),
-                    })
+                        frame_path = os.path.join(input.output_dir, f"frame_{i:04d}.{input.format}")
+                        await asyncio.to_thread(_write_frame, frame_path, frame)
+                    return format_json_response(
+                        {
+                            "dir": input.output_dir,
+                            "count": len(frames),
+                        }
+                    )
 
-                return format_json_response({
-                    "frames": [encode_base64(f) for f in frames],
-                    "count": len(frames),
-                })
+                return format_json_response(
+                    {
+                        "frames": [encode_base64(f) for f in frames],
+                        "count": len(frames),
+                    }
+                )
             finally:
                 await session_manager.release_backend(backend, sid)
         except Exception as e:
             return format_error("wavexis_screencast", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=True,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
     async def wavexis_annotated_screenshot(input: AnnotatedScreenshotInput) -> str:
         """Take a screenshot with numbered labels overlaid on elements.
 
@@ -306,12 +322,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                 result["labels"] = label_map
                 return format_json_response(result)
 
-            return format_json_response({
-                "status": "ok",
-                "format": input.format,
-                "base64": encode_base64(data),
-                "size_bytes": len(data),
-                "labels": label_map,
-            })
+            return format_json_response(
+                {
+                    "status": "ok",
+                    "format": input.format,
+                    "base64": encode_base64(data),
+                    "size_bytes": len(data),
+                    "labels": label_map,
+                }
+            )
         except Exception as e:
             return format_error("wavexis_annotated_screenshot", e)

@@ -32,9 +32,7 @@ async def test_emulate_device(
     register(mcp, session_manager_with_mock)
 
     tool = mcp._tool_manager.get_tool("wavexis_emulate_device")
-    result = await tool.fn(
-        EmulateDeviceInput(device="iphone-15", session_id=mock_session_id)
-    )
+    result = await tool.fn(EmulateDeviceInput(device="iphone-15", session_id=mock_session_id))
     data = json.loads(result)
     assert data["status"] == "ok"
     assert data["device"] == "iphone-15"
@@ -76,9 +74,7 @@ async def test_set_geolocation(
 
     tool = mcp._tool_manager.get_tool("wavexis_set_geolocation")
     result = await tool.fn(
-        SetGeolocationInput(
-            latitude=37.7749, longitude=-122.4194, session_id=mock_session_id
-        )
+        SetGeolocationInput(latitude=37.7749, longitude=-122.4194, session_id=mock_session_id)
     )
     data = json.loads(result)
     assert data["status"] == "ok"
@@ -117,18 +113,14 @@ async def test_set_dark_mode(
     register(mcp, session_manager_with_mock)
 
     tool = mcp._tool_manager.get_tool("wavexis_set_dark_mode")
-    result = await tool.fn(
-        SetDarkModeInput(enabled=True, session_id=mock_session_id)
-    )
+    result = await tool.fn(SetDarkModeInput(enabled=True, session_id=mock_session_id))
     data = json.loads(result)
     assert data["status"] == "ok"
     assert data["dark_mode"] is True
 
 
 @pytest.mark.unit
-async def test_set_locale(
-    session_manager_with_mock: SessionManager, mock_session_id: str
-) -> None:
+async def test_set_locale(session_manager_with_mock: SessionManager, mock_session_id: str) -> None:
     from mcp.server.fastmcp import FastMCP
 
     from wavexis_mcp.tools.emulation import register
@@ -137,9 +129,7 @@ async def test_set_locale(
     register(mcp, session_manager_with_mock)
 
     tool = mcp._tool_manager.get_tool("wavexis_set_locale")
-    result = await tool.fn(
-        SetLocaleInput(locale="fr-FR", session_id=mock_session_id)
-    )
+    result = await tool.fn(SetLocaleInput(locale="fr-FR", session_id=mock_session_id))
     data = json.loads(result)
     assert data["status"] == "ok"
     assert data["locale"] == "fr-FR"
@@ -157,9 +147,7 @@ async def test_set_cpu_throttle(
     register(mcp, session_manager_with_mock)
 
     tool = mcp._tool_manager.get_tool("wavexis_set_cpu_throttle")
-    result = await tool.fn(
-        SetCPUThrottleInput(rate=4.0, session_id=mock_session_id)
-    )
+    result = await tool.fn(SetCPUThrottleInput(rate=4.0, session_id=mock_session_id))
     data = json.loads(result)
     assert data["status"] == "ok"
     assert data["rate"] == 4.0
@@ -177,18 +165,14 @@ async def test_set_touch_emulation(
     register(mcp, session_manager_with_mock)
 
     tool = mcp._tool_manager.get_tool("wavexis_set_touch_emulation")
-    result = await tool.fn(
-        SetTouchEmulationInput(enabled=True, session_id=mock_session_id)
-    )
+    result = await tool.fn(SetTouchEmulationInput(enabled=True, session_id=mock_session_id))
     data = json.loads(result)
     assert data["status"] == "ok"
     assert data["touch_emulation"] is True
 
 
 @pytest.mark.unit
-async def test_set_sensors(
-    session_manager_with_mock: SessionManager, mock_session_id: str
-) -> None:
+async def test_set_sensors(session_manager_with_mock: SessionManager, mock_session_id: str) -> None:
     from mcp.server.fastmcp import FastMCP
 
     from wavexis_mcp.tools.emulation import register

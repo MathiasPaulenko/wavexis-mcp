@@ -205,12 +205,14 @@ def _register_act_tool(mcp: FastMCP, session_manager: SessionManager) -> None:
     from wavexis_mcp.act import execute_act, match_instruction
     from wavexis_mcp.tools.a11y import _format_a11y_tree
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=False,
-        openWorldHint=True,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=False,
+            openWorldHint=True,
+        )
+    )
     async def wavexis_act(input: ActInput) -> str:
         """Execute a natural language instruction on the current page (M1).
 
@@ -231,11 +233,13 @@ def _register_act_tool(mcp: FastMCP, session_manager: SessionManager) -> None:
 
             match = match_instruction(input.instruction, tree)
             if match is None:
-                return format_json_response({
-                    "status": "no_match",
-                    "instruction": input.instruction,
-                    "message": "No matching element found in accessibility tree.",
-                })
+                return format_json_response(
+                    {
+                        "status": "no_match",
+                        "instruction": input.instruction,
+                        "message": "No matching element found in accessibility tree.",
+                    }
+                )
 
             result = await execute_act(
                 session.backend,

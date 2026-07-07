@@ -83,8 +83,22 @@ def _extract_keywords(instruction: str) -> list[str]:
         List of lowercase keyword strings.
     """
     stop_words = {
-        "the", "a", "an", "on", "in", "at", "to", "of", "for",
-        "and", "or", "with", "that", "this", "is", "are",
+        "the",
+        "a",
+        "an",
+        "on",
+        "in",
+        "at",
+        "to",
+        "of",
+        "for",
+        "and",
+        "or",
+        "with",
+        "that",
+        "this",
+        "is",
+        "are",
     }
     words = re.findall(r"[a-zA-Z]+", instruction.lower())
     return [w for w in words if w not in stop_words and len(w) > 1]
@@ -139,12 +153,14 @@ def _flatten_tree(
     flat: list[dict[str, Any]] = []
     for node in nodes:
         path = (parent_path or []) + [node.get("ref", "")]
-        flat.append({
-            "ref": node.get("ref", ""),
-            "role": node.get("role", "unknown"),
-            "name": node.get("name", ""),
-            "path": path,
-        })
+        flat.append(
+            {
+                "ref": node.get("ref", ""),
+                "role": node.get("role", "unknown"),
+                "name": node.get("name", ""),
+                "path": path,
+            }
+        )
         children = node.get("children", [])
         if children:
             flat.extend(_flatten_tree(children, path))

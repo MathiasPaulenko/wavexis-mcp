@@ -64,9 +64,7 @@ async def test_perf_metrics(
 
 
 @pytest.mark.unit
-async def test_perf_trace(
-    session_manager_with_mock: SessionManager, mock_session_id: str
-) -> None:
+async def test_perf_trace(session_manager_with_mock: SessionManager, mock_session_id: str) -> None:
     from mcp.server.fastmcp import FastMCP
 
     mcp = FastMCP("test")
@@ -89,9 +87,7 @@ async def test_perf_trace_file(
 
     out = tmp_path / "trace.json"
     tool = mcp._tool_manager.get_tool("wavexis_perf_trace")
-    result = await tool.fn(
-        PerfTraceInput(session_id=mock_session_id, output_path=str(out))
-    )
+    result = await tool.fn(PerfTraceInput(session_id=mock_session_id, output_path=str(out)))
     data = json.loads(result)
     assert data["path"] == str(out)
     assert out.exists()
@@ -201,9 +197,7 @@ async def test_css_get_rules(
     _register(mcp, session_manager_with_mock)
 
     tool = mcp._tool_manager.get_tool("wavexis_css_get_rules")
-    result = await tool.fn(
-        CSSGetRulesInput(stylesheet_id="s1", session_id=mock_session_id)
-    )
+    result = await tool.fn(CSSGetRulesInput(stylesheet_id="s1", session_id=mock_session_id))
     data = json.loads(result)
     assert data["count"] == 1
 
@@ -218,9 +212,7 @@ async def test_css_get_computed(
     _register(mcp, session_manager_with_mock)
 
     tool = mcp._tool_manager.get_tool("wavexis_css_get_computed")
-    result = await tool.fn(
-        CSSGetComputedInput(selector="h1", session_id=mock_session_id)
-    )
+    result = await tool.fn(CSSGetComputedInput(selector="h1", session_id=mock_session_id))
     data = json.loads(result)
     assert data["computed"]["display"] == "block"
 
@@ -258,9 +250,7 @@ async def test_debug_set_breakpoint_function(
 
     tool = mcp._tool_manager.get_tool("wavexis_debug_set_breakpoint_function")
     result = await tool.fn(
-        DebugSetBreakpointFunctionInput(
-            function_name="myFunc", session_id=mock_session_id
-        )
+        DebugSetBreakpointFunctionInput(function_name="myFunc", session_id=mock_session_id)
     )
     data = json.loads(result)
     assert data["breakpoint_id"] == "bp-2"
@@ -329,9 +319,7 @@ async def test_debug_step_out(
 
 
 @pytest.mark.unit
-async def test_debug_pause(
-    session_manager_with_mock: SessionManager, mock_session_id: str
-) -> None:
+async def test_debug_pause(session_manager_with_mock: SessionManager, mock_session_id: str) -> None:
     from mcp.server.fastmcp import FastMCP
 
     mcp = FastMCP("test")
@@ -368,9 +356,7 @@ async def test_debug_get_listeners(
     _register(mcp, session_manager_with_mock)
 
     tool = mcp._tool_manager.get_tool("wavexis_debug_get_listeners")
-    result = await tool.fn(
-        DebugGetListenersInput(selector="button", session_id=mock_session_id)
-    )
+    result = await tool.fn(DebugGetListenersInput(selector="button", session_id=mock_session_id))
     data = json.loads(result)
     assert data["count"] == 1
     assert data["listeners"][0]["type"] == "click"
@@ -389,9 +375,7 @@ async def test_overlay_highlight(
     _register(mcp, session_manager_with_mock)
 
     tool = mcp._tool_manager.get_tool("wavexis_overlay_highlight")
-    result = await tool.fn(
-        OverlayHighlightInput(selector="h1", session_id=mock_session_id)
-    )
+    result = await tool.fn(OverlayHighlightInput(selector="h1", session_id=mock_session_id))
     data = json.loads(result)
     assert data["status"] == "ok"
 
@@ -423,10 +407,7 @@ async def test_console_messages_pagination(
     mcp = FastMCP("test")
     _register(mcp, session_manager_with_mock)
 
-    messages = [
-        {"level": "error", "text": f"err {i}", "url": "", "line": i}
-        for i in range(10)
-    ]
+    messages = [{"level": "error", "text": f"err {i}", "url": "", "line": i} for i in range(10)]
     session_manager_with_mock.get(mock_session_id).backend.capture_console = AsyncMock(
         return_value=messages
     )
@@ -483,9 +464,7 @@ async def test_ignore_cert_errors(
     _register(mcp, session_manager_with_mock)
 
     tool = mcp._tool_manager.get_tool("wavexis_ignore_cert_errors")
-    result = await tool.fn(
-        IgnoreCertErrorsInput(ignore=True, session_id=mock_session_id)
-    )
+    result = await tool.fn(IgnoreCertErrorsInput(ignore=True, session_id=mock_session_id))
     data = json.loads(result)
     assert data["status"] == "ok"
     assert data["ignore"] is True
@@ -521,9 +500,7 @@ async def test_set_window_bounds(
 
     tool = mcp._tool_manager.get_tool("wavexis_set_window_bounds")
     result = await tool.fn(
-        SetWindowBoundsInput(
-            width=1920, height=1080, x=100, y=50, session_id=mock_session_id
-        )
+        SetWindowBoundsInput(width=1920, height=1080, x=100, y=50, session_id=mock_session_id)
     )
     data = json.loads(result)
     assert data["status"] == "ok"

@@ -57,9 +57,7 @@ async def test_start_stream_no_subscribe_method(
 
 
 @pytest.mark.unit
-async def test_stop_stream(
-    session_manager_with_mock: SessionManager, mock_session_id: str
-) -> None:
+async def test_stop_stream(session_manager_with_mock: SessionManager, mock_session_id: str) -> None:
     handler = StreamingHandler(session_manager_with_mock)
     session = session_manager_with_mock.get(mock_session_id)
     session.backend.subscribe_events = AsyncMock(side_effect=RuntimeError("nope"))
@@ -84,9 +82,7 @@ async def test_stop_stream_no_active_task(
 
 
 @pytest.mark.unit
-async def test_stop_all(
-    session_manager_with_mock: SessionManager, mock_session_id: str
-) -> None:
+async def test_stop_all(session_manager_with_mock: SessionManager, mock_session_id: str) -> None:
     handler = StreamingHandler(session_manager_with_mock)
     session = session_manager_with_mock.get(mock_session_id)
     session.backend.subscribe_events = AsyncMock(side_effect=RuntimeError("nope"))
@@ -128,4 +124,5 @@ async def test_poll_loop_breaks_on_error(
 
 def contextlib_suppress():
     import contextlib
+
     return contextlib.suppress(asyncio.CancelledError)

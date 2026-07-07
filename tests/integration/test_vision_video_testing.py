@@ -56,16 +56,12 @@ async def test_vision_video_testing_workflow() -> None:
 
     try:
         nav_tool = mcp._tool_manager.get_tool("wavexis_navigate")
-        result = await nav_tool.fn(
-            NavigateInput(url="https://example.com", session_id=session_id)
-        )
+        result = await nav_tool.fn(NavigateInput(url="https://example.com", session_id=session_id))
         data = json.loads(result)
         assert data["status"] == "ok"
 
         move_tool = mcp._tool_manager.get_tool("wavexis_mouse_move_xy")
-        result = await move_tool.fn(
-            MouseMoveXYInput(session_id=session_id, x=100, y=100)
-        )
+        result = await move_tool.fn(MouseMoveXYInput(session_id=session_id, x=100, y=100))
         data = json.loads(result)
         assert data["status"] == "ok"
 
@@ -100,9 +96,7 @@ async def test_vision_video_testing_workflow() -> None:
 
         assert_text_tool = mcp._tool_manager.get_tool("wavexis_assert_text_visible")
         result = await assert_text_tool.fn(
-            AssertTextVisibleInput(
-                session_id=session_id, text="Example", timeout=5000
-            )
+            AssertTextVisibleInput(session_id=session_id, text="Example", timeout=5000)
         )
         data = json.loads(result)
         assert data["passed"] is True
@@ -116,9 +110,7 @@ async def test_vision_video_testing_workflow() -> None:
 
         locator_tool = mcp._tool_manager.get_tool("wavexis_generate_locator")
         result = await locator_tool.fn(
-            GenerateLocatorInput(
-                session_id=session_id, selector="h1", description="main heading"
-            )
+            GenerateLocatorInput(session_id=session_id, selector="h1", description="main heading")
         )
         data = json.loads(result)
         assert "locator" in data

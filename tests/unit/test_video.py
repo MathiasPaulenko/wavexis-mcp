@@ -40,9 +40,7 @@ async def test_video_record(
 
 
 @pytest.mark.unit
-async def test_video_stop(
-    session_manager_with_mock: SessionManager, mock_session_id: str
-) -> None:
+async def test_video_stop(session_manager_with_mock: SessionManager, mock_session_id: str) -> None:
     from mcp.server.fastmcp import FastMCP
 
     _recordings.clear()
@@ -104,9 +102,7 @@ async def test_video_action_overlay(
     _register(mcp, session_manager_with_mock)
 
     tool = mcp._tool_manager.get_tool("wavexis_video_action_overlay")
-    result = await tool.fn(
-        VideoActionOverlayInput(session_id=mock_session_id, show=True)
-    )
+    result = await tool.fn(VideoActionOverlayInput(session_id=mock_session_id, show=True))
     data = json.loads(result)
     assert data["status"] == "ok"
     assert data["show"] is True

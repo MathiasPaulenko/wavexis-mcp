@@ -24,26 +24,20 @@ def _register(mcp, mgr):
 
 
 @pytest.mark.unit
-async def test_raw_cdp(
-    session_manager_with_mock: SessionManager, mock_session_id: str
-) -> None:
+async def test_raw_cdp(session_manager_with_mock: SessionManager, mock_session_id: str) -> None:
     from mcp.server.fastmcp import FastMCP
 
     mcp = FastMCP("test")
     _register(mcp, session_manager_with_mock)
 
     tool = mcp._tool_manager.get_tool("wavexis_raw_cdp")
-    result = await tool.fn(
-        RawCDPInput(session_id=mock_session_id, method="Page.reload")
-    )
+    result = await tool.fn(RawCDPInput(session_id=mock_session_id, method="Page.reload"))
     data = json.loads(result)
     assert "result" in data
 
 
 @pytest.mark.unit
-async def test_raw_bidi(
-    session_manager_with_mock: SessionManager, mock_session_id: str
-) -> None:
+async def test_raw_bidi(session_manager_with_mock: SessionManager, mock_session_id: str) -> None:
     from mcp.server.fastmcp import FastMCP
 
     mcp = FastMCP("test")
@@ -75,9 +69,7 @@ async def test_browser_context_create(
     )
 
     tool = mcp._tool_manager.get_tool("wavexis_browser_context_create")
-    result = await tool.fn(
-        BrowserContextCreateInput(session_id=mock_session_id)
-    )
+    result = await tool.fn(BrowserContextCreateInput(session_id=mock_session_id))
     data = json.loads(result)
     assert data["context_id"] == "ctx-123"
 
@@ -93,9 +85,7 @@ async def test_browser_context_close(
 
     tool = mcp._tool_manager.get_tool("wavexis_browser_context_close")
     result = await tool.fn(
-        BrowserContextCloseInput(
-            session_id=mock_session_id, context_id="ctx-123"
-        )
+        BrowserContextCloseInput(session_id=mock_session_id, context_id="ctx-123")
     )
     data = json.loads(result)
     assert data["status"] == "ok"
@@ -119,9 +109,7 @@ async def test_multi_action_yaml(
     )
 
     tool = mcp._tool_manager.get_tool("wavexis_multi_action")
-    result = await tool.fn(
-        MultiActionInput(config=yaml_config, session_id=mock_session_id)
-    )
+    result = await tool.fn(MultiActionInput(config=yaml_config, session_id=mock_session_id))
     data = json.loads(result)
     assert data["status"] == "ok"
     assert data["actions"] == 2
@@ -156,9 +144,7 @@ async def test_multi_action_all_types(
     )
 
     tool = mcp._tool_manager.get_tool("wavexis_multi_action")
-    result = await tool.fn(
-        MultiActionInput(config=yaml_config, session_id=mock_session_id)
-    )
+    result = await tool.fn(MultiActionInput(config=yaml_config, session_id=mock_session_id))
     data = json.loads(result)
     assert data["status"] == "ok"
     assert data["actions"] == 6
@@ -181,16 +167,10 @@ async def test_multi_action_unknown_action(
     mcp = FastMCP("test")
     _register(mcp, session_manager_with_mock)
 
-    yaml_config = (
-        "actions:\n"
-        "  - scroll:\n"
-        "      amount: 500\n"
-    )
+    yaml_config = "actions:\n  - scroll:\n      amount: 500\n"
 
     tool = mcp._tool_manager.get_tool("wavexis_multi_action")
-    result = await tool.fn(
-        MultiActionInput(config=yaml_config, session_id=mock_session_id)
-    )
+    result = await tool.fn(MultiActionInput(config=yaml_config, session_id=mock_session_id))
     data = json.loads(result)
     assert data["status"] == "ok"
     assert data["results"][0]["status"] == "unknown"
@@ -210,11 +190,7 @@ async def test_multi_action_continue_on_error(
     )
 
     yaml_config = (
-        "actions:\n"
-        "  - click:\n"
-        "      selector: '#missing'\n"
-        "  - eval:\n"
-        "      expression: 1+1\n"
+        "actions:\n  - click:\n      selector: '#missing'\n  - eval:\n      expression: 1+1\n"
     )
 
     tool = mcp._tool_manager.get_tool("wavexis_multi_action")
@@ -245,11 +221,7 @@ async def test_multi_action_stop_on_error(
     )
 
     yaml_config = (
-        "actions:\n"
-        "  - click:\n"
-        "      selector: '#missing'\n"
-        "  - eval:\n"
-        "      expression: 1+1\n"
+        "actions:\n  - click:\n      selector: '#missing'\n  - eval:\n      expression: 1+1\n"
     )
 
     tool = mcp._tool_manager.get_tool("wavexis_multi_action")
@@ -275,9 +247,7 @@ async def test_multi_action_empty_config(
     _register(mcp, session_manager_with_mock)
 
     tool = mcp._tool_manager.get_tool("wavexis_multi_action")
-    result = await tool.fn(
-        MultiActionInput(config="", session_id=mock_session_id)
-    )
+    result = await tool.fn(MultiActionInput(config="", session_id=mock_session_id))
     data = json.loads(result)
     assert data["status"] == "ok"
     assert data["actions"] == 0
@@ -293,9 +263,7 @@ async def test_multi_action_invalid_yaml(
     _register(mcp, session_manager_with_mock)
 
     tool = mcp._tool_manager.get_tool("wavexis_multi_action")
-    result = await tool.fn(
-        MultiActionInput(config="{{invalid yaml", session_id=mock_session_id)
-    )
+    result = await tool.fn(MultiActionInput(config="{{invalid yaml", session_id=mock_session_id))
     data = json.loads(result)
     assert "error" in data
     assert data["tool"] == "wavexis_multi_action"
@@ -315,9 +283,7 @@ async def test_browser_context_create_error(
     )
 
     tool = mcp._tool_manager.get_tool("wavexis_browser_context_create")
-    result = await tool.fn(
-        BrowserContextCreateInput(session_id=mock_session_id)
-    )
+    result = await tool.fn(BrowserContextCreateInput(session_id=mock_session_id))
     data = json.loads(result)
     assert "error" in data
     assert data["tool"] == "wavexis_browser_context_create"

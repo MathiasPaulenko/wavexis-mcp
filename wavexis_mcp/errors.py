@@ -75,9 +75,7 @@ class TimeoutError(WaveXisMCPError):
 # ── Error suggestion mapping ─────────────────────────────────────
 
 _SUGGESTIONS: dict[str, str] = {
-    "SessionNotFoundError": (
-        "Call wavexis_session_open first to create a browser session."
-    ),
+    "SessionNotFoundError": ("Call wavexis_session_open first to create a browser session."),
     "SessionExpiredError": (
         "The session was closed. Call wavexis_session_open to start a new one."
     ),
@@ -85,16 +83,9 @@ _SUGGESTIONS: dict[str, str] = {
         "Try wavexis_backends to see available backends. "
         "Install with: pip install wavexis[cdp] or wavexis[bidi]."
     ),
-    "TimeoutError": (
-        "Increase wait_timeout or check that the page has loaded before acting."
-    ),
-    "CapsError": (
-        "Restart the server with the required --caps flag "
-        "(e.g. --caps=core,devtools)."
-    ),
-    "ToolError": (
-        "Check the error message for details. Verify selectors and page state."
-    ),
+    "TimeoutError": ("Increase wait_timeout or check that the page has loaded before acting."),
+    "CapsError": ("Restart the server with the required --caps flag (e.g. --caps=core,devtools)."),
+    "ToolError": ("Check the error message for details. Verify selectors and page state."),
 }
 
 

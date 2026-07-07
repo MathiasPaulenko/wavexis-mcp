@@ -39,12 +39,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         session_manager: The shared session manager.
     """
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=True,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
     async def wavexis_dom_get(input: DOMGetInput) -> str:
         """Get the HTML of an element matching a CSS selector.
 
@@ -71,12 +73,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_dom_get", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=True,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
     async def wavexis_dom_query(input: DOMQueryInput) -> str:
         """Query elements by CSS selector.
 
@@ -99,22 +103,26 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                 raw = await backend.dom_query(input.selector, all=input.all)
                 elements = raw if isinstance(raw, list) else [raw]
                 paginated = elements[input.offset : input.offset + input.limit]
-                return format_json_response({
-                    "elements": paginated,
-                    "count": len(paginated),
-                    "total": len(elements),
-                })
+                return format_json_response(
+                    {
+                        "elements": paginated,
+                        "count": len(paginated),
+                        "total": len(elements),
+                    }
+                )
             finally:
                 await session_manager.release_backend(backend, sid)
         except Exception as e:
             return format_error("wavexis_dom_query", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_dom_set_attr(input: DOMSetAttrInput) -> str:
         """Set an attribute on an element matching a CSS selector.
 
@@ -131,12 +139,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_dom_set_attr", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_dom_get_attr(input: DOMGetAttrInput) -> str:
         """Get an attribute value from an element matching a CSS selector.
 
@@ -149,20 +159,24 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         try:
             session = session_manager.get(input.session_id)
             value = await session.backend.dom_get_attr(input.selector, input.name)
-            return format_json_response({
-                "value": value,
-                "selector": input.selector,
-                "name": input.name,
-            })
+            return format_json_response(
+                {
+                    "value": value,
+                    "selector": input.selector,
+                    "name": input.name,
+                }
+            )
         except Exception as e:
             return format_error("wavexis_dom_get_attr", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=True,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=True,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_dom_remove_attr(input: DOMRemoveAttrInput) -> str:
         """Remove an attribute from an element matching a CSS selector.
 
@@ -179,12 +193,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_dom_remove_attr", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=True,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=True,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_dom_remove(input: DOMRemoveInput) -> str:
         """Remove an element matching a CSS selector from the DOM.
 
@@ -201,12 +217,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_dom_remove", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_dom_focus(input: DOMFocusInput) -> str:
         """Focus an element matching a CSS selector.
 
@@ -223,12 +241,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_dom_focus", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_dom_scroll(input: DOMScrollInput) -> str:
         """Scroll to an element or by offset.
 
@@ -240,19 +260,19 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """
         try:
             session = session_manager.get(input.session_id)
-            await session.backend.dom_scroll(
-                selector=input.selector, x=input.x, y=input.y
-            )
+            await session.backend.dom_scroll(selector=input.selector, x=input.x, y=input.y)
             return format_json_response({"status": "ok"})
         except Exception as e:
             return format_error("wavexis_dom_scroll", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_dom_snapshot(input: DOMSnapshotInput) -> str:
         """Capture a full DOM snapshot of the page.
 
@@ -272,12 +292,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
 
     # ── iframe ──────────────────────────────────────────────
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=True,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
     async def wavexis_iframe_eval(input: IframeEvalInput) -> str:
         """Evaluate a JavaScript expression inside an iframe.
 
@@ -298,12 +320,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_iframe_eval", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=True,
-        idempotentHint=False,
-        openWorldHint=True,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=True,
+            idempotentHint=False,
+            openWorldHint=True,
+        )
+    )
     async def wavexis_iframe_click(input: IframeClickInput) -> str:
         """Click an element inside an iframe.
 
@@ -323,12 +347,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_iframe_click", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=True,
-        idempotentHint=False,
-        openWorldHint=True,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=True,
+            idempotentHint=False,
+            openWorldHint=True,
+        )
+    )
     async def wavexis_iframe_fill(input: IframeFillInput) -> str:
         """Fill an input element inside an iframe.
 
@@ -351,12 +377,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
 
     # ── Shadow DOM ──────────────────────────────────────────
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=True,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
     async def wavexis_shadow_eval(input: ShadowEvalInput) -> str:
         """Evaluate a JavaScript expression inside a shadow DOM tree.
 
@@ -381,12 +409,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_shadow_eval", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=True,
-        idempotentHint=False,
-        openWorldHint=True,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=True,
+            idempotentHint=False,
+            openWorldHint=True,
+        )
+    )
     async def wavexis_shadow_click(input: ShadowClickInput) -> str:
         """Click an element inside a shadow DOM tree.
 
@@ -405,12 +435,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_shadow_click", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=True,
-        idempotentHint=False,
-        openWorldHint=True,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=True,
+            idempotentHint=False,
+            openWorldHint=True,
+        )
+    )
     async def wavexis_shadow_fill(input: ShadowFillInput) -> str:
         """Fill an input element inside a shadow DOM tree.
 

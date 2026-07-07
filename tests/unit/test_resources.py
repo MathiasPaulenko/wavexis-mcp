@@ -29,6 +29,7 @@ class TestResources:
             def decorator(func):
                 registered[uri] = func
                 return func
+
             return decorator
 
         mcp.resource = capture_resource
@@ -53,6 +54,7 @@ class TestResources:
             def decorator(func):
                 registered[uri] = func
                 return func
+
             return decorator
 
         mcp.resource = capture_resource
@@ -82,6 +84,7 @@ class TestResources:
             def decorator(func):
                 registered[uri] = func
                 return func
+
             return decorator
 
         mcp.resource = capture_resource
@@ -111,6 +114,7 @@ class TestResources:
             def decorator(func):
                 registered[uri] = func
                 return func
+
             return decorator
 
         mcp.resource = capture_resource
@@ -136,6 +140,7 @@ class TestResources:
             def decorator(func):
                 registered[uri] = func
                 return func
+
             return decorator
 
         mcp.resource = capture_resource
@@ -160,6 +165,7 @@ class TestResources:
             def decorator(func):
                 registered[uri] = func
                 return func
+
             return decorator
 
         mcp.resource = capture_resource
@@ -184,6 +190,7 @@ class TestResources:
             def decorator(func):
                 registered[uri] = func
                 return func
+
             return decorator
 
         mcp.resource = capture_resource
@@ -208,6 +215,7 @@ class TestResources:
             def decorator(func):
                 registered[uri] = func
                 return func
+
             return decorator
 
         mcp.resource = capture_resource
@@ -236,6 +244,7 @@ class TestResources:
             def decorator(func):
                 registered[uri] = func
                 return func
+
             return decorator
 
         mcp.resource = capture_resource

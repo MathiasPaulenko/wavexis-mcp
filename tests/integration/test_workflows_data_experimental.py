@@ -60,9 +60,7 @@ async def test_workflows_data_experimental_workflow() -> None:
             "      expression: document.title\n"
         )
         multi_tool = mcp._tool_manager.get_tool("wavexis_multi_action")
-        result = await multi_tool.fn(
-            MultiActionInput(config=yaml_config, session_id=session_id)
-        )
+        result = await multi_tool.fn(MultiActionInput(config=yaml_config, session_id=session_id))
         data = json.loads(result)
         assert data["status"] == "ok"
         assert data["actions"] == 2
@@ -103,9 +101,7 @@ async def test_workflows_data_experimental_workflow() -> None:
 
         # 5. Service worker list (may fail if CDP method unavailable)
         sw_tool = mcp._tool_manager.get_tool("wavexis_service_worker_list")
-        result = await sw_tool.fn(
-            ServiceWorkerListInput(session_id=session_id)
-        )
+        result = await sw_tool.fn(ServiceWorkerListInput(session_id=session_id))
         data = json.loads(result)
         assert "workers" in data or "error" in data
 

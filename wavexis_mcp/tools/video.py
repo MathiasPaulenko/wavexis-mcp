@@ -33,12 +33,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         session_manager: The shared session manager.
     """
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=False,
-        openWorldHint=True,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=False,
+            openWorldHint=True,
+        )
+    )
     async def wavexis_video_record(input: VideoRecordInput) -> str:
         """Start recording a video of the page.
 
@@ -67,19 +69,23 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                 "output_path": input.output_path,
                 "frames": [],
             }
-            return format_json_response({
-                "recording_id": recording_id,
-                "status": "recording",
-            })
+            return format_json_response(
+                {
+                    "recording_id": recording_id,
+                    "status": "recording",
+                }
+            )
         except Exception as e:
             return format_error("wavexis_video_record", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=False,
-        openWorldHint=True,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=False,
+            openWorldHint=True,
+        )
+    )
     async def wavexis_video_stop(input: VideoStopInput) -> str:
         """Stop recording and return the video as base64 or save to file.
 
@@ -95,8 +101,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             await session.backend.raw("Page.stopScreencast", {})
 
             recording_id = next(
-                (rid for rid, rec in _recordings.items()
-                 if rec["session_id"] == input.session_id),
+                (rid for rid, rec in _recordings.items() if rec["session_id"] == input.session_id),
                 None,
             )
             if recording_id is None:
@@ -115,33 +120,41 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             output_path = input.output_path or rec.get("output_path")
             if output_path and video_data:
                 meta = save_to_file(video_data, output_path)
-                return format_json_response({
-                    "path": meta["path"],
-                    "duration_ms": duration_ms,
-                    "size_bytes": meta["size_bytes"],
-                })
+                return format_json_response(
+                    {
+                        "path": meta["path"],
+                        "duration_ms": duration_ms,
+                        "size_bytes": meta["size_bytes"],
+                    }
+                )
 
             if video_data:
                 b64 = encode_base64(video_data)
-                return format_json_response({
-                    "base64": b64,
-                    "duration_ms": duration_ms,
-                    "size_bytes": len(video_data),
-                })
+                return format_json_response(
+                    {
+                        "base64": b64,
+                        "duration_ms": duration_ms,
+                        "size_bytes": len(video_data),
+                    }
+                )
 
-            return format_json_response({
-                "duration_ms": duration_ms,
-                "size_bytes": 0,
-            })
+            return format_json_response(
+                {
+                    "duration_ms": duration_ms,
+                    "size_bytes": 0,
+                }
+            )
         except Exception as e:
             return format_error("wavexis_video_stop", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_video_add_chapter(input: VideoAddChapterInput) -> str:
         """Add a chapter marker to an active recording.
 
@@ -168,19 +181,23 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             chapters.append(chapter)
             rec["chapters"] = chapters
 
-            return format_json_response({
-                "status": "ok",
-                "chapter": chapter,
-            })
+            return format_json_response(
+                {
+                    "status": "ok",
+                    "chapter": chapter,
+                }
+            )
         except Exception as e:
             return format_error("wavexis_video_add_chapter", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_video_action_overlay(input: VideoActionOverlayInput) -> str:
         """Enable or disable action overlay on the video recording.
 
@@ -195,9 +212,11 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             await session.backend.eval(
                 f"window.__wavexisOverlay = {'true' if input.show else 'false'};"
             )
-            return format_json_response({
-                "status": "ok",
-                "show": input.show,
-            })
+            return format_json_response(
+                {
+                    "status": "ok",
+                    "show": input.show,
+                }
+            )
         except Exception as e:
             return format_error("wavexis_video_action_overlay", e)

@@ -94,9 +94,7 @@ async def test_dom_get_attr(
     register(mcp, session_manager_with_mock)
 
     tool = mcp._tool_manager.get_tool("wavexis_dom_get_attr")
-    result = await tool.fn(
-        DOMGetAttrInput(selector="h1", name="id", session_id=mock_session_id)
-    )
+    result = await tool.fn(DOMGetAttrInput(selector="h1", name="id", session_id=mock_session_id))
     data = json.loads(result)
     assert data["value"] == "value"
 
@@ -121,9 +119,7 @@ async def test_dom_remove_attr(
 
 
 @pytest.mark.unit
-async def test_dom_remove(
-    session_manager_with_mock: SessionManager, mock_session_id: str
-) -> None:
+async def test_dom_remove(session_manager_with_mock: SessionManager, mock_session_id: str) -> None:
     from mcp.server.fastmcp import FastMCP
 
     from wavexis_mcp.tools.dom import register
@@ -138,9 +134,7 @@ async def test_dom_remove(
 
 
 @pytest.mark.unit
-async def test_dom_focus(
-    session_manager_with_mock: SessionManager, mock_session_id: str
-) -> None:
+async def test_dom_focus(session_manager_with_mock: SessionManager, mock_session_id: str) -> None:
     from mcp.server.fastmcp import FastMCP
 
     from wavexis_mcp.tools.dom import register
@@ -155,9 +149,7 @@ async def test_dom_focus(
 
 
 @pytest.mark.unit
-async def test_dom_scroll(
-    session_manager_with_mock: SessionManager, mock_session_id: str
-) -> None:
+async def test_dom_scroll(session_manager_with_mock: SessionManager, mock_session_id: str) -> None:
     from mcp.server.fastmcp import FastMCP
 
     from wavexis_mcp.tools.dom import register

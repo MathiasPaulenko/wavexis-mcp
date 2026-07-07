@@ -50,9 +50,7 @@ async def test_a11y_interactions_devtools_workflow() -> None:
 
     try:
         nav_tool = mcp._tool_manager.get_tool("wavexis_navigate")
-        result = await nav_tool.fn(
-            NavigateInput(url="https://example.com", session_id=session_id)
-        )
+        result = await nav_tool.fn(NavigateInput(url="https://example.com", session_id=session_id))
         data = json.loads(result)
         assert data["status"] == "ok"
 
@@ -68,16 +66,12 @@ async def test_a11y_interactions_devtools_workflow() -> None:
         assert "metrics" in data
 
         console_tool = mcp._tool_manager.get_tool("wavexis_console_messages")
-        result = await console_tool.fn(
-            ConsoleMessagesInput(session_id=session_id, all=True)
-        )
+        result = await console_tool.fn(ConsoleMessagesInput(session_id=session_id, all=True))
         data = json.loads(result)
         assert "messages" in data
 
         css_tool = mcp._tool_manager.get_tool("wavexis_css_get_computed")
-        result = await css_tool.fn(
-            CSSGetComputedInput(selector="body", session_id=session_id)
-        )
+        result = await css_tool.fn(CSSGetComputedInput(selector="body", session_id=session_id))
         data = json.loads(result)
         assert "computed" in data
     finally:

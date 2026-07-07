@@ -76,9 +76,7 @@ async def test_fill(mock_backend: AsyncMock) -> None:
 
 
 @pytest.mark.unit
-async def test_fill_form(
-    session_manager_with_mock: SessionManager, mock_session_id: str
-) -> None:
+async def test_fill_form(session_manager_with_mock: SessionManager, mock_session_id: str) -> None:
     from mcp.server.fastmcp import FastMCP
 
     from wavexis_mcp.tools.input import register
@@ -113,7 +111,9 @@ async def test_select_option(mock_backend: AsyncMock) -> None:
     register(mcp, mgr)
 
     tool = mcp._tool_manager.get_tool("wavexis_select_option")
-    result = await tool.fn(SelectOptionInput(selector="select", value="opt1", url="https://example.com"))
+    result = await tool.fn(
+        SelectOptionInput(selector="select", value="opt1", url="https://example.com")
+    )
     data = json.loads(result)
     assert data["status"] == "ok"
 
@@ -136,9 +136,7 @@ async def test_hover(mock_backend: AsyncMock) -> None:
 
 
 @pytest.mark.unit
-async def test_key_press(
-    session_manager_with_mock: SessionManager, mock_session_id: str
-) -> None:
+async def test_key_press(session_manager_with_mock: SessionManager, mock_session_id: str) -> None:
     from mcp.server.fastmcp import FastMCP
 
     from wavexis_mcp.tools.input import register
@@ -206,9 +204,7 @@ async def test_set_files(mock_backend: AsyncMock) -> None:
 
 
 @pytest.mark.unit
-async def test_check(
-    session_manager_with_mock: SessionManager, mock_session_id: str
-) -> None:
+async def test_check(session_manager_with_mock: SessionManager, mock_session_id: str) -> None:
     from mcp.server.fastmcp import FastMCP
 
     from wavexis_mcp.tools.input import register
@@ -226,9 +222,7 @@ async def test_check(
 
 
 @pytest.mark.unit
-async def test_uncheck(
-    session_manager_with_mock: SessionManager, mock_session_id: str
-) -> None:
+async def test_uncheck(session_manager_with_mock: SessionManager, mock_session_id: str) -> None:
     from mcp.server.fastmcp import FastMCP
 
     from wavexis_mcp.tools.input import register

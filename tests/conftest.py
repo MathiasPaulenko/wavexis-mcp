@@ -69,9 +69,7 @@ def mock_backend() -> AsyncMock:
         return_value=[{"url": "https://example.com/resource"}]
     )
     backend.cache_storage_delete = AsyncMock()
-    backend.indexeddb_list = AsyncMock(
-        return_value=[{"name": "db1", "stores": ["store1"]}]
-    )
+    backend.indexeddb_list = AsyncMock(return_value=[{"name": "db1", "stores": ["store1"]}])
     backend.indexeddb_get_data = AsyncMock(return_value={"key": "value"})
     backend.indexeddb_clear = AsyncMock()
 
@@ -96,9 +94,7 @@ def mock_backend() -> AsyncMock:
         }
     )
     backend.a11y_node = AsyncMock(return_value={"role": "button", "name": "Submit"})
-    backend.a11y_ancestors = AsyncMock(
-        return_value=[{"role": "WebArea", "name": "Test Page"}]
-    )
+    backend.a11y_ancestors = AsyncMock(return_value=[{"role": "WebArea", "name": "Test Page"}])
 
     backend.dialog_accept = AsyncMock()
     backend.dialog_dismiss = AsyncMock()
@@ -122,9 +118,7 @@ def mock_backend() -> AsyncMock:
         return_value=[{"styleSheetId": "s1", "origin": "regular", "sourceURL": "style.css"}]
     )
     backend.css_get_rules = AsyncMock(return_value=[{"selectorText": "h1", "style": {}}])
-    backend.css_get_computed = AsyncMock(
-        return_value={"color": "rgb(0, 0, 0)", "display": "block"}
-    )
+    backend.css_get_computed = AsyncMock(return_value={"color": "rgb(0, 0, 0)", "display": "block"})
 
     backend.debug_set_breakpoint = AsyncMock(return_value="bp-1")
     backend.debug_set_breakpoint_function = AsyncMock(return_value="bp-2")
@@ -151,9 +145,7 @@ def mock_backend() -> AsyncMock:
         return_value=[{"level": "info", "message": "Browser log entry"}]
     )
 
-    backend.get_security_state = AsyncMock(
-        return_value={"state": "secure", "explanations": []}
-    )
+    backend.get_security_state = AsyncMock(return_value={"state": "secure", "explanations": []})
     backend.ignore_cert_errors = AsyncMock()
 
     backend.get_window_bounds = AsyncMock(
@@ -162,9 +154,7 @@ def mock_backend() -> AsyncMock:
     backend.set_window_bounds = AsyncMock()
 
     backend.raw = AsyncMock(return_value={"result": {}})
-    backend.suggest_locator = AsyncMock(
-        return_value=["#submit-btn", "button[type=submit]"]
-    )
+    backend.suggest_locator = AsyncMock(return_value=["#submit-btn", "button[type=submit]"])
 
     backend.sw_list = AsyncMock(return_value=[])
     backend.sw_unregister = AsyncMock()

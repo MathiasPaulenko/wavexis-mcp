@@ -71,12 +71,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
 
     # ── LocalStorage ──
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_localstorage_get(input: LocalStorageGetInput) -> str:
         """Get a localStorage value by key.
 
@@ -95,12 +97,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_localstorage_get", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_localstorage_set(input: LocalStorageSetInput) -> str:
         """Set a localStorage key/value pair.
 
@@ -120,12 +124,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_localstorage_set", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=True,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=True,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_localstorage_delete(input: LocalStorageDeleteInput) -> str:
         """Delete a localStorage key.
 
@@ -144,12 +150,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_localstorage_delete", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=True,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=True,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_localstorage_clear(input: LocalStorageClearInput) -> str:
         """Clear all localStorage entries.
 
@@ -166,12 +174,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_localstorage_clear", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_localstorage_list(input: LocalStorageListInput) -> str:
         """List all localStorage entries.
 
@@ -197,12 +207,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
 
     # ── SessionStorage ──
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_sessionstorage_get(input: SessionStorageGetInput) -> str:
         """Get a sessionStorage value by key.
 
@@ -221,12 +233,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_sessionstorage_get", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_sessionstorage_set(input: SessionStorageSetInput) -> str:
         """Set a sessionStorage key/value pair.
 
@@ -246,12 +260,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_sessionstorage_set", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=True,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=True,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_sessionstorage_delete(input: SessionStorageDeleteInput) -> str:
         """Delete a sessionStorage key.
 
@@ -271,12 +287,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_sessionstorage_delete", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=True,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=True,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_sessionstorage_clear(input: SessionStorageClearInput) -> str:
         """Clear all sessionStorage entries.
 
@@ -293,12 +311,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_sessionstorage_clear", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_sessionstorage_list(input: SessionStorageListInput) -> str:
         """List all sessionStorage entries.
 
@@ -324,12 +344,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
 
     # ── Cache Storage ──
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_cache_storage_list(input: CacheStorageListInput) -> str:
         """List all Cache Storage cache names.
 
@@ -346,12 +368,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_cache_storage_list", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_cache_storage_entries(input: CacheStorageEntriesInput) -> str:
         """List entries in a Cache Storage cache.
 
@@ -364,20 +388,24 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         try:
             session = session_manager.get(input.session_id)
             entries = await session.backend.cache_storage_entries(input.cache_name)
-            return format_json_response({
-                "cache_name": input.cache_name,
-                "entries": entries,
-                "count": len(entries),
-            })
+            return format_json_response(
+                {
+                    "cache_name": input.cache_name,
+                    "entries": entries,
+                    "count": len(entries),
+                }
+            )
         except Exception as e:
             return format_error("wavexis_cache_storage_entries", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=True,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=True,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_cache_storage_delete(input: CacheStorageDeleteInput) -> str:
         """Delete a Cache Storage cache.
 
@@ -396,12 +424,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
 
     # ── IndexedDB ──
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_indexeddb_list(input: IndexedDBListInput) -> str:
         """List all IndexedDB databases and their object stores.
 
@@ -418,12 +448,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_indexeddb_list", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_indexeddb_get_data(input: IndexedDBGetDataInput) -> str:
         """Get data from an IndexedDB object store.
 
@@ -435,23 +467,25 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """
         try:
             session = session_manager.get(input.session_id)
-            data = await session.backend.indexeddb_get_data(
-                input.database, input.store, input.key
+            data = await session.backend.indexeddb_get_data(input.database, input.store, input.key)
+            return format_json_response(
+                {
+                    "database": input.database,
+                    "store": input.store,
+                    "data": data,
+                }
             )
-            return format_json_response({
-                "database": input.database,
-                "store": input.store,
-                "data": data,
-            })
         except Exception as e:
             return format_error("wavexis_indexeddb_get_data", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=True,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=True,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_indexeddb_clear(input: IndexedDBClearInput) -> str:
         """Clear an IndexedDB object store.
 
@@ -470,12 +504,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
 
     # ── Storage State (composites) ──
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_storage_state_save(input: StorageStateSaveInput) -> str:
         """Save cookies + localStorage + sessionStorage to a JSON file.
 
@@ -510,21 +546,25 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                 "sessionStorage": session_storage,
             }
             await asyncio.to_thread(_write_json, input.output_path, state)
-            return format_json_response({
-                "path": input.output_path,
-                "cookies": len(cookies),
-                "localStorage_entries": len(local_storage),
-                "sessionStorage_entries": len(session_storage),
-            })
+            return format_json_response(
+                {
+                    "path": input.output_path,
+                    "cookies": len(cookies),
+                    "localStorage_entries": len(local_storage),
+                    "sessionStorage_entries": len(session_storage),
+                }
+            )
         except Exception as e:
             return format_error("wavexis_storage_state_save", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=False,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=False,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_storage_state_restore(input: StorageStateRestoreInput) -> str:
         """Restore cookies + localStorage + sessionStorage from a JSON file.
 
@@ -544,14 +584,16 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             for cookie in cookies:
                 from wavexis.config import CookieParams
 
-                await session.backend.set_cookie(CookieParams(
-                    name=cookie.get("name", ""),
-                    value=cookie.get("value", ""),
-                    domain=cookie.get("domain", ""),
-                    path=cookie.get("path", "/"),
-                    secure=cookie.get("secure", False),
-                    http_only=cookie.get("httpOnly", False),
-                ))
+                await session.backend.set_cookie(
+                    CookieParams(
+                        name=cookie.get("name", ""),
+                        value=cookie.get("value", ""),
+                        domain=cookie.get("domain", ""),
+                        path=cookie.get("path", "/"),
+                        secure=cookie.get("secure", False),
+                        http_only=cookie.get("httpOnly", False),
+                    )
+                )
 
             local_storage = state.get("localStorage", {})
             for key, value in local_storage.items():
@@ -567,11 +609,13 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                     await_promise=False,
                 )
 
-            return format_json_response({
-                "status": "ok",
-                "cookies_restored": len(cookies),
-                "localStorage_restored": len(local_storage),
-                "sessionStorage_restored": len(session_storage),
-            })
+            return format_json_response(
+                {
+                    "status": "ok",
+                    "cookies_restored": len(cookies),
+                    "localStorage_restored": len(local_storage),
+                    "sessionStorage_restored": len(session_storage),
+                }
+            )
         except Exception as e:
             return format_error("wavexis_storage_state_restore", e)

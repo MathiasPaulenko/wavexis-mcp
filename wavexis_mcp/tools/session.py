@@ -21,12 +21,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         session_manager: The shared session manager.
     """
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=False,
-        openWorldHint=True,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=False,
+            openWorldHint=True,
+        )
+    )
     async def wavexis_session_open(input: SessionOpenInput) -> str:
         """Launch a persistent browser session for multi-step workflows.
 
@@ -53,12 +55,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_session_open", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=True,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=True,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_session_close(input: SessionCloseInput) -> str:
         """Close a browser session and release resources.
 
@@ -70,18 +74,18 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """
         try:
             await session_manager.close(input.session_id)
-            return format_json_response(
-                {"status": "ok", "session_id": input.session_id}
-            )
+            return format_json_response({"status": "ok", "session_id": input.session_id})
         except Exception as e:
             return format_error("wavexis_session_close", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_session_info(input: SessionInfoInput) -> str:
         """Get information about an active browser session.
 

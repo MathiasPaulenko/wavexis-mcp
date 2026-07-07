@@ -31,12 +31,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         session_manager: The shared session manager.
     """
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=False,
-        openWorldHint=True,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=False,
+            openWorldHint=True,
+        )
+    )
     async def wavexis_multi_action(input: MultiActionInput) -> str:
         """Execute multiple actions from a YAML config sequentially.
 
@@ -66,9 +68,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                         for action_type, params in action.items():
                             if action_type == "navigate":
                                 wait = session_manager.make_wait(timeout=30000)
-                                await backend.navigate(
-                                    params.get("url", ""), wait
-                                )
+                                await backend.navigate(params.get("url", ""), wait)
                                 results.append({"action": i, "type": "navigate", "status": "ok"})
                             elif action_type == "screenshot":
                                 from wavexis.config import ScreenshotParams
@@ -78,19 +78,27 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                                     full_page=params.get("full_page", False),
                                 )
                                 data = await backend.screenshot(p)
-                                results.append({
-                                    "action": i, "type": "screenshot",
-                                    "status": "ok", "size": len(data),
-                                })
+                                results.append(
+                                    {
+                                        "action": i,
+                                        "type": "screenshot",
+                                        "status": "ok",
+                                        "size": len(data),
+                                    }
+                                )
                             elif action_type == "eval":
                                 result = await backend.eval(
                                     params.get("expression", ""),
                                     await_promise=params.get("await_promise", False),
                                 )
-                                results.append({
-                                    "action": i, "type": "eval",
-                                    "status": "ok", "result": result,
-                                })
+                                results.append(
+                                    {
+                                        "action": i,
+                                        "type": "eval",
+                                        "status": "ok",
+                                        "result": result,
+                                    }
+                                )
                             elif action_type == "click":
                                 await backend.click(params.get("selector", ""))
                                 results.append({"action": i, "type": "click", "status": "ok"})
@@ -107,10 +115,13 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                                 )
                                 results.append({"action": i, "type": "fill", "status": "ok"})
                             else:
-                                results.append({
-                                    "action": i, "type": action_type,
-                                    "status": "unknown",
-                                })
+                                results.append(
+                                    {
+                                        "action": i,
+                                        "type": action_type,
+                                        "status": "unknown",
+                                    }
+                                )
                     except Exception as exc:
                         errors.append({"action": i, "error": str(exc)})
                         if not input.continue_on_error:
@@ -118,23 +129,27 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                     finally:
                         pass
 
-                return format_json_response({
-                    "status": "ok",
-                    "actions": len(actions),
-                    "results": results,
-                    "errors": errors,
-                })
+                return format_json_response(
+                    {
+                        "status": "ok",
+                        "actions": len(actions),
+                        "results": results,
+                        "errors": errors,
+                    }
+                )
             finally:
                 await session_manager.release_backend(backend, sid)
         except Exception as e:
             return format_error("wavexis_multi_action", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=False,
-        openWorldHint=True,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=False,
+            openWorldHint=True,
+        )
+    )
     async def wavexis_raw_cdp(input: RawCDPInput) -> str:
         """Send a raw CDP command (escape hatch).
 
@@ -154,12 +169,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_raw_cdp", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=False,
-        openWorldHint=True,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=False,
+            openWorldHint=True,
+        )
+    )
     async def wavexis_raw_bidi(input: RawBiDiInput) -> str:
         """Send a raw BiDi command (escape hatch).
 
@@ -179,12 +196,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_raw_bidi", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=False,
-        openWorldHint=True,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=False,
+            openWorldHint=True,
+        )
+    )
     async def wavexis_browser_context_create(
         input: BrowserContextCreateInput,
     ) -> str:
@@ -207,12 +226,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_browser_context_create", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=True,
-        idempotentHint=False,
-        openWorldHint=True,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=True,
+            idempotentHint=False,
+            openWorldHint=True,
+        )
+    )
     async def wavexis_browser_context_close(
         input: BrowserContextCloseInput,
     ) -> str:

@@ -8,21 +8,23 @@ regardless of the user's selection.
 
 from __future__ import annotations
 
-ALL_TIERS: frozenset[str] = frozenset({
-    "core",
-    "network",
-    "storage",
-    "emulation",
-    "a11y",
-    "interactions",
-    "devtools",
-    "vision",
-    "video",
-    "testing",
-    "workflows",
-    "data",
-    "experimental",
-})
+ALL_TIERS: frozenset[str] = frozenset(
+    {
+        "core",
+        "network",
+        "storage",
+        "emulation",
+        "a11y",
+        "interactions",
+        "devtools",
+        "vision",
+        "video",
+        "testing",
+        "workflows",
+        "data",
+        "experimental",
+    }
+)
 
 TIER_MAP: dict[str, set[str]] = {
     "core": {"core"},

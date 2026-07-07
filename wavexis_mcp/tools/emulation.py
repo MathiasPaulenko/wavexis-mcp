@@ -41,12 +41,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         session_manager: The shared session manager.
     """
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_emulate_device(input: EmulateDeviceInput) -> str:
         """Emulate a specific device (iphone-15, pixel-8, etc.).
 
@@ -63,12 +65,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_emulate_device", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_set_viewport(input: SetViewportInput) -> str:
         """Set a custom viewport size and scale factor.
 
@@ -80,24 +84,26 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """
         try:
             session = session_manager.get(input.session_id)
-            await session.backend.set_viewport(
-                input.width, input.height, input.device_scale_factor
+            await session.backend.set_viewport(input.width, input.height, input.device_scale_factor)
+            return format_json_response(
+                {
+                    "status": "ok",
+                    "width": input.width,
+                    "height": input.height,
+                    "device_scale_factor": input.device_scale_factor,
+                }
             )
-            return format_json_response({
-                "status": "ok",
-                "width": input.width,
-                "height": input.height,
-                "device_scale_factor": input.device_scale_factor,
-            })
         except Exception as e:
             return format_error("wavexis_set_viewport", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_set_geolocation(input: SetGeolocationInput) -> str:
         """Override the browser geolocation.
 
@@ -109,23 +115,25 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """
         try:
             session = session_manager.get(input.session_id)
-            await session.backend.set_geolocation(
-                input.latitude, input.longitude, input.accuracy
+            await session.backend.set_geolocation(input.latitude, input.longitude, input.accuracy)
+            return format_json_response(
+                {
+                    "status": "ok",
+                    "latitude": input.latitude,
+                    "longitude": input.longitude,
+                }
             )
-            return format_json_response({
-                "status": "ok",
-                "latitude": input.latitude,
-                "longitude": input.longitude,
-            })
         except Exception as e:
             return format_error("wavexis_set_geolocation", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_set_timezone(input: SetTimezoneInput) -> str:
         """Override the browser timezone.
 
@@ -142,12 +150,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_set_timezone", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_set_dark_mode(input: SetDarkModeInput) -> str:
         """Enable or disable dark mode emulation.
 
@@ -164,12 +174,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_set_dark_mode", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_set_locale(input: SetLocaleInput) -> str:
         """Override the browser locale.
 
@@ -186,12 +198,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_set_locale", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_set_cpu_throttle(input: SetCPUThrottleInput) -> str:
         """Enable CPU throttling at a given multiplier.
 
@@ -208,12 +222,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_set_cpu_throttle", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_set_touch_emulation(input: SetTouchEmulationInput) -> str:
         """Enable or disable touch event emulation.
 
@@ -230,12 +246,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_set_touch_emulation", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_set_sensors(input: SetSensorsInput) -> str:
         """Override sensor values (orientation, motion, light, proximity).
 
@@ -247,15 +265,15 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """
         try:
             session = session_manager.get(input.session_id)
-            sensor_type = _SENSOR_TYPE_MAP.get(
-                input.sensor_type, input.sensor_type
-            )
+            sensor_type = _SENSOR_TYPE_MAP.get(input.sensor_type, input.sensor_type)
             params = SensorParams(type=sensor_type, values=input.values)
             await session.backend.set_sensors(params)
-            return format_json_response({
-                "status": "ok",
-                "sensor_type": input.sensor_type,
-                "values": input.values,
-            })
+            return format_json_response(
+                {
+                    "status": "ok",
+                    "sensor_type": input.sensor_type,
+                    "values": input.values,
+                }
+            )
         except Exception as e:
             return format_error("wavexis_set_sensors", e)

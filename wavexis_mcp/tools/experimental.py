@@ -51,12 +51,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
 
     # ── Service Workers (3) ──
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_service_worker_list(input: ServiceWorkerListInput) -> str:
         """List registered service workers.
 
@@ -73,12 +75,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_service_worker_list", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=True,
-        idempotentHint=False,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=True,
+            idempotentHint=False,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_service_worker_unregister(
         input: ServiceWorkerUnregisterInput,
     ) -> str:
@@ -97,12 +101,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_service_worker_unregister", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=False,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=False,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_service_worker_emulate(
         input: ServiceWorkerEmulateInput,
     ) -> str:
@@ -126,12 +132,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
 
     # ── Animations (3) ──
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_animation_play(input: AnimationPlayInput) -> str:
         """Play/resume an animation by ID.
 
@@ -148,12 +156,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_animation_play", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_animation_pause(input: AnimationPauseInput) -> str:
         """Pause an animation by ID.
 
@@ -170,12 +180,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_animation_pause", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_animation_set_rate(input: AnimationSetRateInput) -> str:
         """Set the playback rate of an animation.
 
@@ -190,21 +202,25 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             await session.backend.animation_seek(
                 input.animation_id, int(input.playback_rate * 1000)
             )
-            return format_json_response({
-                "status": "ok",
-                "playback_rate": input.playback_rate,
-            })
+            return format_json_response(
+                {
+                    "status": "ok",
+                    "playback_rate": input.playback_rate,
+                }
+            )
         except Exception as e:
             return format_error("wavexis_animation_set_rate", e)
 
     # ── WebAuthn (3) ──
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=False,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=False,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_webauthn_add_credential(
         input: WebAuthnAddCredentialInput,
     ) -> str:
@@ -218,19 +234,19 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """
         try:
             session = session_manager.get(input.session_id)
-            await session.backend.webauthn_add_credential(
-                input.authenticator_id, input.credential
-            )
+            await session.backend.webauthn_add_credential(input.authenticator_id, input.credential)
             return format_json_response({"status": "ok"})
         except Exception as e:
             return format_error("wavexis_webauthn_add_credential", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_webauthn_get_credential(
         input: WebAuthnGetCredentialInput,
     ) -> str:
@@ -244,19 +260,19 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """
         try:
             session = session_manager.get(input.session_id)
-            creds = await session.backend.webauthn_get_credentials(
-                input.authenticator_id
-            )
+            creds = await session.backend.webauthn_get_credentials(input.authenticator_id)
             return format_json_response({"credentials": creds})
         except Exception as e:
             return format_error("wavexis_webauthn_get_credential", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=True,
-        idempotentHint=False,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=True,
+            idempotentHint=False,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_webauthn_remove_credential(
         input: WebAuthnRemoveCredentialInput,
     ) -> str:
@@ -270,21 +286,21 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """
         try:
             session = session_manager.get(input.session_id)
-            await session.backend.webauthn_remove_authenticator(
-                input.authenticator_id
-            )
+            await session.backend.webauthn_remove_authenticator(input.authenticator_id)
             return format_json_response({"status": "ok"})
         except Exception as e:
             return format_error("wavexis_webauthn_remove_credential", e)
 
     # ── WebAudio (2) ──
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_webaudio_capture(input: WebAudioCaptureInput) -> str:
         """Capture WebAudio context data.
 
@@ -304,12 +320,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_webaudio_capture", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_webaudio_stop_capture(
         input: WebAudioStopCaptureInput,
     ) -> str:
@@ -330,12 +348,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
 
     # ── Media (3) ──
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_media_player_play(
         input: MediaPlayerPlayInput,
     ) -> str:
@@ -357,12 +377,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_media_player_play", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_media_player_pause(
         input: MediaPlayerPauseInput,
     ) -> str:
@@ -384,12 +406,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_media_player_pause", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_media_player_seek(
         input: MediaPlayerSeekInput,
     ) -> str:
@@ -413,12 +437,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
 
     # ── Cast (2) ──
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=False,
-        openWorldHint=True,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=False,
+            openWorldHint=True,
+        )
+    )
     async def wavexis_cast_start(input: CastStartInput) -> str:
         """Start tab mirroring to a cast sink.
 
@@ -435,12 +461,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_cast_start", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=True,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
     async def wavexis_cast_stop(input: CastStopInput) -> str:
         """Stop active cast mirroring.
 
@@ -459,12 +487,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
 
     # ── Bluetooth (4) ──
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_bluetooth_adapter_state(
         input: BluetoothAdapterStateInput,
     ) -> str:
@@ -486,12 +516,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_bluetooth_adapter_state", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=False,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=False,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_bluetooth_device_connect(
         input: BluetoothDeviceConnectInput,
     ) -> str:
@@ -506,20 +538,24 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         try:
             session = session_manager.get(input.session_id)
             await session.backend.bluetooth_emulate(input.name, input.address)
-            return format_json_response({
-                "status": "ok",
-                "name": input.name,
-                "address": input.address,
-            })
+            return format_json_response(
+                {
+                    "status": "ok",
+                    "name": input.name,
+                    "address": input.address,
+                }
+            )
         except Exception as e:
             return format_error("wavexis_bluetooth_device_connect", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=True,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=True,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_bluetooth_device_disconnect(
         input: BluetoothDeviceDisconnectInput,
     ) -> str:
@@ -538,12 +574,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_bluetooth_device_disconnect", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_bluetooth_device_list(
         input: BluetoothDeviceListInput,
     ) -> str:
@@ -564,12 +602,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
 
     # ── WebExtensions (3) ──
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=True,
-        idempotentHint=False,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=True,
+            idempotentHint=False,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_extension_install(input: ExtensionInstallInput) -> str:
         """Install a browser extension from a .crx or unpacked directory.
 
@@ -586,12 +626,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_extension_install", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=True,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=True,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_extension_uninstall(input: ExtensionUninstallInput) -> str:
         """Uninstall a browser extension by ID.
 
@@ -608,12 +650,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_extension_uninstall", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_extension_list(input: ExtensionListInput) -> str:
         """List installed browser extensions.
 
@@ -626,21 +670,25 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         try:
             session = session_manager.get(input.session_id)
             extensions = await session.backend.extension_list()
-            return format_json_response({
-                "extensions": extensions,
-                "count": len(extensions),
-            })
+            return format_json_response(
+                {
+                    "extensions": extensions,
+                    "count": len(extensions),
+                }
+            )
         except Exception as e:
             return format_error("wavexis_extension_list", e)
 
     # ── Browser preferences (2) ──
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_get_pref(input: GetPrefInput) -> str:
         """Get a browser preference value by key.
 
@@ -657,12 +705,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_get_pref", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_set_pref(input: SetPrefInput) -> str:
         """Set a browser preference value.
 

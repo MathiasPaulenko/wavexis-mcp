@@ -43,9 +43,7 @@ async def test_localstorage_get(
     mcp = FastMCP("test")
     register(mcp, session_manager_with_mock)
 
-    session_manager_with_mock.get(mock_session_id).backend.eval = AsyncMock(
-        return_value="my-value"
-    )
+    session_manager_with_mock.get(mock_session_id).backend.eval = AsyncMock(return_value="my-value")
 
     tool = mcp._tool_manager.get_tool("wavexis_localstorage_get")
     result = await tool.fn(LocalStorageGetInput(key="test", session_id=mock_session_id))
@@ -85,9 +83,7 @@ async def test_localstorage_delete(
     register(mcp, session_manager_with_mock)
 
     tool = mcp._tool_manager.get_tool("wavexis_localstorage_delete")
-    result = await tool.fn(
-        LocalStorageDeleteInput(key="test", session_id=mock_session_id)
-    )
+    result = await tool.fn(LocalStorageDeleteInput(key="test", session_id=mock_session_id))
     data = json.loads(result)
     assert data["status"] == "ok"
 
@@ -145,14 +141,10 @@ async def test_sessionstorage_get(
     mcp = FastMCP("test")
     register(mcp, session_manager_with_mock)
 
-    session_manager_with_mock.get(mock_session_id).backend.eval = AsyncMock(
-        return_value="ss-value"
-    )
+    session_manager_with_mock.get(mock_session_id).backend.eval = AsyncMock(return_value="ss-value")
 
     tool = mcp._tool_manager.get_tool("wavexis_sessionstorage_get")
-    result = await tool.fn(
-        SessionStorageGetInput(key="test", session_id=mock_session_id)
-    )
+    result = await tool.fn(SessionStorageGetInput(key="test", session_id=mock_session_id))
     data = json.loads(result)
     assert data["value"] == "ss-value"
 
@@ -188,9 +180,7 @@ async def test_sessionstorage_delete(
     register(mcp, session_manager_with_mock)
 
     tool = mcp._tool_manager.get_tool("wavexis_sessionstorage_delete")
-    result = await tool.fn(
-        SessionStorageDeleteInput(key="test", session_id=mock_session_id)
-    )
+    result = await tool.fn(SessionStorageDeleteInput(key="test", session_id=mock_session_id))
     data = json.loads(result)
     assert data["status"] == "ok"
 
@@ -287,9 +277,7 @@ async def test_cache_storage_delete(
     register(mcp, session_manager_with_mock)
 
     tool = mcp._tool_manager.get_tool("wavexis_cache_storage_delete")
-    result = await tool.fn(
-        CacheStorageDeleteInput(cache_name="cache1", session_id=mock_session_id)
-    )
+    result = await tool.fn(CacheStorageDeleteInput(cache_name="cache1", session_id=mock_session_id))
     data = json.loads(result)
     assert data["status"] == "ok"
 
@@ -328,9 +316,7 @@ async def test_indexeddb_get_data(
 
     tool = mcp._tool_manager.get_tool("wavexis_indexeddb_get_data")
     result = await tool.fn(
-        IndexedDBGetDataInput(
-            database="db1", store="store1", session_id=mock_session_id
-        )
+        IndexedDBGetDataInput(database="db1", store="store1", session_id=mock_session_id)
     )
     data = json.loads(result)
     assert data["database"] == "db1"
@@ -375,11 +361,7 @@ async def test_storage_state_save(
 
     out = tmp_path / "state.json"
     tool = mcp._tool_manager.get_tool("wavexis_storage_state_save")
-    result = await tool.fn(
-        StorageStateSaveInput(
-            session_id=mock_session_id, output_path=str(out)
-        )
-    )
+    result = await tool.fn(StorageStateSaveInput(session_id=mock_session_id, output_path=str(out)))
     data = json.loads(result)
     assert data["path"] == str(out)
     assert data["cookies"] == 1
@@ -408,9 +390,7 @@ async def test_storage_state_restore(
 
     tool = mcp._tool_manager.get_tool("wavexis_storage_state_restore")
     result = await tool.fn(
-        StorageStateRestoreInput(
-            session_id=mock_session_id, input_path=str(state_path)
-        )
+        StorageStateRestoreInput(session_id=mock_session_id, input_path=str(state_path))
     )
     data = json.loads(result)
     assert data["status"] == "ok"

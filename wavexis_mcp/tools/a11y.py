@@ -24,9 +24,7 @@ from wavexis_mcp.session import SessionManager
 _REF_COUNTER = 0
 
 
-def _format_a11y_tree(
-    nodes: list[dict[str, Any]], level: int = 0
-) -> list[dict[str, Any]]:
+def _format_a11y_tree(nodes: list[dict[str, Any]], level: int = 0) -> list[dict[str, Any]]:
     """Convert raw a11y tree nodes into LLM-friendly structure with refs.
 
     Args:
@@ -105,12 +103,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         session_manager: The shared session manager.
     """
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=True,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
     async def wavexis_a11y_snapshot(input: A11ySnapshotInput) -> str:
         """Get the full accessibility tree as LLM-friendly text with element refs.
 
@@ -136,22 +136,26 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                 tree = _format_a11y_tree(nodes)
                 text = _tree_to_text(tree)
                 count = _count_nodes(tree)
-                return format_json_response({
-                    "snapshot": tree,
-                    "text": text,
-                    "element_count": count,
-                })
+                return format_json_response(
+                    {
+                        "snapshot": tree,
+                        "text": text,
+                        "element_count": count,
+                    }
+                )
             finally:
                 await session_manager.release_backend(backend, sid)
         except Exception as e:
             return format_error("wavexis_a11y_snapshot", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_a11y_node(input: A11yNodeInput) -> str:
         """Get a specific accessibility node by ID.
 
@@ -168,12 +172,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_a11y_node", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=False,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
     async def wavexis_a11y_ancestors(input: A11yAncestorsInput) -> str:
         """Get the ancestor chain for a node.
 
@@ -190,12 +196,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_a11y_ancestors", e)
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=True,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
     async def wavexis_axe_audit(input: AxeAuditInput) -> str:
         """Run an axe-core accessibility audit on the current page (W9).
 

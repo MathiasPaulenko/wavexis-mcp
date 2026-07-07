@@ -13,9 +13,7 @@ from wavexis.backend.base import AbstractBackend
 from wavexis_mcp.models import FormField
 
 
-async def fill_form_composite(
-    backend: AbstractBackend, fields: list[FormField]
-) -> int:
+async def fill_form_composite(backend: AbstractBackend, fields: list[FormField]) -> int:
     """Fill multiple form fields sequentially using ``backend.fill()``.
 
     Args:

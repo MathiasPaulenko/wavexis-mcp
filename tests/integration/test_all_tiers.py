@@ -39,10 +39,27 @@ async def test_one_tool_per_tier() -> None:
     sm = SessionManager()
 
     for mod in [
-        session, navigation, capture, javascript, dom, input,
-        cookies, tabs, utility, network, storage, emulation,
-        a11y, interactions, devtools, vision, video, testing,
-        workflows, data, experimental,
+        session,
+        navigation,
+        capture,
+        javascript,
+        dom,
+        input,
+        cookies,
+        tabs,
+        utility,
+        network,
+        storage,
+        emulation,
+        a11y,
+        interactions,
+        devtools,
+        vision,
+        video,
+        testing,
+        workflows,
+        data,
+        experimental,
     ]:
         mod.register(mcp, sm)
 
@@ -82,7 +99,17 @@ async def test_all_tiers_enabled() -> None:
     """Verify all 13 tiers are enabled with --caps=all."""
     cm = CapsManager("all")
     assert cm.enabled_tiers() == {
-        "core", "network", "storage", "emulation", "a11y",
-        "interactions", "devtools", "vision", "video", "testing",
-        "workflows", "data", "experimental",
+        "core",
+        "network",
+        "storage",
+        "emulation",
+        "a11y",
+        "interactions",
+        "devtools",
+        "vision",
+        "video",
+        "testing",
+        "workflows",
+        "data",
+        "experimental",
     }

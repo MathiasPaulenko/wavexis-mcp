@@ -53,9 +53,7 @@ async def test_a11y_snapshot_text_format(
 
 
 @pytest.mark.unit
-async def test_a11y_node(
-    session_manager_with_mock: SessionManager, mock_session_id: str
-) -> None:
+async def test_a11y_node(session_manager_with_mock: SessionManager, mock_session_id: str) -> None:
     from mcp.server.fastmcp import FastMCP
 
     from wavexis_mcp.tools.a11y import register
@@ -81,9 +79,7 @@ async def test_a11y_ancestors(
     register(mcp, session_manager_with_mock)
 
     tool = mcp._tool_manager.get_tool("wavexis_a11y_ancestors")
-    result = await tool.fn(
-        A11yAncestorsInput(node_id="el-1", session_id=mock_session_id)
-    )
+    result = await tool.fn(A11yAncestorsInput(node_id="el-1", session_id=mock_session_id))
     data = json.loads(result)
     assert data["count"] == 1
     assert data["ancestors"][0]["role"] == "WebArea"

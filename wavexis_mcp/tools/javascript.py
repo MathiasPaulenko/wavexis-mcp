@@ -22,12 +22,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         session_manager: The shared session manager.
     """
 
-    @mcp.tool(annotations=ToolAnnotations(
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=True,
-    ))
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
     async def wavexis_eval(input: EvalInput) -> str:
         """Evaluate a JavaScript expression and return the result.
 
@@ -50,10 +52,12 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
 
                 result = await backend.eval(input.expression, await_promise=input.await_promise)
                 result_type = type(result).__name__ if result is not None else "undefined"
-                return format_json_response({
-                    "result": result,
-                    "type": result_type,
-                })
+                return format_json_response(
+                    {
+                        "result": result,
+                        "type": result_type,
+                    }
+                )
             finally:
                 await session_manager.release_backend(backend, sid)
         except Exception as e:

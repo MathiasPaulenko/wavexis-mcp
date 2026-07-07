@@ -25,36 +25,28 @@ def _register(mcp, mgr):
 
 
 @pytest.mark.unit
-async def test_record(
-    session_manager_with_mock: SessionManager, mock_session_id: str
-) -> None:
+async def test_record(session_manager_with_mock: SessionManager, mock_session_id: str) -> None:
     from mcp.server.fastmcp import FastMCP
 
     mcp = FastMCP("test")
     _register(mcp, session_manager_with_mock)
 
     tool = mcp._tool_manager.get_tool("wavexis_record")
-    result = await tool.fn(
-        RecordInput(url="https://example.com", duration=5, headless=True)
-    )
+    result = await tool.fn(RecordInput(url="https://example.com", duration=5, headless=True))
     data = json.loads(result)
     assert "yaml" in data
     assert data["events_captured"] == 2
 
 
 @pytest.mark.unit
-async def test_lighthouse(
-    session_manager_with_mock: SessionManager, mock_session_id: str
-) -> None:
+async def test_lighthouse(session_manager_with_mock: SessionManager, mock_session_id: str) -> None:
     from mcp.server.fastmcp import FastMCP
 
     mcp = FastMCP("test")
     _register(mcp, session_manager_with_mock)
 
     tool = mcp._tool_manager.get_tool("wavexis_lighthouse")
-    result = await tool.fn(
-        LighthouseInput(url="https://example.com", session_id=mock_session_id)
-    )
+    result = await tool.fn(LighthouseInput(url="https://example.com", session_id=mock_session_id))
     data = json.loads(result)
     assert "categories" in data
     assert "performance" in data["categories"]
@@ -62,9 +54,7 @@ async def test_lighthouse(
 
 
 @pytest.mark.unit
-async def test_extract(
-    session_manager_with_mock: SessionManager, mock_session_id: str
-) -> None:
+async def test_extract(session_manager_with_mock: SessionManager, mock_session_id: str) -> None:
     from mcp.server.fastmcp import FastMCP
 
     mcp = FastMCP("test")
@@ -111,17 +101,13 @@ async def test_websocket_intercept(
 
 
 @pytest.mark.unit
-async def test_crawl(
-    session_manager_with_mock: SessionManager, mock_session_id: str
-) -> None:
+async def test_crawl(session_manager_with_mock: SessionManager, mock_session_id: str) -> None:
     from mcp.server.fastmcp import FastMCP
 
     mcp = FastMCP("test")
     _register(mcp, session_manager_with_mock)
 
-    session_manager_with_mock.get(mock_session_id).backend.eval = AsyncMock(
-        return_value="Example"
-    )
+    session_manager_with_mock.get(mock_session_id).backend.eval = AsyncMock(return_value="Example")
 
     tool = mcp._tool_manager.get_tool("wavexis_crawl")
     result = await tool.fn(
