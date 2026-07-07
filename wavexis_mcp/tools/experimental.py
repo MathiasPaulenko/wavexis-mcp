@@ -12,6 +12,7 @@ from mcp.types import ToolAnnotations
 
 from wavexis_mcp.formatter import format_error, format_json_response
 from wavexis_mcp.models import (
+    AnimationListInput,
     AnimationPauseInput,
     AnimationPlayInput,
     AnimationSetRateInput,
@@ -19,18 +20,22 @@ from wavexis_mcp.models import (
     BluetoothDeviceConnectInput,
     BluetoothDeviceDisconnectInput,
     BluetoothDeviceListInput,
+    CastListInput,
     CastStartInput,
     CastStopInput,
     ExtensionInstallInput,
     ExtensionListInput,
     ExtensionUninstallInput,
     GetPrefInput,
+    MediaGetMessagesInput,
+    MediaGetPlayersInput,
     MediaPlayerPauseInput,
     MediaPlayerPlayInput,
     MediaPlayerSeekInput,
     ServiceWorkerEmulateInput,
     ServiceWorkerListInput,
     ServiceWorkerUnregisterInput,
+    ServiceWorkerUpdateInput,
     SetPrefInput,
     WebAudioCaptureInput,
     WebAudioStopCaptureInput,
@@ -106,6 +111,32 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         annotations=ToolAnnotations(
             readOnlyHint=False,
             destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
+    async def wavexis_service_worker_update(
+        input: ServiceWorkerUpdateInput,
+    ) -> str:
+        """Trigger an update for a service worker registration.
+
+        Args:
+            input: Update parameters (session_id, registration_id).
+
+        Returns:
+            JSON string with status ``"ok"``.
+        """
+        try:
+            session = session_manager.get(input.session_id)
+            await session.backend.sw_update(input.registration_id)
+            return format_json_response({"status": "ok"})
+        except Exception as e:
+            return format_error("wavexis_service_worker_update", e)
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
             idempotentHint=False,
             openWorldHint=False,
         )
@@ -131,7 +162,31 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_service_worker_emulate", e)
 
-    # ── Animations (3) ──
+    # ── Animations (4) ──
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
+    async def wavexis_animation_list(input: AnimationListInput) -> str:
+        """List all active animations on the page.
+
+        Args:
+            input: List parameters (session_id).
+
+        Returns:
+            JSON string with ``animations`` list and ``count``.
+        """
+        try:
+            session = session_manager.get(input.session_id)
+            animations = await session.backend.animation_list()
+            return format_json_response({"animations": animations, "count": len(animations)})
+        except Exception as e:
+            return format_error("wavexis_animation_list", e)
 
     @mcp.tool(
         annotations=ToolAnnotations(
@@ -375,7 +430,57 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_webaudio_stop_capture", e)
 
-    # ── Media (3) ──
+    # ── Media (5) ──
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
+    async def wavexis_media_get_players(input: MediaGetPlayersInput) -> str:
+        """List all media players on the page.
+
+        Args:
+            input: List parameters (session_id).
+
+        Returns:
+            JSON string with ``players`` list and ``count``.
+        """
+        try:
+            session = session_manager.get(input.session_id)
+            players = await session.backend.media_get_players()
+            return format_json_response({"players": players, "count": len(players)})
+        except Exception as e:
+            return format_error("wavexis_media_get_players", e)
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        )
+    )
+    async def wavexis_media_get_messages(
+        input: MediaGetMessagesInput,
+    ) -> str:
+        """Get messages for a specific media player.
+
+        Args:
+            input: Message parameters (session_id, player_id).
+
+        Returns:
+            JSON string with ``messages`` list and ``count``.
+        """
+        try:
+            session = session_manager.get(input.session_id)
+            messages = await session.backend.media_get_messages(input.player_id)
+            return format_json_response({"messages": messages, "count": len(messages)})
+        except Exception as e:
+            return format_error("wavexis_media_get_messages", e)
 
     @mcp.tool(
         annotations=ToolAnnotations(
@@ -464,7 +569,31 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_media_player_seek", e)
 
-    # ── Cast (2) ──
+    # ── Cast (3) ──
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
+    async def wavexis_cast_list(input: CastListInput) -> str:
+        """List available cast sinks.
+
+        Args:
+            input: List parameters (session_id).
+
+        Returns:
+            JSON string with ``sinks`` list and ``count``.
+        """
+        try:
+            session = session_manager.get(input.session_id)
+            sinks = await session.backend.cast_list()
+            return format_json_response({"sinks": sinks, "count": len(sinks)})
+        except Exception as e:
+            return format_error("wavexis_cast_list", e)
 
     @mcp.tool(
         annotations=ToolAnnotations(

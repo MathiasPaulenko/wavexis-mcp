@@ -1,10 +1,10 @@
 # Configuration
 
-WaveXisMCP organizes 166 tools into 13 capability tiers. Core is always enabled. Additional tiers are opt-in via `--caps`.
+WaveXisMCP organizes 172 tools into 13 capability tiers. Core is always enabled. Additional tiers are opt-in via `--caps`.
 
 ## Capability tiers
 
-Capability tiers are the primary way to control which tools are exposed to the LLM. Each tier groups related tools by domain. This matters because LLMs have context windows — exposing 166 tool definitions consumes tokens. For simple tasks, 42 core tools is plenty. For complex automation, enable everything with `--caps all`.
+Capability tiers are the primary way to control which tools are exposed to the LLM. Each tier groups related tools by domain. This matters because LLMs have context windows — exposing 172 tool definitions consumes tokens. For simple tasks, 42 core tools is plenty. For complex automation, enable everything with `--caps all`.
 
 | Tier | Flag | Tools | Key features |
 | --- | --- | --- | --- |
@@ -19,9 +19,9 @@ Capability tiers are the primary way to control which tools are exposed to the L
 | **Video** | `--caps=video` | 4 | Video recording, chapters, action overlay |
 | **Testing** | `--caps=testing` | 4 | Assertions, locator generation |
 | **Workflows** | `--caps=workflows` | 6 | Multi-action YAML, raw CDP/BiDi, browser context CRUD |
-| **Data** | `--caps=data` | 6 | Codegen, Lighthouse audit, extract, websocket intercept, crawl, visual diff |
-| **Experimental** | `--caps=experimental` | 21 | Service workers, animations, WebAuthn, WebAudio, media, cast, bluetooth, extensions, prefs |
-| **Total** | `--caps=all` | **166** | |
+| **Data** | `--caps=data` | 7 | Codegen, Lighthouse audit, extract, websocket intercept, crawl, visual diff, core web vitals |
+| **Experimental** | `--caps=experimental` | 26 | Service workers, animations, WebAuthn, WebAudio, media, cast, bluetooth, extensions, prefs |
+| **Total** | `--caps=all` | **172** | |
 
 ### Tier details
 
@@ -83,7 +83,7 @@ Niche and experimental features. Service worker management (list, unregister, up
 # Core only (default, 42 tools)
 wavexis-mcp
 
-# All tiers (166 tools)
+# All tiers (172 tools)
 wavexis-mcp --caps all
 
 # Specific tiers

@@ -21,7 +21,7 @@ This document describes the system design, data flow, and key architectural deci
 │         │                │                  │          │
 │  ┌──────▼────────────────▼──────────────────▼───────┐  │
 │  │              Tool Functions                      │  │
-│  │  (166 @mcp.tool async functions across 13 mods)  │  │
+│  │  (172 @mcp.tool async functions across 13 mods)  │  │
 │  └──────────────────────┬───────────────────────────┘  │
 │                         │                              │
 │  ┌──────────────────────▼───────────────────────────┐  │

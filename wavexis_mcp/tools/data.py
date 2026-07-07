@@ -15,6 +15,7 @@ from mcp.types import ToolAnnotations
 
 from wavexis_mcp.formatter import format_error, format_json_response, save_to_file
 from wavexis_mcp.models import (
+    CoreWebVitalsInput,
     CrawlInput,
     ExtractInput,
     LighthouseInput,
@@ -433,3 +434,48 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                 await session_manager.release_backend(backend, sid)
         except Exception as e:
             return format_error("wavexis_visual_diff", e)
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
+    async def wavexis_core_web_vitals(input: CoreWebVitalsInput) -> str:
+        """Measure Core Web Vitals (LCP, CLS, INP) with ratings and score.
+
+        Args:
+            input: CWV parameters (url, observe_ms, budgets).
+
+        Returns:
+            JSON string with ``metrics``, ``ratings``, ``score``, and optional ``budgets``.
+        """
+        try:
+            backend, sid = await session_manager.acquire_backend(
+                input.session_id,
+                backend=input.backend,
+                headless=input.headless,
+            )
+            try:
+                from wavexis.actions.core_web_vitals import (
+                    CoreWebVitalsAction,
+                    CoreWebVitalsParams,
+                )
+                from wavexis.config import BrowserOptions, WaitStrategy
+
+                params = CoreWebVitalsParams(
+                    url=input.url,
+                    wait=WaitStrategy(strategy="load", timeout=30000),
+                    browser=BrowserOptions(headless=input.headless),
+                    budgets=input.budgets,
+                    observe_ms=input.observe_ms,
+                )
+                action = CoreWebVitalsAction(params)
+                result = await action._collect_cwv(backend)
+                return format_json_response(result)
+            finally:
+                await session_manager.release_backend(backend, sid)
+        except Exception as e:
+            return format_error("wavexis_core_web_vitals", e)

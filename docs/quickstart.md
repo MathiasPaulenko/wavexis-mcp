@@ -104,14 +104,14 @@ Add to your MCP settings:
 
 ### Capability tiers
 
-The `--caps` flag controls which tools are exposed to the LLM. With 166 tools total, exposing all of them can overwhelm smaller LLMs with long tool lists. Choose a tier that matches your use case:
+The `--caps` flag controls which tools are exposed to the LLM. With 172 tools total, exposing all of them can overwhelm smaller LLMs with long tool lists. Choose a tier that matches your use case:
 
 | Flag | Tools | Use case |
 |------|-------|----------|
 | `--caps core` | 42 | Default. Session, navigation, screenshot, DOM, input. Good for simple tasks. |
 | `--caps core,network,storage` | 65 | Add network control and storage access. Good for scraping. |
 | `--caps core,a11y,interactions,devtools` | 74 | Add accessibility, dialogs, and DevTools. Good for testing. |
-| `--caps all` | 166 | Everything. Good for power users and automation. |
+| `--caps all` | 172 | Everything. Good for power users and automation. |
 
 See [Configuration](configuration.md) for the full list of tiers.
 
@@ -203,5 +203,5 @@ wavexis_session_close(session_id="abc-123")
 
 - [Configuration](configuration.md) — learn about all 13 capability tiers and CLI flags
 - [Architecture](architecture.md) — understand the system design and data flow
-- [Tools reference](tools/core.md) — browse all 166 tools by tier
+- [Tools reference](tools/core.md) — browse all 172 tools by tier
 - [Examples](examples/screenshot.md) — real-world usage patterns

@@ -5,6 +5,23 @@ All notable changes to WaveXisMCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2025-07-07
+
+### Added
+
+- 6 new useful tools bridging remaining backend methods (166 → 172 total):
+  - `wavexis_animation_list` — list all active animations on the page (experimental tier)
+  - `wavexis_media_get_players` — list all media players (experimental tier)
+  - `wavexis_media_get_messages` — get messages for a specific media player (experimental tier)
+  - `wavexis_cast_list` — list available cast sinks (experimental tier)
+  - `wavexis_service_worker_update` — trigger an update for a service worker registration (experimental tier)
+  - `wavexis_core_web_vitals` — measure Core Web Vitals (LCP, CLS, INP) with ratings and score (data tier)
+
+### Changed
+
+- Bumped tool count from 166 to 172 in pyproject.toml, README, and docs
+- Updated tier counts: Experimental 21→26, Data 6→7
+
 ## [1.5.1] - 2025-07-07
 
 ### Fixed

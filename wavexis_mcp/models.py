@@ -1322,11 +1322,24 @@ class ServiceWorkerUnregisterInput(BaseModel):
     registration_id: str = Field(...)
 
 
+class ServiceWorkerUpdateInput(BaseModel):
+    """Input for triggering a service worker update."""
+
+    session_id: str = Field(...)
+    registration_id: str = Field(...)
+
+
 class ServiceWorkerEmulateInput(BaseModel):
     """Input for emulating a service worker."""
 
     session_id: str = Field(...)
     script_url: str = Field(..., description="Script URL for the emulated service worker")
+
+
+class AnimationListInput(BaseModel):
+    """Input for listing active animations."""
+
+    session_id: str = Field(...)
 
 
 class AnimationPlayInput(BaseModel):
@@ -1400,6 +1413,19 @@ class WebAudioStopCaptureInput(BaseModel):
     session_id: str = Field(...)
 
 
+class MediaGetPlayersInput(BaseModel):
+    """Input for listing media players."""
+
+    session_id: str = Field(...)
+
+
+class MediaGetMessagesInput(BaseModel):
+    """Input for getting messages from a media player."""
+
+    session_id: str = Field(...)
+    player_id: str = Field(...)
+
+
 class MediaPlayerPlayInput(BaseModel):
     """Input for playing a media player."""
 
@@ -1420,6 +1446,12 @@ class MediaPlayerSeekInput(BaseModel):
     session_id: str = Field(...)
     player_id: str = Field(...)
     time_ms: int = Field(..., ge=0, description="Seek time in milliseconds")
+
+
+class CastListInput(BaseModel):
+    """Input for listing available cast sinks."""
+
+    session_id: str = Field(...)
 
 
 class CastStartInput(BaseModel):
@@ -1527,6 +1559,22 @@ class StopCombinedTraceInput(BaseModel):
 
     session_id: str = Field(...)
     trace_id: str = Field(..., description="Trace ID from start_combined_trace")
+
+
+class CoreWebVitalsInput(BaseModel):
+    """Input for measuring Core Web Vitals (LCP, CLS, INP)."""
+
+    url: str = Field(..., description="URL to navigate to for measurement")
+    session_id: str | None = Field(default=None)
+    observe_ms: int = Field(
+        default=5000, ge=1000, le=30000, description="Observation window in milliseconds"
+    )
+    budgets: dict[str, float] = Field(
+        default_factory=dict,
+        description="Optional budgets: lcp_ms, cls, inp_ms, fcp_ms, ttfb_ms, tbt_ms, load_ms",
+    )
+    headless: bool = Field(default=True)
+    backend: str = Field(default="cdp")
 
 
 class AxeAuditInput(BaseModel):
