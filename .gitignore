@@ -30,6 +30,7 @@ htmlcov/
 # Build
 *.whl
 *.tar.gz
+site/
 
 # OS
 .DS_Store
