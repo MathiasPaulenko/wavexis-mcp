@@ -8,6 +8,7 @@ WebSocket frames, crawling websites, and visual regression testing.
 from __future__ import annotations
 
 import asyncio
+import base64
 from typing import Any
 
 from mcp.server.fastmcp import FastMCP
@@ -409,25 +410,36 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                 headless=input.headless,
             )
             try:
-                from wavexis.config import ScreenshotParams, WaitStrategy
+                from wavexis.actions.visual_diff import VisualDiffAction, VisualDiffParams
+                from wavexis.config import WaitStrategy
 
-                wait = WaitStrategy(strategy="load", timeout=input.wait_timeout)
-                await backend.navigate(input.url, wait)
+                threshold = max(0, min(255, round(input.threshold * 255)))
+                params = VisualDiffParams(
+                    url="",
+                    baseline_path=input.baseline_path,
+                    selector=input.selector,
+                    threshold=threshold,
+                    wait=WaitStrategy(strategy="load", timeout=input.wait_timeout),
+                )
+                action = VisualDiffAction(params)
+                raw = await action.execute(backend)
 
-                params = ScreenshotParams(url="", full_page=True)
-                current = await backend.screenshot(params)
+                diff_count = int(raw.get("diff_count", 0) or 0)
+                diff_percentage = float(raw.get("diff_percentage", 0.0) or 0.0)
+                result: dict[str, Any] = {
+                    "diff_percentage": diff_percentage,
+                    "diff_pixels": diff_count,
+                    "passed": diff_count == 0,
+                    "total_pixels": int(raw.get("total_pixels", 0) or 0),
+                }
 
-                import anyio
-
-                baseline = await anyio.Path(input.baseline_path).read_bytes()
-
-                action = VisualDiffAction()
-                result = action.compare(baseline, current, threshold=input.threshold)
-
-                if input.output_path and result.get("diff_bytes"):
-                    save_to_file(result["diff_bytes"], input.output_path)
+                diff_b64 = raw.get("diff_base64", "")
+                if input.output_path:
+                    diff_bytes = base64.b64decode(diff_b64) if diff_b64 else b""
+                    save_to_file(diff_bytes, input.output_path)
                     result["diff_path"] = input.output_path
-                    del result["diff_bytes"]
+                else:
+                    result["diff_base64"] = diff_b64
 
                 return format_json_response(result)
             finally:

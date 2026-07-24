@@ -13,7 +13,7 @@ import contextlib
 import fnmatch
 import json
 import re
-from typing import Any
+from typing import Any, cast
 
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
@@ -86,9 +86,9 @@ def _init_network_log(session: Any) -> None:
     """Attach a per-session network event log to the backend if missing."""
     backend = session.backend
     if not isinstance(getattr(backend, "_network_log", None), list):
-        backend._network_log: list[dict[str, Any]] = []
-        backend._network_log_map: dict[str, dict[str, Any]] = {}
-        backend._network_log_sub_id: str | None = None
+        backend._network_log = []
+        backend._network_log_map = {}
+        backend._network_log_sub_id = None
 
 
 def _on_network_event(session: Any, event: dict[str, Any]) -> None:
@@ -137,7 +137,7 @@ async def _ensure_network_log(session: Any) -> list[dict[str, Any]]:
         )
         # Allow one event loop tick for any already-buffered events to arrive.
         await asyncio.sleep(0)
-    return backend._network_log
+    return cast(list[dict[str, Any]], backend._network_log)
 
 
 def _render_network_line(entry: dict[str, Any]) -> str:
@@ -199,11 +199,11 @@ def _init_routes(session: Any) -> None:
     """Attach per-session route state to the backend."""
     backend = session.backend
     if not isinstance(getattr(backend, "_route_entries", None), list):
-        backend._route_entries: list[_RouteEntry] = []
-        backend._route_handler: Any = None
+        backend._route_entries = []
+        backend._route_handler = None
 
 
-def _build_route_handler(session: Any):
+def _build_route_handler(session: Any) -> Any:
     """Build an async handler for Fetch.requestPaused events."""
 
     async def handler(event_params: dict[str, Any]) -> None:

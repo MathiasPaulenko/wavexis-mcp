@@ -646,16 +646,38 @@ async def test_visual_diff_success_with_output_path(
         if name == "wavexis.actions.visual_diff":
             mod = types.ModuleType("wavexis.actions.visual_diff")
 
+            class VisualDiffParams:
+                def __init__(
+                    self,
+                    url="",
+                    baseline_path="",
+                    selector=None,
+                    threshold=10,
+                    wait=None,
+                    browser=None,
+                ):
+                    self.url = url
+                    self.baseline_path = baseline_path
+                    self.selector = selector
+                    self.threshold = threshold
+                    self.wait = wait
+                    self.browser = browser
+
             class VisualDiffAction:
-                def compare(self, baseline, current, threshold=0.0):
+                def __init__(self, params=None):
+                    self.params = params
+
+                async def execute(self, backend):
                     return {
+                        "diff_count": 10,
                         "diff_percentage": 0.5,
-                        "diff_pixels": 10,
-                        "passed": False,
-                        "diff_bytes": b"diff",
+                        "total_pixels": 100,
+                        "threshold": 25,
+                        "diff_base64": "ZGlmZg==",
                     }
 
             mod.VisualDiffAction = VisualDiffAction
+            mod.VisualDiffParams = VisualDiffParams
             return mod
         return real_import(name, *args, **kwargs)
 
