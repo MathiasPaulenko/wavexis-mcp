@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from wavexis_mcp.models import BrowserVersionInput
+from wavexis_mcp.models import BrowserVersionInput, InvokeInput
 from wavexis_mcp.session import SessionManager
 
 
@@ -44,3 +44,49 @@ async def test_backends() -> None:
     data = json.loads(result)
     assert "backends" in data
     assert "available" in data
+
+
+@pytest.mark.unit
+async def test_invoke_with_session(
+    session_manager_with_mock: SessionManager, mock_session_id: str
+) -> None:
+    from mcp.server.fastmcp import FastMCP
+
+    from wavexis_mcp.tools.utility import register
+
+    mcp = FastMCP("test")
+    register(mcp, session_manager_with_mock)
+
+    session_manager_with_mock.get(mock_session_id).backend.page_print_to_pdf = AsyncMock(
+        return_value="base64pdf"
+    )
+
+    tool = mcp._tool_manager.get_tool("wavexis_invoke")
+    result = await tool.fn(
+        InvokeInput(
+            session_id=mock_session_id,
+            method="page_print_to_pdf",
+            params={"landscape": True, "display_header_footer": False},
+        )
+    )
+    data = json.loads(result)
+    assert data["status"] == "ok"
+    assert data["result"] == "base64pdf"
+
+
+@pytest.mark.unit
+async def test_invoke_private_method(
+    session_manager_with_mock: SessionManager, mock_session_id: str
+) -> None:
+    from mcp.server.fastmcp import FastMCP
+
+    from wavexis_mcp.tools.utility import register
+
+    mcp = FastMCP("test")
+    register(mcp, session_manager_with_mock)
+
+    tool = mcp._tool_manager.get_tool("wavexis_invoke")
+    result = await tool.fn(InvokeInput(session_id=mock_session_id, method="_private", params={}))
+    data = json.loads(result)
+    assert "error" in data
+    assert data["tool"] == "wavexis_invoke"

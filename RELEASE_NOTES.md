@@ -1,17 +1,11 @@
-# Release v1.6.5
+# Release v1.6.6
 
-## Bug Fixes
+## Summary
 
-### a11y_snapshot: CDP flat node tree parsing
-- **Problem**: `wavexis_a11y_snapshot` returned only 1 element with `role: unknown`
-- **Cause**: CDP's `Accessibility.getFullAXTree` returns a flat list of nodes with `nodeId`/`parentId` references, but the MCP code expected a pre-built tree with `role` (string), `name` (string), and `children` (list)
-- **Fix**: Added `_build_a11y_tree()` to transform CDP flat node list into nested tree structure with proper role/name extraction from CDP dict format
-
-### Backend timeouts to prevent hanging tools
-- **Problem**: Tools like `list_tabs`, `screenshot` (with `output_path`), and `session_info` hung indefinitely after extended use
-- **Cause**: No timeout on backend WebSocket calls — if the browser connection degrades, `await` hangs forever
-- **Fix**: Added `SessionManager.call_backend()` with `asyncio.wait_for()` (30s default timeout). Applied to `tabs.py`, `capture.py`, `a11y.py`, `session.py`, and `server.py` (act tool)
-
-### assert_url: case-insensitive matching
-- **Problem**: `wavexis_assert_url` failed matching "python" against "Python" in URLs
-- **Fix**: Changed to case-insensitive substring matching
+- Reached **100% test coverage** across all `wavexis_mcp` modules.
+- Full suite now passes: **425 tests** (395 unit + 30 integration).
+- Added `wavexis_mcp/tools/playwright_parity.py` with text-based accessibility find tools.
+- Added coverage-gap test files: `test_coverage_gaps.py`, `test_coverage_remaining.py`, and `test_network_extended.py`.
+- Cleaned up repository artifacts (`__pycache__`, `.coverage`, `htmlcov/`, `dist/`, `site/`, caches, and `tmp_debug.py`).
+- Fixed lint/format issues so `ruff check` and `ruff format --check` pass cleanly.
+- Added missing `Any` imports in `tools/input.py` and `tools/workflows.py`.

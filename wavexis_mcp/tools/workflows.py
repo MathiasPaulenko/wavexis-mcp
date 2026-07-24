@@ -218,11 +218,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """
         try:
             session = session_manager.get(input.session_id)
-            result = await session.backend.raw(
-                "Target.createBrowserContext",
-                {"disposeOnDetach": False},
-            )
-            context_id = result.get("browserContextId", "") if isinstance(result, dict) else ""
+            context_id = await session.backend.new_context()
             return format_json_response({"context_id": context_id})
         except Exception as e:
             return format_error("wavexis_browser_context_create", e)
@@ -248,10 +244,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """
         try:
             session = session_manager.get(input.session_id)
-            await session.backend.raw(
-                "Target.disposeBrowserContext",
-                {"browserContextId": input.context_id},
-            )
+            await session.backend.close_context(input.context_id)
             return format_json_response({"status": "ok"})
         except Exception as e:
             return format_error("wavexis_browser_context_close", e)

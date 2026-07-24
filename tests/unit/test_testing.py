@@ -8,8 +8,10 @@ from unittest.mock import AsyncMock
 import pytest
 
 from wavexis_mcp.models import (
+    AssertListInput,
     AssertTextVisibleInput,
     AssertURLInput,
+    AssertValueInput,
     AssertVisibleInput,
     GenerateLocatorInput,
 )
@@ -155,4 +157,86 @@ async def test_generate_locator(
     )
     data = json.loads(result)
     assert data["locator"] == "#submit-btn"
-    assert data["alternative"] == "button[type=submit]"
+
+
+@pytest.mark.unit
+async def test_assert_value_pass(
+    session_manager_with_mock: SessionManager, mock_session_id: str
+) -> None:
+    from mcp.server.fastmcp import FastMCP
+
+    mcp = FastMCP("test")
+    _register(mcp, session_manager_with_mock)
+
+    session_manager_with_mock.get(mock_session_id).backend.eval = AsyncMock(return_value=True)
+
+    tool = mcp._tool_manager.get_tool("wavexis_assert_value")
+    result = await tool.fn(
+        AssertValueInput(session_id=mock_session_id, selector="input", value="hello", timeout=100)
+    )
+    data = json.loads(result)
+    assert data["passed"] is True
+    assert data["value"] == "hello"
+
+
+@pytest.mark.unit
+async def test_assert_value_fail(
+    session_manager_with_mock: SessionManager, mock_session_id: str
+) -> None:
+    from mcp.server.fastmcp import FastMCP
+
+    mcp = FastMCP("test")
+    _register(mcp, session_manager_with_mock)
+
+    session_manager_with_mock.get(mock_session_id).backend.eval = AsyncMock(return_value=False)
+
+    tool = mcp._tool_manager.get_tool("wavexis_assert_value")
+    result = await tool.fn(
+        AssertValueInput(session_id=mock_session_id, selector="input", value="hello", timeout=100)
+    )
+    data = json.loads(result)
+    assert data["passed"] is False
+
+
+@pytest.mark.unit
+async def test_assert_list_pass(
+    session_manager_with_mock: SessionManager, mock_session_id: str
+) -> None:
+    from mcp.server.fastmcp import FastMCP
+
+    mcp = FastMCP("test")
+    _register(mcp, session_manager_with_mock)
+
+    session_manager_with_mock.get(mock_session_id).backend.eval = AsyncMock(
+        return_value=[True, True]
+    )
+
+    tool = mcp._tool_manager.get_tool("wavexis_assert_list")
+    result = await tool.fn(
+        AssertListInput(session_id=mock_session_id, selector="ul", items=["a", "b"], timeout=100)
+    )
+    data = json.loads(result)
+    assert data["passed"] is True
+    assert data["missing"] == []
+
+
+@pytest.mark.unit
+async def test_assert_list_fail(
+    session_manager_with_mock: SessionManager, mock_session_id: str
+) -> None:
+    from mcp.server.fastmcp import FastMCP
+
+    mcp = FastMCP("test")
+    _register(mcp, session_manager_with_mock)
+
+    session_manager_with_mock.get(mock_session_id).backend.eval = AsyncMock(
+        return_value=[True, False]
+    )
+
+    tool = mcp._tool_manager.get_tool("wavexis_assert_list")
+    result = await tool.fn(
+        AssertListInput(session_id=mock_session_id, selector="ul", items=["a", "b"], timeout=100)
+    )
+    data = json.loads(result)
+    assert data["passed"] is False
+    assert data["missing"] == ["b"]

@@ -9,6 +9,8 @@ import pytest
 
 from wavexis_mcp.models import (
     AnnotatedScreenshotInput,
+    PagePDFInput,
+    PageSnapshotInput,
     PDFInput,
     ScrapeInput,
     ScreencastInput,
@@ -157,3 +159,47 @@ async def test_annotated_screenshot_file(
     assert data["status"] == "ok"
     assert data["labels"] == {"@e1": "button#submit"}
     assert out.exists()
+
+
+@pytest.mark.unit
+async def test_page_pdf(mock_backend: AsyncMock) -> None:
+    from mcp.server.fastmcp import FastMCP
+
+    from wavexis_mcp.tools.capture import register
+
+    mcp = FastMCP("test")
+    mgr = SessionManager()
+    mgr._backend_manager.select = MagicMock(return_value=mock_backend)
+    register(mcp, mgr)
+
+    mock_backend.page_print_to_pdf = AsyncMock(return_value="JVBERi0xLjQK")
+
+    tool = mcp._tool_manager.get_tool("wavexis_page_pdf")
+    result = await tool.fn(PagePDFInput(url="https://example.com"))
+    data = json.loads(result)
+    assert data["status"] == "ok"
+    assert "base64" in data
+    assert data["type"] == "pdf"
+
+
+@pytest.mark.unit
+async def test_page_snapshot(mock_backend: AsyncMock) -> None:
+    from mcp.server.fastmcp import FastMCP
+
+    from wavexis_mcp.tools.capture import register
+
+    mcp = FastMCP("test")
+    mgr = SessionManager()
+    mgr._backend_manager.select = MagicMock(return_value=mock_backend)
+    register(mcp, mgr)
+
+    mock_backend.page_capture_snapshot = AsyncMock(
+        return_value="Content-Type: multipart/related;\n..."
+    )
+
+    tool = mcp._tool_manager.get_tool("wavexis_page_snapshot")
+    result = await tool.fn(PageSnapshotInput(url="https://example.com", format="mhtml"))
+    data = json.loads(result)
+    assert data["status"] == "ok"
+    assert data["format"] == "mhtml"
+    assert "content" in data

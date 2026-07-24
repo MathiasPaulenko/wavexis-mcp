@@ -5,6 +5,20 @@ All notable changes to WaveXisMCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.6] - 2026-07-24
+
+### Added
+
+- New `wavexis_mcp/tools/playwright_parity.py` module with text-based accessibility find tools.
+- Full unit + integration test coverage (`425` tests passing, `100%` coverage across `wavexis_mcp`).
+- Coverage-gap tests in `tests/unit/test_coverage_gaps.py`, `test_coverage_remaining.py`, and `test_network_extended.py`.
+
+### Changed
+
+- Lint/format cleanup across the entire codebase (`ruff check` and `ruff format` now pass).
+- Added missing `Any` imports in `wavexis_mcp/tools/input.py` and `wavexis_mcp/tools/workflows.py`.
+- Repository cleanup: removed `__pycache__`, `.coverage`, `htmlcov/`, `dist/`, `site/`, `.mypy_cache`, `.pytest_cache`, `.ruff_cache`, and stray `tmp_debug.py`.
+
 ## [1.6.4] - 2025-07-08
 
 ### Changed

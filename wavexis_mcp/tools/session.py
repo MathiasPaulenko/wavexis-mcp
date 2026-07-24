@@ -48,6 +48,10 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                 extra_headers=input.extra_headers,
                 proxy=input.proxy,
                 timeout=input.timeout,
+                user_data_dir=input.user_data_dir,
+                connect_endpoint=input.browser_url,
+                remote_url=input.remote_url,
+                stealth=input.stealth,
             )
             return format_json_response(
                 {"session_id": session_id, "backend": input.backend, "status": "ok"}

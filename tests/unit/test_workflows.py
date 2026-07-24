@@ -65,8 +65,8 @@ async def test_browser_context_create(
     mcp = FastMCP("test")
     _register(mcp, session_manager_with_mock)
 
-    session_manager_with_mock.get(mock_session_id).backend.raw = AsyncMock(
-        return_value={"browserContextId": "ctx-123"}
+    session_manager_with_mock.get(mock_session_id).backend.new_context = AsyncMock(
+        return_value="ctx-123"
     )
 
     tool = mcp._tool_manager.get_tool("wavexis_browser_context_create")
@@ -279,7 +279,7 @@ async def test_browser_context_create_error(
     mcp = FastMCP("test")
     _register(mcp, session_manager_with_mock)
 
-    session_manager_with_mock.get(mock_session_id).backend.raw = AsyncMock(
+    session_manager_with_mock.get(mock_session_id).backend.new_context = AsyncMock(
         side_effect=RuntimeError("failed")
     )
 

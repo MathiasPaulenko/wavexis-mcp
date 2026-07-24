@@ -9,7 +9,7 @@ Interactions, and DevTools) and separated by section comments.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -27,6 +27,14 @@ class SessionOpenInput(BaseModel):
     extra_headers: dict[str, str] = Field(default_factory=dict)
     proxy: str | None = Field(default=None)
     timeout: int = Field(default=30000, ge=1000, le=300000)
+    user_data_dir: str | None = Field(
+        default=None, description="Persistent Chrome user data directory"
+    )
+    browser_url: str | None = Field(
+        default=None, description="WebSocket URL of an existing browser (e.g. ws://localhost:9222)"
+    )
+    remote_url: str | None = Field(default=None, description="Cloud browser WebSocket URL")
+    stealth: bool = Field(default=False, description="Enable anti-bot stealth mode")
 
 
 class SessionCloseInput(BaseModel):
@@ -75,7 +83,8 @@ class WaitInput(BaseModel):
 
     session_id: str = Field(...)
     strategy: str = Field(
-        default="load", description="load, domcontentloaded, networkidle, selector, url"
+        default="load",
+        description="load, domcontentloaded, networkidle, selector, url, none",
     )
     selector: str | None = Field(default=None)
     url_pattern: str | None = Field(default=None)
@@ -123,6 +132,39 @@ class PDFInput(BaseModel):
     no_header_footer: bool = Field(default=False)
     media: str = Field(default="print", description="CSS media: 'print' or 'screen'")
     js: str | None = Field(default=None)
+    output_path: str | None = Field(default=None)
+    wait_timeout: int = Field(default=30000)
+    headless: bool = Field(default=True)
+    backend: str = Field(default="cdp")
+
+
+class PagePDFInput(BaseModel):
+    """Input for generating a PDF via the low-level Page.printToPDF CDP method."""
+
+    url: str | None = Field(default=None)
+    session_id: str | None = Field(default=None)
+    landscape: bool = Field(default=False)
+    display_header_footer: bool = Field(default=False)
+    print_background: bool = Field(default=False)
+    scale: float = Field(default=1.0, ge=0.1, le=2.0)
+    paper_width: float = Field(default=8.5, ge=1.0, le=100.0)
+    paper_height: float = Field(default=11.0, ge=1.0, le=100.0)
+    margin_top: float = Field(default=0.4, ge=0.0)
+    margin_bottom: float = Field(default=0.4, ge=0.0)
+    margin_left: float = Field(default=0.4, ge=0.0)
+    margin_right: float = Field(default=0.4, ge=0.0)
+    output_path: str | None = Field(default=None, description="Path to save the decoded PDF bytes")
+    wait_timeout: int = Field(default=30000)
+    headless: bool = Field(default=True)
+    backend: str = Field(default="cdp")
+
+
+class PageSnapshotInput(BaseModel):
+    """Input for capturing a page snapshot as MHTML or text."""
+
+    url: str | None = Field(default=None)
+    session_id: str | None = Field(default=None)
+    format: str = Field(default="mhtml", description="Output format: 'mhtml' or 'text'")
     output_path: str | None = Field(default=None)
     wait_timeout: int = Field(default=30000)
     headless: bool = Field(default=True)
@@ -279,6 +321,30 @@ class ClickInput(BaseModel):
     backend: str = Field(default="cdp")
 
 
+class DoubleClickInput(BaseModel):
+    """Input for double-clicking an element."""
+
+    selector: str = Field(..., description="CSS selector for element to double-click")
+    session_id: str | None = Field(default=None)
+    url: str | None = Field(default=None)
+    auto_wait: bool = Field(default=True, description="Wait for the element before clicking")
+    wait_timeout: int = Field(default=30000)
+    headless: bool = Field(default=True)
+    backend: str = Field(default="cdp")
+
+
+class RightClickInput(BaseModel):
+    """Input for right-clicking an element."""
+
+    selector: str = Field(..., description="CSS selector for element to right-click")
+    session_id: str | None = Field(default=None)
+    url: str | None = Field(default=None)
+    auto_wait: bool = Field(default=True, description="Wait for the element before clicking")
+    wait_timeout: int = Field(default=30000)
+    headless: bool = Field(default=True)
+    backend: str = Field(default="cdp")
+
+
 class TypeInput(BaseModel):
     """Input for typing text into an element."""
 
@@ -407,6 +473,21 @@ class SetFilesInput(BaseModel):
 
     selector: str = Field(..., description="CSS selector for <input type='file'> element")
     files: list[str] = Field(..., min_length=1, description="Absolute file paths to upload")
+    session_id: str | None = Field(default=None)
+    url: str | None = Field(default=None)
+    wait_timeout: int = Field(default=30000)
+    headless: bool = Field(default=True)
+    backend: str = Field(default="cdp")
+
+
+class DropInput(BaseModel):
+    """Input for dropping files or MIME-typed data onto an element."""
+
+    selector: str = Field(..., description="CSS selector for the drop target")
+    data: dict[str, str] = Field(
+        default_factory=dict, description="MIME type to string payload map"
+    )
+    paths: list[str] = Field(default_factory=list, description="Absolute file paths to drop")
     session_id: str | None = Field(default=None)
     url: str | None = Field(default=None)
     wait_timeout: int = Field(default=30000)
@@ -544,6 +625,13 @@ class ThrottleNetworkInput(BaseModel):
     offline: bool = Field(default=False)
 
 
+class SetNetworkStateInput(BaseModel):
+    """Input for overriding the browser network state (online/offline)."""
+
+    session_id: str = Field(...)
+    state: str = Field(default="online", pattern=r"^(online|offline)$")
+
+
 class SetCacheDisabledInput(BaseModel):
     """Input for enabling or disabling the browser cache."""
 
@@ -593,6 +681,55 @@ class NetworkRequestsInput(BaseModel):
     )
     limit: int = Field(default=100, ge=1, le=1000, description="Max requests to return")
     offset: int = Field(default=0, ge=0, description="Skip first N requests for pagination")
+    mode: Literal["performance", "events"] = Field(
+        default="performance",
+        description="Use performance.getEntriesByType or CDP network event log",
+    )
+
+
+class NetworkRequestInput(BaseModel):
+    """Input for getting full details of a single network request by index."""
+
+    session_id: str = Field(...)
+    index: int = Field(..., ge=1, description="1-based index from wavexis_network_requests")
+    part: Literal["request-headers", "request-body", "response-headers", "response-body"] | None = (
+        Field(default=None, description="Return only this part")
+    )
+
+
+class NetworkClearInput(BaseModel):
+    """Input for clearing the network event log."""
+
+    session_id: str = Field(...)
+
+
+class RouteInput(BaseModel):
+    """Input for adding a network route/mock."""
+
+    session_id: str = Field(...)
+    pattern: str = Field(..., description="URL glob to match (e.g. '**/api/users')")
+    status: int | None = Field(default=None, description="HTTP status code to return")
+    body: str | None = Field(default=None, description="Response body for mocked requests")
+    content_type: str | None = Field(
+        default=None, description="Content-Type header for mocked response"
+    )
+    headers: list[str] | None = Field(default=None, description='Headers in "Name: Value" format')
+    remove_headers: str | None = Field(
+        default=None, description="Comma-separated header names to remove"
+    )
+
+
+class UnrouteInput(BaseModel):
+    """Input for removing network routes."""
+
+    session_id: str = Field(...)
+    pattern: str | None = Field(default=None, description="Pattern to remove; omit to remove all")
+
+
+class RouteListInput(BaseModel):
+    """Input for listing active network routes."""
+
+    session_id: str = Field(...)
 
 
 # ── Storage ─────────────────────────────────────────────────────
@@ -1123,6 +1260,16 @@ class MouseDoubleClickXYInput(BaseModel):
     button: str = Field(default="left")
 
 
+class MouseWheelInput(BaseModel):
+    """Input for simulating a mouse wheel event at coordinates."""
+
+    session_id: str = Field(...)
+    x: int = Field(default=0, description="X coordinate of the wheel event")
+    y: int = Field(default=0, description="Y coordinate of the wheel event")
+    delta_x: int = Field(default=0, description="Horizontal scroll amount")
+    delta_y: int = Field(default=0, description="Vertical scroll amount")
+
+
 # ── Video ────────────────────────────────────────────────────────
 
 
@@ -1174,6 +1321,24 @@ class AssertTextVisibleInput(BaseModel):
 
     session_id: str = Field(...)
     text: str = Field(..., description="Text to search for")
+    timeout: int = Field(default=5000, ge=100, le=30000)
+
+
+class AssertValueInput(BaseModel):
+    """Input for asserting the value of a form element."""
+
+    session_id: str = Field(...)
+    selector: str = Field(..., description="CSS selector for the input element")
+    value: str = Field(..., description="Expected value")
+    timeout: int = Field(default=5000, ge=100, le=30000)
+
+
+class AssertListInput(BaseModel):
+    """Input for asserting all text items appear inside a list element."""
+
+    session_id: str = Field(...)
+    selector: str = Field(..., description="CSS selector for the list element")
+    items: list[str] = Field(..., min_length=1, description="Expected visible text items")
     timeout: int = Field(default=5000, ge=100, le=30000)
 
 
@@ -1238,6 +1403,62 @@ class BrowserContextListInput(BaseModel):
     """Input for listing browser contexts."""
 
     session_id: str = Field(...)
+
+
+class InvokeInput(BaseModel):
+    """Input for invoking any wavexis backend method by name.
+
+    This is a generic escape hatch that exposes the hundreds of high-level
+    methods available on ``AbstractBackend`` (e.g. ``page_print_to_pdf``,
+    ``perf_trace``, ``runtime_evaluate``, ``pwa_install``, etc.) without
+    requiring a dedicated MCP tool for each one.
+    """
+
+    method: str = Field(
+        ...,
+        description=(
+            "Backend method name (snake_case), e.g. 'page_print_to_pdf' or 'runtime_evaluate'."
+        ),
+    )
+    params: dict[str, Any] = Field(
+        default_factory=dict,
+        description=(
+            "Keyword arguments for the method. For methods that expect a "
+            "single dataclass parameter (e.g. 'pdf'), pass the dataclass "
+            "fields here as a JSON object."
+        ),
+    )
+    session_id: str | None = Field(
+        default=None,
+        description=(
+            "Existing session ID. If omitted, an ephemeral browser is "
+            "launched and closed automatically."
+        ),
+    )
+    url: str | None = Field(
+        default=None, description="URL to navigate to before invoking the method."
+    )
+    output_path: str | None = Field(
+        default=None,
+        description="If the method returns bytes, save to this path instead of base64.",
+    )
+    backend: str = Field(
+        default="cdp", description="Backend type for ephemeral sessions: 'cdp', 'bidi', or 'auto'."
+    )
+    headless: bool = Field(default=True)
+    width: int = Field(default=1280, ge=320, le=3840)
+    height: int = Field(default=800, ge=240, le=2160)
+    user_agent: str | None = Field(default=None)
+    extra_headers: dict[str, str] = Field(default_factory=dict)
+    proxy: str | None = Field(default=None)
+    timeout: int = Field(default=30000, ge=1000, le=300000)
+    user_data_dir: str | None = Field(default=None)
+    browser_url: str | None = Field(default=None)
+    remote_url: str | None = Field(default=None)
+    stealth: bool = Field(default=False)
+    wait_strategy: str = Field(default="load")
+    wait_selector: str | None = Field(default=None)
+    wait_timeout: int = Field(default=30000)
 
 
 # ── Data ─────────────────────────────────────────────────────────

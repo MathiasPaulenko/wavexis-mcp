@@ -16,6 +16,7 @@ from wavexis_mcp.models import (
     NetworkRequestsInput,
     SetCacheDisabledInput,
     SetHeadersInput,
+    SetNetworkStateInput,
     SetUserAgentInput,
     ThrottleNetworkInput,
 )
@@ -52,6 +53,28 @@ async def test_set_user_agent(
     result = await tool.fn(SetUserAgentInput(user_agent="TestBot/1.0", session_id=mock_session_id))
     data = json.loads(result)
     assert data["status"] == "ok"
+
+
+@pytest.mark.unit
+async def test_set_network_state(
+    session_manager_with_mock: SessionManager, mock_session_id: str
+) -> None:
+    from mcp.server.fastmcp import FastMCP
+
+    from wavexis_mcp.tools.network import register
+
+    mcp = FastMCP("test")
+    register(mcp, session_manager_with_mock)
+
+    session_manager_with_mock.get(
+        mock_session_id
+    ).backend.network_override_network_state = AsyncMock(return_value=None)
+
+    tool = mcp._tool_manager.get_tool("wavexis_set_network_state")
+    result = await tool.fn(SetNetworkStateInput(state="offline", session_id=mock_session_id))
+    data = json.loads(result)
+    assert data["status"] == "ok"
+    assert data["state"] == "offline"
 
 
 @pytest.mark.unit

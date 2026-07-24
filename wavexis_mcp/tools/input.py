@@ -6,6 +6,8 @@ key_press, drag, tap, set_files, check, and uncheck tools.
 
 from __future__ import annotations
 
+from typing import Any
+
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
 
@@ -14,7 +16,9 @@ from wavexis_mcp.formatter import format_error, format_json_response
 from wavexis_mcp.models import (
     CheckInput,
     ClickInput,
+    DoubleClickInput,
     DragInput,
+    DropInput,
     FillFormInput,
     FillInput,
     FindByTextInput,
@@ -22,6 +26,7 @@ from wavexis_mcp.models import (
     KeyPressInput,
     NLClickInput,
     NLFillInput,
+    RightClickInput,
     SelectOptionInput,
     SetFilesInput,
     TapInput,
@@ -75,6 +80,74 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                 await session_manager.release_backend(backend, sid)
         except Exception as e:
             return format_error("wavexis_click", e)
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=True,
+            idempotentHint=False,
+            openWorldHint=True,
+        )
+    )
+    async def wavexis_double_click(input: DoubleClickInput) -> str:
+        """Double-click an element matching a CSS selector.
+
+        Args:
+            input: Double-click parameters (selector, session, URL).
+
+        Returns:
+            JSON string with status ``"ok"``.
+        """
+        try:
+            backend, sid = await session_manager.acquire_backend(
+                input.session_id,
+                backend=input.backend,
+                headless=input.headless,
+            )
+            try:
+                if input.url:
+                    wait = session_manager.make_wait(timeout=input.wait_timeout)
+                    await backend.navigate(input.url, wait)
+                await backend.double_click(input.selector, auto_wait=input.auto_wait)
+                return format_json_response({"status": "ok"})
+            finally:
+                await session_manager.release_backend(backend, sid)
+        except Exception as e:
+            return format_error("wavexis_double_click", e)
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=True,
+            idempotentHint=False,
+            openWorldHint=True,
+        )
+    )
+    async def wavexis_right_click(input: RightClickInput) -> str:
+        """Right-click an element matching a CSS selector.
+
+        Args:
+            input: Right-click parameters (selector, session, URL).
+
+        Returns:
+            JSON string with status ``"ok"``.
+        """
+        try:
+            backend, sid = await session_manager.acquire_backend(
+                input.session_id,
+                backend=input.backend,
+                headless=input.headless,
+            )
+            try:
+                if input.url:
+                    wait = session_manager.make_wait(timeout=input.wait_timeout)
+                    await backend.navigate(input.url, wait)
+                await backend.right_click(input.selector, auto_wait=input.auto_wait)
+                return format_json_response({"status": "ok"})
+            finally:
+                await session_manager.release_backend(backend, sid)
+        except Exception as e:
+            return format_error("wavexis_right_click", e)
 
     @mcp.tool(
         annotations=ToolAnnotations(
@@ -371,6 +444,74 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                 await session_manager.release_backend(backend, sid)
         except Exception as e:
             return format_error("wavexis_set_files", e)
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=True,
+            idempotentHint=False,
+            openWorldHint=True,
+        )
+    )
+    async def wavexis_drop(input: DropInput) -> str:
+        """Drop files or MIME-typed data onto an element.
+
+        Args:
+            input: Drop parameters (selector, data map, file paths).
+
+        Returns:
+            JSON string with status ``"ok"`` and drop summary.
+        """
+        try:
+            backend, sid = await session_manager.acquire_backend(
+                input.session_id,
+                backend=input.backend,
+                headless=input.headless,
+            )
+            try:
+                if input.url:
+                    wait = session_manager.make_wait(timeout=input.wait_timeout)
+                    await backend.navigate(input.url, wait)
+
+                escaped = input.selector.replace("'", "\\'")
+                js = (
+                    f"(function(){{"
+                    f"var el=document.querySelector('{escaped}');"
+                    f"if(!el) return null;"
+                    f"var r=el.getBoundingClientRect();"
+                    f"return {{x:r.left+r.width/2,y:r.top+r.height/2}};"
+                    f"}})()"
+                )
+                coords = await backend.eval(js)
+                if not coords:
+                    raise RuntimeError(f"Element not found for selector: {input.selector}")
+
+                x, y = float(coords["x"]), float(coords["y"])
+
+                items = [{"mimeType": mime, "data": data} for mime, data in input.data.items()]
+                drag_data: dict[str, Any] = {
+                    "dragOperationsMask": 7,
+                    "items": items,
+                    "files": input.paths,
+                }
+
+                for event in ("dragEnter", "dragOver", "drop"):
+                    await backend.input_dispatch_drag_event(event, x, y, drag_data)
+
+                return format_json_response(
+                    {
+                        "status": "ok",
+                        "selector": input.selector,
+                        "x": x,
+                        "y": y,
+                        "data_types": list(input.data.keys()),
+                        "files": input.paths,
+                    }
+                )
+            finally:
+                await session_manager.release_backend(backend, sid)
+        except Exception as e:
+            return format_error("wavexis_drop", e)
 
     @mcp.tool(
         annotations=ToolAnnotations(

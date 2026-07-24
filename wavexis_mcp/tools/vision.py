@@ -18,6 +18,7 @@ from wavexis_mcp.models import (
     MouseMoveInput,
     MouseMoveXYInput,
     MouseUpInput,
+    MouseWheelInput,
 )
 from wavexis_mcp.session import SessionManager
 
@@ -253,3 +254,44 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             )
         except Exception as e:
             return format_error("wavexis_mouse_double_click_xy", e)
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=False,
+            openWorldHint=True,
+        )
+    )
+    async def wavexis_mouse_wheel(input: MouseWheelInput) -> str:
+        """Simulate a mouse wheel (scroll) event at the given coordinates.
+
+        Args:
+            input: Mouse wheel parameters (x, y, delta_x, delta_y).
+
+        Returns:
+            JSON string with status ``"ok"`` and scroll amounts.
+        """
+        try:
+            session = session_manager.get(input.session_id)
+            await session.backend.raw(
+                "Input.dispatchMouseEvent",
+                {
+                    "type": "mouseWheel",
+                    "x": input.x,
+                    "y": input.y,
+                    "deltaX": input.delta_x,
+                    "deltaY": input.delta_y,
+                },
+            )
+            return format_json_response(
+                {
+                    "status": "ok",
+                    "x": input.x,
+                    "y": input.y,
+                    "delta_x": input.delta_x,
+                    "delta_y": input.delta_y,
+                }
+            )
+        except Exception as e:
+            return format_error("wavexis_mouse_wheel", e)

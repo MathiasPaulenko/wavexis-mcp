@@ -135,6 +135,7 @@ def create_server(
         javascript,
         navigation,
         network,
+        playwright_parity,
         session,
         storage,
         tabs,
@@ -154,6 +155,7 @@ def create_server(
     cookies.register(mcp, _session_manager)
     tabs.register(mcp, _session_manager)
     utility.register(mcp, _session_manager)
+    playwright_parity.register(mcp, _session_manager)
 
     if _caps_manager.is_enabled("network"):
         network.register(mcp, _session_manager)

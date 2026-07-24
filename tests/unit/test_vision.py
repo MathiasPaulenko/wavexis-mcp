@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from unittest.mock import AsyncMock
 
 import pytest
 
@@ -13,6 +14,7 @@ from wavexis_mcp.models import (
     MouseMoveInput,
     MouseMoveXYInput,
     MouseUpInput,
+    MouseWheelInput,
 )
 from wavexis_mcp.session import SessionManager
 
@@ -133,3 +135,27 @@ async def test_mouse_double_click_xy(
     assert data["status"] == "ok"
     assert data["x"] == 150
     assert data["y"] == 150
+
+
+# ── mouse_wheel ──
+
+
+@pytest.mark.unit
+async def test_mouse_wheel(session_manager_with_mock: SessionManager, mock_session_id: str) -> None:
+    from mcp.server.fastmcp import FastMCP
+
+    mcp = FastMCP("test")
+    _register(mcp, session_manager_with_mock)
+
+    session_manager_with_mock.get(mock_session_id).backend.raw = AsyncMock(return_value=None)
+
+    tool = mcp._tool_manager.get_tool("wavexis_mouse_wheel")
+    result = await tool.fn(
+        MouseWheelInput(session_id=mock_session_id, x=100, y=200, delta_x=0, delta_y=500)
+    )
+    data = json.loads(result)
+    assert data["status"] == "ok"
+    assert data["x"] == 100
+    assert data["y"] == 200
+    assert data["delta_x"] == 0
+    assert data["delta_y"] == 500

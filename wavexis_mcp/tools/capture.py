@@ -1,11 +1,13 @@
 """Capture tools for WaveXisMCP.
 
-Provides screenshot, PDF, scrape, and screencast tools.  Binary
-outputs can be returned as base64 or saved to disk via
-``output_path`` / ``output_dir``.
+Provides screenshot, PDF, scrape, screencast, page PDF and page
+snapshot tools. Binary outputs can be returned as base64 or saved to
+disk via ``output_path`` / ``output_dir``.
 """
 
 from __future__ import annotations
+
+import base64
 
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
@@ -19,6 +21,8 @@ from wavexis_mcp.formatter import (
 )
 from wavexis_mcp.models import (
     AnnotatedScreenshotInput,
+    PagePDFInput,
+    PageSnapshotInput,
     PDFInput,
     ScrapeInput,
     ScreencastInput,
@@ -333,3 +337,112 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             )
         except Exception as e:
             return format_error("wavexis_annotated_screenshot", e)
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
+    async def wavexis_page_pdf(input: PagePDFInput) -> str:
+        """Generate a PDF using the low-level Page.printToPDF CDP method.
+
+        Offers pixel-level control over paper size, margins, and print
+        options beyond ``wavexis_pdf``.
+
+        Args:
+            input: Page PDF parameters.
+
+        Returns:
+            JSON string with base64 PDF data or saved file path.
+        """
+        try:
+            backend, sid = await session_manager.acquire_backend(
+                input.session_id,
+                backend=input.backend,
+                headless=input.headless,
+            )
+            try:
+                if input.url:
+                    wait = session_manager.make_wait(timeout=input.wait_timeout)
+                    await backend.navigate(input.url, wait)
+
+                result = await backend.page_print_to_pdf(
+                    landscape=input.landscape,
+                    display_header_footer=input.display_header_footer,
+                    print_background=input.print_background,
+                    scale=input.scale,
+                    paper_width=input.paper_width,
+                    paper_height=input.paper_height,
+                    margin_top=input.margin_top,
+                    margin_bottom=input.margin_bottom,
+                    margin_left=input.margin_left,
+                    margin_right=input.margin_right,
+                )
+
+                if input.output_path:
+                    pdf_bytes = base64.b64decode(result)
+                    meta = save_to_file(pdf_bytes, input.output_path)
+                    return format_json_response({"status": "ok", "type": "pdf", **meta})
+
+                return format_json_response(
+                    {
+                        "status": "ok",
+                        "type": "pdf",
+                        "base64": result,
+                        "size_bytes": len(result),
+                    }
+                )
+            finally:
+                await session_manager.release_backend(backend, sid)
+        except Exception as e:
+            return format_error("wavexis_page_pdf", e)
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
+    async def wavexis_page_snapshot(input: PageSnapshotInput) -> str:
+        """Capture the page as MHTML or a plain text document.
+
+        Args:
+            input: Page snapshot parameters (format, URL, output path).
+
+        Returns:
+            JSON string with the snapshot content or saved file path.
+        """
+        try:
+            backend, sid = await session_manager.acquire_backend(
+                input.session_id,
+                backend=input.backend,
+                headless=input.headless,
+            )
+            try:
+                if input.url:
+                    wait = session_manager.make_wait(timeout=input.wait_timeout)
+                    await backend.navigate(input.url, wait)
+
+                snapshot = await backend.page_capture_snapshot(format=input.format)
+
+                if input.output_path:
+                    meta = save_to_file(snapshot.encode("utf-8"), input.output_path)
+                    return format_json_response({"status": "ok", "format": input.format, **meta})
+
+                return format_json_response(
+                    {
+                        "status": "ok",
+                        "format": input.format,
+                        "content": snapshot,
+                        "size_bytes": len(snapshot),
+                    }
+                )
+            finally:
+                await session_manager.release_backend(backend, sid)
+        except Exception as e:
+            return format_error("wavexis_page_snapshot", e)

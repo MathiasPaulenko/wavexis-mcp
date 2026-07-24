@@ -15,8 +15,10 @@ from mcp.types import ToolAnnotations
 
 from wavexis_mcp.formatter import format_error, format_json_response
 from wavexis_mcp.models import (
+    AssertListInput,
     AssertTextVisibleInput,
     AssertURLInput,
+    AssertValueInput,
     AssertVisibleInput,
     GenerateLocatorInput,
 )
@@ -140,6 +142,141 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                 {
                     "passed": False,
                     "text": input.text,
+                    "message": str(e),
+                }
+            )
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
+    async def wavexis_assert_value(input: AssertValueInput) -> str:
+        """Assert that a form element has the expected value.
+
+        Args:
+            input: Assertion parameters (selector, value, timeout).
+
+        Returns:
+            JSON string with ``passed``, ``value``, and ``message``.
+        """
+        try:
+            session = session_manager.get(input.session_id)
+            escaped = input.selector.replace("'", "\\'")
+            escaped_val = input.value.replace("'", "\\'").replace("\\", "\\\\")
+            js = (
+                f"(function(){{"
+                f"var el=document.querySelector('{escaped}');"
+                f"if(!el) return false;"
+                f"return String(el.value)==='{escaped_val}';"
+                f"}})()"
+            )
+            deadline = time.monotonic() + input.timeout / 1000
+            passed = False
+            while time.monotonic() < deadline:
+                result = await session.backend.eval(js)
+                if result is True or result == "true":
+                    passed = True
+                    break
+                await asyncio.sleep(0.1)
+
+            if passed:
+                return format_json_response(
+                    {
+                        "passed": True,
+                        "selector": input.selector,
+                        "value": input.value,
+                        "message": "Value matches",
+                    }
+                )
+            return format_json_response(
+                {
+                    "passed": False,
+                    "selector": input.selector,
+                    "value": input.value,
+                    "message": "Value does not match within timeout",
+                }
+            )
+        except Exception as e:
+            return format_json_response(
+                {
+                    "passed": False,
+                    "selector": input.selector,
+                    "value": input.value,
+                    "message": str(e),
+                }
+            )
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
+    async def wavexis_assert_list(input: AssertListInput) -> str:
+        """Assert that all expected text items are visible inside a list element.
+
+        Args:
+            input: Assertion parameters (selector, items, timeout).
+
+        Returns:
+            JSON string with ``passed``, ``items``, ``missing``, and ``message``.
+        """
+        try:
+            session = session_manager.get(input.session_id)
+            escaped = input.selector.replace("'", "\\'")
+            items_js = ",".join(repr(item) for item in input.items)
+            js = (
+                f"(function(){{"
+                f"var list=document.querySelector('{escaped}');"
+                f"if(!list) return null;"
+                f"var text=list.innerText;"
+                f"var items=[{items_js}];"
+                f"return items.map(function(i){{return text.indexOf(i)!==-1;}});"
+                f"}})()"
+            )
+            deadline = time.monotonic() + input.timeout / 1000
+            passed = False
+            while time.monotonic() < deadline:
+                result = await session.backend.eval(js)
+                if result and all(result):
+                    passed = True
+                    break
+                await asyncio.sleep(0.1)
+
+            if passed:
+                return format_json_response(
+                    {
+                        "passed": True,
+                        "selector": input.selector,
+                        "items": input.items,
+                        "missing": [],
+                        "message": "All list items are visible",
+                    }
+                )
+            current = result or [False] * len(input.items)
+            missing = [item for item, ok in zip(input.items, current, strict=False) if not ok]
+            return format_json_response(
+                {
+                    "passed": False,
+                    "selector": input.selector,
+                    "items": input.items,
+                    "missing": missing,
+                    "message": "Some list items are missing",
+                }
+            )
+        except Exception as e:
+            return format_json_response(
+                {
+                    "passed": False,
+                    "selector": input.selector,
+                    "items": input.items,
+                    "missing": input.items,
                     "message": str(e),
                 }
             )

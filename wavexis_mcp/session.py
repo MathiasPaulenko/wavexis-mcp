@@ -68,6 +68,8 @@ class SessionManager:
         timeout: int = 30000,
         user_data_dir: str | None = None,
         connect_endpoint: str | None = None,
+        remote_url: str | None = None,
+        stealth: bool = False,
     ) -> str:
         """Launch a browser session and return its session ID.
 
@@ -82,6 +84,8 @@ class SessionManager:
             timeout: Default navigation timeout in milliseconds.
             user_data_dir: Chrome user data directory, or ``None``.
             connect_endpoint: WebSocket endpoint to connect to an existing browser.
+            remote_url: Cloud browser WebSocket endpoint, or ``None``.
+            stealth: Enable anti-bot stealth mode.
 
         Returns:
             A unique session ID string.
@@ -100,6 +104,8 @@ class SessionManager:
             timeout=timeout,
             user_data_dir=user_data_dir,
             browser_url=connect_endpoint,
+            remote_url=remote_url,
+            stealth=stealth,
         )
         await backend_instance.launch(opts)
 
@@ -215,6 +221,8 @@ class SessionManager:
         timeout: int = 30000,
         user_data_dir: str | None = None,
         connect_endpoint: str | None = None,
+        remote_url: str | None = None,
+        stealth: bool = False,
     ) -> tuple[AbstractBackend, str | None]:
         """Get a backend from an existing session or create an ephemeral one.
 
@@ -235,6 +243,8 @@ class SessionManager:
             timeout: Navigation timeout in milliseconds.
             user_data_dir: Chrome user data directory, or ``None``.
             connect_endpoint: WebSocket endpoint for existing browser.
+            remote_url: Cloud browser WebSocket endpoint, or ``None``.
+            stealth: Enable anti-bot stealth mode.
 
         Returns:
             A tuple of ``(backend, session_id_or_None)``.
@@ -256,6 +266,8 @@ class SessionManager:
             timeout=timeout,
             user_data_dir=user_data_dir,
             browser_url=connect_endpoint,
+            remote_url=remote_url,
+            stealth=stealth,
         )
         await backend_instance.launch(opts)
         return backend_instance, None
@@ -292,7 +304,7 @@ class SessionManager:
         """Build a ``WaitStrategy`` from common tool parameters.
 
         Args:
-            strategy: Wait strategy name (``"load"``, ``"selector"``, etc.).
+            strategy: Wait strategy name (``"load"``, ``"selector"``, ``"none"``, etc.).
             selector: CSS selector for ``"selector"`` strategy.
             url_pattern: URL pattern for URL-based strategies.
             timeout: Maximum wait time in milliseconds.

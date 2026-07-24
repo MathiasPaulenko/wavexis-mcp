@@ -10,7 +10,9 @@ import pytest
 from wavexis_mcp.models import (
     CheckInput,
     ClickInput,
+    DoubleClickInput,
     DragInput,
+    DropInput,
     FillFormInput,
     FillInput,
     FindByTextInput,
@@ -19,6 +21,7 @@ from wavexis_mcp.models import (
     KeyPressInput,
     NLClickInput,
     NLFillInput,
+    RightClickInput,
     SelectOptionInput,
     SetFilesInput,
     TapInput,
@@ -308,3 +311,66 @@ async def test_nl_fill(session_manager_with_mock: SessionManager, mock_session_i
     )
     data = json.loads(result)
     assert data["status"] == "ok"
+
+
+@pytest.mark.unit
+async def test_double_click(mock_backend: AsyncMock) -> None:
+    from mcp.server.fastmcp import FastMCP
+
+    from wavexis_mcp.tools.input import register
+
+    mcp = FastMCP("test")
+    mgr = SessionManager()
+    mgr._backend_manager.select = MagicMock(return_value=mock_backend)
+    register(mcp, mgr)
+
+    tool = mcp._tool_manager.get_tool("wavexis_double_click")
+    result = await tool.fn(DoubleClickInput(selector="button", url="https://example.com"))
+    data = json.loads(result)
+    assert data["status"] == "ok"
+
+
+@pytest.mark.unit
+async def test_right_click(mock_backend: AsyncMock) -> None:
+    from mcp.server.fastmcp import FastMCP
+
+    from wavexis_mcp.tools.input import register
+
+    mcp = FastMCP("test")
+    mgr = SessionManager()
+    mgr._backend_manager.select = MagicMock(return_value=mock_backend)
+    register(mcp, mgr)
+
+    tool = mcp._tool_manager.get_tool("wavexis_right_click")
+    result = await tool.fn(RightClickInput(selector="button", url="https://example.com"))
+    data = json.loads(result)
+    assert data["status"] == "ok"
+
+
+@pytest.mark.unit
+async def test_drop(mock_backend: AsyncMock) -> None:
+    from mcp.server.fastmcp import FastMCP
+
+    from wavexis_mcp.tools.input import register
+
+    mcp = FastMCP("test")
+    mgr = SessionManager()
+    mgr._backend_manager.select = MagicMock(return_value=mock_backend)
+    register(mcp, mgr)
+
+    mock_backend.eval = AsyncMock(return_value={"x": 100, "y": 200})
+    mock_backend.input_dispatch_drag_event = AsyncMock(return_value=None)
+
+    tool = mcp._tool_manager.get_tool("wavexis_drop")
+    result = await tool.fn(
+        DropInput(
+            selector="#dropzone",
+            data={"text/plain": "hello"},
+            paths=["d:\\\\file.txt"],
+            url="https://example.com",
+        )
+    )
+    data = json.loads(result)
+    assert data["status"] == "ok"
+    assert data["selector"] == "#dropzone"
+    assert mock_backend.input_dispatch_drag_event.call_count == 3
