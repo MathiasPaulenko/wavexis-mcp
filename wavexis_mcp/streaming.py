@@ -152,6 +152,8 @@ class StreamingHandler:
                 # Reset backoff after a successful poll.
                 interval = _POLL_INTERVAL_S
                 consecutive_errors = 0
+            except SessionNotFoundError:
+                break
             except Exception as exc:
                 consecutive_errors += 1
                 logger.warning("Streaming poll error for %s: %s", session_id, exc)

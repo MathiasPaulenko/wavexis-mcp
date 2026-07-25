@@ -116,16 +116,15 @@ class RateLimiter:
         Args:
             now: Current monotonic timestamp.
         """
-        if now - self._last_cleanup < _CLEANUP_INTERVAL_S:
-            return
-        self._last_cleanup = now
-        stale = [
-            sid
-            for sid, bucket in self._buckets.items()
-            if now - bucket.last_refill > self._bucket_ttl
-        ]
-        for sid in stale:
-            self._buckets.pop(sid, None)
+        if now - self._last_cleanup >= _CLEANUP_INTERVAL_S:
+            self._last_cleanup = now
+            stale = [
+                sid
+                for sid, bucket in self._buckets.items()
+                if now - bucket.last_refill > self._bucket_ttl
+            ]
+            for sid in stale:
+                self._buckets.pop(sid, None)
 
         overflow = len(self._buckets) - self._max_buckets
         if overflow > 0:

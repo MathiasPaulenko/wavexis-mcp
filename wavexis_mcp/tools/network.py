@@ -59,6 +59,10 @@ from wavexis_mcp.session import BrowserSession, SessionManager
 
 _logger = logging.getLogger(__name__)
 
+# Lock used to initialize per-backend network log state atomically when
+# callbacks arrive from background threads.
+_NETWORK_LOG_INIT_LOCK = threading.Lock()
+
 # Headers that could be used to bypass security controls or perform
 # request smuggling when set by an MCP client.
 _BLOCKED_HEADERS = frozenset(
@@ -147,12 +151,16 @@ def _matches_pattern(pattern: str, url: str) -> bool:
 def _init_network_log(session: BrowserSession) -> None:
     """Attach a per-session network event log to the backend if missing."""
     backend = cast(Any, _backend(session))
-    if not isinstance(getattr(backend, "_network_log", None), deque):
-        backend._network_log = deque(maxlen=_NETWORK_LOG_MAX)
-        backend._network_log_map = {}
-        backend._network_log_sub_id = None
-    if getattr(backend, "_network_log_lock", None) is None:
-        backend._network_log_lock = threading.Lock()
+    if not isinstance(getattr(backend, "_network_log", None), deque) or getattr(
+        backend, "_network_log_lock", None
+    ) is None:
+        with _NETWORK_LOG_INIT_LOCK:
+            if not isinstance(getattr(backend, "_network_log", None), deque):
+                backend._network_log = deque(maxlen=_NETWORK_LOG_MAX)
+                backend._network_log_map = {}
+                backend._network_log_sub_id = None
+            if getattr(backend, "_network_log_lock", None) is None:
+                backend._network_log_lock = threading.Lock()
 
 
 def _on_network_event(session: BrowserSession, event: dict[str, Any]) -> None:

@@ -78,7 +78,12 @@ def _make_frame_handler(
         except RuntimeError:
             _logger.warning("No running event loop; dropping screencast frame")
             return
-        asyncio.run_coroutine_threadsafe(_append_frame(recording, total_ref, data), loop)
+        future = asyncio.run_coroutine_threadsafe(_append_frame(recording, total_ref, data), loop)
+        future.add_done_callback(
+            lambda f: _logger.exception("Frame append failed: %s", f.exception())
+            if f.exception()
+            else None
+        )
 
     return handler
 

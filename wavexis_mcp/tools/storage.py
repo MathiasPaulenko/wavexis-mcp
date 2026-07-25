@@ -38,6 +38,9 @@ from wavexis_mcp.models import (
 )
 from wavexis_mcp.session import SessionManager
 
+_MAX_RESTORE_COOKIES = 1000
+_MAX_RESTORE_STORAGE_ITEMS = 1000
+
 
 async def _eval(backend: AbstractBackend, expr: str, **kwargs: Any) -> Any:
     """Evaluate *expr* on *backend* with a 5-second timeout."""
@@ -613,6 +616,16 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                 return format_json_response({"status": "error", "error": "Invalid state file"})
 
             cookies = state.get("cookies", [])
+            if len(cookies) > _MAX_RESTORE_COOKIES:
+                return format_json_response(
+                    {
+                        "status": "error",
+                        "error": (
+                            f"Too many cookies to restore: {len(cookies)} > "
+                            f"{_MAX_RESTORE_COOKIES}"
+                        ),
+                    }
+                )
             from wavexis.config import CookieParams
 
             cookie_tasks = [
@@ -631,6 +644,16 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             await asyncio.gather(*cookie_tasks, return_exceptions=True)
 
             local_storage = state.get("localStorage", {})
+            if len(local_storage) > _MAX_RESTORE_STORAGE_ITEMS:
+                return format_json_response(
+                    {
+                        "status": "error",
+                        "error": (
+                            f"Too many localStorage items: {len(local_storage)} > "
+                            f"{_MAX_RESTORE_STORAGE_ITEMS}"
+                        ),
+                    }
+                )
             if local_storage:
                 local_js = ";".join(
                     f"localStorage.setItem({json.dumps(key)}, {json.dumps(value)})"
@@ -639,6 +662,16 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                 await _eval(session.backend, local_js, await_promise=False)
 
             session_storage = state.get("sessionStorage", {})
+            if len(session_storage) > _MAX_RESTORE_STORAGE_ITEMS:
+                return format_json_response(
+                    {
+                        "status": "error",
+                        "error": (
+                            f"Too many sessionStorage items: {len(session_storage)} > "
+                            f"{_MAX_RESTORE_STORAGE_ITEMS}"
+                        ),
+                    }
+                )
             if session_storage:
                 session_js = ";".join(
                     f"sessionStorage.setItem({json.dumps(key)}, {json.dumps(value)})"

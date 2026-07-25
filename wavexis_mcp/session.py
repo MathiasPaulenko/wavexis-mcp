@@ -70,7 +70,10 @@ class _BackendProxy:
                 return _async_wrapper
 
             def _sync_wrapper(*args: Any, **kwargs: Any) -> Any:
-                return attr(*args, **kwargs)
+                result = attr(*args, **kwargs)
+                if inspect.isawaitable(result):
+                    return asyncio.wait_for(result, timeout=self._timeout)
+                return result
 
             _sync_wrapper.__name__ = getattr(attr, "__name__", name)
             _sync_wrapper.__doc__ = getattr(attr, "__doc__", None)
@@ -278,16 +281,20 @@ class SessionManager:
         if popped is not None:
             # Best-effort cleanup of any tool-specific subscriptions before
             # closing the backend so callbacks are not leaked after close.
+            # Use the underlying backend when available to avoid the timeout
+            # proxy during cleanup.
+            real_backend = getattr(popped.backend, "_backend", popped.backend)
+
             sub_id = getattr(popped.backend, "_network_log_sub_id", None)
             if isinstance(sub_id, str):
                 with contextlib.suppress(Exception):
-                    await popped.backend.unsubscribe_events(sub_id)
+                    await real_backend.unsubscribe_events(sub_id)
                 popped.backend._network_log_sub_id = None
 
             route_handler = getattr(popped.backend, "_route_handler", None)
             if route_handler is not None and not isinstance(route_handler, AsyncMock):
                 with contextlib.suppress(Exception):
-                    cdp_session = popped.backend._require_session()
+                    cdp_session = real_backend._require_session()
                     cdp_session.off("Fetch.requestPaused", route_handler)
                 popped.backend._route_handler = None
                 route_entries = getattr(popped.backend, "_route_entries", None)
@@ -298,7 +305,7 @@ class SessionManager:
             if isinstance(devtools_subs, set):
                 for dev_sub in list(devtools_subs):
                     with contextlib.suppress(Exception):
-                        await popped.backend.unsubscribe_events(dev_sub)
+                        await real_backend.unsubscribe_events(dev_sub)
                 devtools_subs.clear()
 
             try:
