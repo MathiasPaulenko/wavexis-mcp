@@ -14,7 +14,7 @@ authors = [{ name = "Mathias Paulenko", email = "mathias.paulenko@outlook.com" }
 maintainers = [{ name = "Mathias Paulenko", email = "mathias.paulenko@outlook.com" }]
 keywords = ["mcp", "browser", "automation", "cdp", "bidi", "screenshot", "scraping", "chromium", "llm"]
 classifiers = [
-    "Development Status :: 5 - Production/Stable",
+    "Development Status :: 4 - Beta",
     "Environment :: Console",
     "Environment :: Web Environment",
     "Framework :: AsyncIO",
@@ -36,6 +36,7 @@ dependencies = [
     "wavexis>=2.16.16,<3.0",
     "pydantic>=2.0,<3",
     "pyyaml>=6.0,<7.0",
+    "regex>=2024.0,<2030.0",
 ]
 
 [project.optional-dependencies]
@@ -80,10 +81,11 @@ ignore = ["ASYNC109"]
 
 [tool.mypy]
 strict = true
-python_version = "3.11"
+python_version = "3.12"
 
 [[tool.mypy.overrides]]
-module = ["wavexis.*", "yaml.*"]
+module = ["wavexis.*", "yaml.*", "regex.*"]
+follow_imports = "skip"
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
@@ -113,4 +115,12 @@ include = [
     "/CONTRIBUTING.md",
     "/SECURITY.md",
     "/AGENTS.md",
+    "/pyproject.toml",
+    "/mkdocs.yml",
+    "/docker-compose.yml",
+    "/docs",
+    "/scripts",
+    "/tests",
+    "/.github",
+    "/.pre-commit-config.yaml",
 ]
