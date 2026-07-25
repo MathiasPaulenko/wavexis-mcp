@@ -21,10 +21,22 @@ async def fill_form_composite(backend: AbstractBackend, fields: list[FormField])
         fields: List of form field descriptors (selector + value).
 
     Returns:
-        The number of fields successfully filled.
+        The number of fields successfully filled.  Failures for individual
+        fields do not stop the whole operation.
     """
+    import logging
+
+    _logger = logging.getLogger(__name__)
+
     count = 0
     for field in fields:
-        await backend.fill(field.selector, field.value)
-        count += 1
+        try:
+            await backend.fill(field.selector, field.value)
+            count += 1
+        except Exception as exc:
+            _logger.warning(
+                "Failed to fill field %s: %s",
+                field.selector,
+                exc,
+            )
     return count

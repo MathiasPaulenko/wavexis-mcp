@@ -278,6 +278,9 @@ def match_instruction(
     Returns:
         ``MatchResult`` for the best match, or ``None`` if no match found.
     """
+    if not instruction or not instruction.strip():
+        return None
+
     keywords = _extract_keywords(instruction)
     if not keywords:
         return None
