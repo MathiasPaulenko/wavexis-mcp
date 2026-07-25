@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.7] - 2026-07-25
+
 ### Changed
 
 - Renamed `TimeoutError` to `OperationTimeoutError` in `wavexis_mcp/errors.py` to avoid shadowing the built-in `TimeoutError`; kept `TimeoutError` as a backwards-compatible alias.
@@ -40,6 +42,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added 5-second timeouts to storage `backend.eval()` calls and resource handlers.
 - Added stale-bucket eviction to `RateLimiter` to prevent unbounded memory growth.
 - Added `tests/unit/test_security.py` regression suite covering SSRF, raw CDP/BiDi filtering, header filtering, and user-data sandboxing.
+- Added `focus` action handling to `execute_act`.
+- Added CDP screencast frame listener attachment and per-recording/total frame caps to `wavexis_video_record`.
+- Added bucket cap and LRU eviction to `RateLimiter`.
+
+### Changed
+
+- Bumped mypy target from Python 3.11 to 3.12 for compatibility with newer type stubs.
+- Updated `Development Status` classifier from Production/Stable to Beta.
 
 ### Fixed
 
@@ -49,6 +59,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed redundant `call_backend()` wrapper around `get_current_url()` in `tools/session.py`.
 - Removed dead `finally: pass` block in `tools/workflows.py`.
 - Restored `ruff format` compliance for the codebase.
+- Hardened header-injection defenses in `SessionManager.open()`, `wavexis_set_headers`, `wavexis_route`, and `wavexis_service_worker_emulate`.
+- Fixed `wavexis_perf_coverage` to safely handle non-list, non-dict backend results.
+- Fixed `wavexis_storage_state_restore` to return a clear error for malformed JSON.
+- Replaced unbounded network log and route lists with bounded `deque` containers.
+- Added exponential backoff to testing assertion polling and streaming poll loops.
+- Fixed `SessionManager.cleanup_all()` to log errors instead of silently suppressing them.
+- Fixed Dockerfile wheel copy glob and expanded sdist includes.
 
 ## [1.6.6] - 2025-07-24
 
