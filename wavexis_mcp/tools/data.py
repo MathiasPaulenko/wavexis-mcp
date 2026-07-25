@@ -89,6 +89,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                 from wavexis.config import WaitStrategy
 
                 wait = WaitStrategy(strategy="load", timeout=30000)
+                validate_url(input.url)
                 await backend.navigate(input.url, wait)
 
                 await asyncio.sleep(input.duration)
@@ -145,6 +146,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                 from wavexis.config import WaitStrategy
 
                 wait = WaitStrategy(strategy="load", timeout=input.wait_timeout)
+                validate_url(input.url)
                 await backend.navigate(input.url, wait)
 
                 metrics = await backend.perf_metrics()
@@ -224,6 +226,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                 from wavexis.config import WaitStrategy
 
                 wait = WaitStrategy(strategy="load", timeout=input.wait_timeout)
+                validate_url(input.url)
                 await backend.navigate(input.url, wait)
 
                 schema_entries = ",".join(

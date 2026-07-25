@@ -36,14 +36,26 @@ def secure_output_path(path: str, base_dir: str | os.PathLike[str] | None = None
         A resolved ``Path`` that is guaranteed to be inside the allowed base.
 
     Raises:
-        ValueError: If the resolved path escapes the allowed base directory.
+        ValueError: If the resolved path escapes the allowed base directory
+            or if any path component is a symlink.
     """
     if base_dir is not None:
         base = Path(base_dir).resolve()
     else:
         base = Path(os.environ.get("WAVEXIS_MCP_OUTPUT_DIR", Path.cwd())).resolve()
     target = Path(path)
-    resolved = target.resolve() if target.is_absolute() else (base / target).resolve()
+    candidate = target if target.is_absolute() else base / target
+
+    # Reject any symlink in the path.  resolve() already follows symlinks and
+    # would reject targets that escape the base, but checking explicitly makes
+    # the intent clear and mitigates obvious symlink-based sandbox bypasses.
+    for part in [candidate, *candidate.parents]:
+        if part == base:
+            break
+        if part.is_symlink():
+            raise ValueError(f"Symlinks are not allowed in output path: {path!r}")
+
+    resolved = candidate.resolve()
     try:
         resolved.relative_to(base)
     except ValueError as exc:

@@ -11,7 +11,7 @@ import time
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
 
-from wavexis_mcp.formatter import format_error, format_json_response
+from wavexis_mcp.formatter import format_error, format_json_response, validate_url
 from wavexis_mcp.models import NavigateInput, ReloadInput, SimpleNavInput, WaitInput
 from wavexis_mcp.session import SessionManager
 
@@ -54,6 +54,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                     url_pattern=input.wait_url_pattern,
                     timeout=input.wait_timeout,
                 )
+                validate_url(input.url)
                 await backend.navigate(input.url, wait)
                 return format_json_response({"status": "ok", "url": input.url})
             finally:

@@ -9,7 +9,7 @@ from __future__ import annotations
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
 
-from wavexis_mcp.formatter import format_error, format_json_response
+from wavexis_mcp.formatter import format_error, format_json_response, validate_url
 from wavexis_mcp.models import EvalInput
 from wavexis_mcp.session import SessionManager
 
@@ -48,6 +48,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             try:
                 if input.url:
                     wait = session_manager.make_wait(timeout=input.wait_timeout)
+                    validate_url(input.url)
                     await backend.navigate(input.url, wait)
 
                 result = await backend.eval(input.expression, await_promise=input.await_promise)

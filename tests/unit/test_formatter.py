@@ -123,3 +123,31 @@ def test_secure_output_path_rejects_whitespace_host_url() -> None:
     # Hostname containing only whitespace must be rejected.
     with pytest.raises(ValueError, match="URL has no host"):
         validate_url("http://   /path")
+
+
+def test_secure_output_path_rejects_symlink_escape(tmp_path: Path) -> None:
+    # Creating symlinks may require privileges on Windows; skip if unsupported.
+    outside = tmp_path / "outside.txt"
+    outside.write_text("secret")
+    link = tmp_path / "link.txt"
+    try:
+        link.symlink_to(outside)
+    except OSError:
+        pytest.skip("Unable to create symlink in test environment")
+
+    with pytest.raises(ValueError, match="Symlinks"):
+        secure_output_path("link.txt", base_dir=tmp_path)
+
+
+def test_secure_output_path_rejects_symlink_dir_escape(tmp_path: Path) -> None:
+    outside_dir = tmp_path / "outside"
+    outside_dir.mkdir()
+    (outside_dir / "file.txt").write_text("secret")
+    link_dir = tmp_path / "linkdir"
+    try:
+        link_dir.symlink_to(outside_dir)
+    except OSError:
+        pytest.skip("Unable to create symlink in test environment")
+
+    with pytest.raises(ValueError, match="Symlinks"):
+        secure_output_path("linkdir/file.txt", base_dir=tmp_path)
