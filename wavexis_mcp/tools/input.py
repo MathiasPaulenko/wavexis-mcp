@@ -7,6 +7,7 @@ key_press, drag, tap, set_files, check, and uncheck tools.
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from typing import Any
 
 from mcp.server.fastmcp import FastMCP
@@ -39,6 +40,36 @@ from wavexis_mcp.models import (
     TypeInput,
 )
 from wavexis_mcp.session import SessionManager
+
+_MAX_FILE_SIZE = 100 * 1024 * 1024  # 100 MiB per file
+_MAX_TOTAL_FILE_SIZE = 500 * 1024 * 1024  # 500 MiB total
+
+
+def _validate_files(paths: list[str]) -> list[Path]:
+    """Validate and return resolved file paths with size limits.
+
+    Args:
+        paths: Caller-supplied file paths.
+
+    Returns:
+        List of resolved ``Path`` objects.
+
+    Raises:
+        ValueError: If a file exceeds the per-file limit or the total
+            size exceeds the aggregate limit.
+    """
+    resolved: list[Path] = []
+    total = 0
+    for p in paths:
+        path = secure_output_path(p)
+        size = path.stat().st_size
+        if size > _MAX_FILE_SIZE:
+            raise ValueError(f"File {p!r} exceeds {_MAX_FILE_SIZE} bytes")
+        total += size
+        if total > _MAX_TOTAL_FILE_SIZE:
+            raise ValueError("Total file size exceeds the maximum allowed")
+        resolved.append(path)
+    return resolved
 
 
 def register(mcp: FastMCP, session_manager: SessionManager) -> None:
@@ -455,7 +486,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                     wait = session_manager.make_wait(timeout=input.wait_timeout)
                     validate_url(input.url)
                     await backend.navigate(input.url, wait)
-                validated_files = [str(secure_output_path(p)) for p in input.files]
+                validated_files = [str(p) for p in _validate_files(input.files)]
                 await backend.set_files(input.selector, validated_files)
                 return format_json_response({"status": "ok"})
             finally:
@@ -508,7 +539,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                 x, y = float(coords["x"]), float(coords["y"])
 
                 items = [{"mimeType": mime, "data": data} for mime, data in input.data.items()]
-                validated_paths = [str(secure_output_path(p)) for p in input.paths]
+                validated_paths = [str(p) for p in _validate_files(input.paths)]
                 drag_data: dict[str, Any] = {
                     "dragOperationsMask": 7,
                     "items": items,

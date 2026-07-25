@@ -85,11 +85,19 @@ _THROTTLE_PRESETS: dict[str, dict[str, int | bool]] = {
 
 _NETWORK_LOG_MAX = 1000
 _MAX_ROUTE_ENTRIES = 100
+_MAX_PATTERN_LENGTH = 1000
+_MAX_PATTERN_WILDCARDS = 50
 
 
 @functools.lru_cache(maxsize=256)
 def _glob_to_regex(pattern: str) -> Any:
     """Convert a Playwright-style glob pattern to a compiled regex."""
+    if len(pattern) > _MAX_PATTERN_LENGTH:
+        raise ValueError(f"Pattern exceeds {_MAX_PATTERN_LENGTH} characters")
+    wildcard_count = pattern.count("*") + pattern.count("?")
+    if wildcard_count > _MAX_PATTERN_WILDCARDS:
+        raise ValueError(f"Pattern contains too many wildcards ({wildcard_count})")
+
     parts = []
     for i, segment in enumerate(pattern.split("**")):
         if i > 0:

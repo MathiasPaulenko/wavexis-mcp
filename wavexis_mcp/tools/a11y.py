@@ -21,6 +21,8 @@ from wavexis_mcp.models import (
 )
 from wavexis_mcp.session import SessionManager
 
+_MAX_A11Y_DEPTH = 100
+
 
 def _extract_role(node: dict[str, Any]) -> str:
     """Extract a human-readable role string from a CDP a11y node.
@@ -160,7 +162,7 @@ def _format_a11y_tree(
             "level": level,
         }
         children = node.get("children", [])
-        if children:
+        if children and level < _MAX_A11Y_DEPTH:
             entry["children"] = _format_a11y_tree(children, level + 1, ref_counter)
         result.append(entry)
     return result
@@ -339,6 +341,13 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                     validate_url(input.url)
                     await session_manager.call_backend(backend.navigate(input.url))
                 result = await session_manager.call_backend(backend.axe_audit())
+                if not isinstance(result, dict):
+                    result = {
+                        "violations": [],
+                        "passes": [],
+                        "incomplete": [],
+                        "inapplicable": [],
+                    }
                 return format_json_response(result)
             finally:
                 await session_manager.release_backend(backend, sid)

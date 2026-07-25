@@ -14,6 +14,7 @@ import inspect
 import json
 import logging
 import time
+import uuid
 from typing import Any
 
 from mcp.server.fastmcp import FastMCP
@@ -152,7 +153,7 @@ def register(
         """
         try:
             session = session_manager.get(input.session_id)
-            recording_id = f"rec-{int(time.time() * 1000)}"
+            recording_id = f"rec-{uuid.uuid4().hex}"
             recording: dict[str, Any] = {
                 "session_id": input.session_id,
                 "start_time": time.time(),
@@ -236,7 +237,7 @@ def register(
                     )
 
                 rec = recordings.pop(recording_id)
-            _detach_screencast_handler(rec)
+                _detach_screencast_handler(rec)
             start_time = rec["start_time"]
             duration_ms = int((time.time() - start_time) * 1000)
 

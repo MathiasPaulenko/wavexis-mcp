@@ -153,7 +153,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_backends", e)
 
-    async def _build_result(result: object, output_path: str | None) -> dict[str, Any] | str:
+    async def _build_result(result: object, output_path: str | None) -> dict[str, Any]:
         """Format a raw backend result into a JSON-ready payload or file path.
 
         Bytes are returned as base64 or written to disk; lists of bytes are
@@ -164,7 +164,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             output_path: Optional destination for binary outputs.
 
         Returns:
-            A metadata dict, a file path string, or a list of frame metadata.
+            A metadata dictionary describing the result.
         """
         if isinstance(result, bytes):
             if output_path:

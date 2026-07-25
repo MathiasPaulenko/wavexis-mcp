@@ -10,6 +10,7 @@ coverage and catches import/registration errors.
 from __future__ import annotations
 
 import inspect
+import json
 from typing import Any, Literal, Union, get_args, get_origin
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -338,6 +339,14 @@ async def test_all_tools_smoke(
 
             if not isinstance(result, str):
                 failures.append((name, f"non-string result: {type(result)}"))
+                continue
+
+            try:
+                parsed = json.loads(result)
+                if not isinstance(parsed, dict):
+                    failures.append((name, f"result is not a JSON object: {result[:200]!r}"))
+            except json.JSONDecodeError:
+                failures.append((name, f"result is not valid JSON: {result[:200]!r}"))
 
     if failures:
         msg = "\n".join(f"  {n}: {e}" for n, e in failures[:20])
@@ -395,6 +404,14 @@ async def test_all_tools_error_smoke(
                 continue
             if not isinstance(result, str):
                 failures.append((name, f"non-string result: {type(result)}"))
+                continue
+
+            try:
+                parsed = json.loads(result)
+                if not isinstance(parsed, dict):
+                    failures.append((name, f"result is not a JSON object: {result[:200]!r}"))
+            except json.JSONDecodeError:
+                failures.append((name, f"result is not valid JSON: {result[:200]!r}"))
 
         if failures:
             msg = "\n".join(f"  {n}: {e}" for n, e in failures[:20])
@@ -447,6 +464,14 @@ async def test_all_tools_output_path_smoke(
 
             if not isinstance(result, str):
                 failures.append((name, f"non-string result: {type(result)}"))
+                continue
+
+            try:
+                parsed = json.loads(result)
+                if not isinstance(parsed, dict):
+                    failures.append((name, f"result is not a JSON object: {result[:200]!r}"))
+            except json.JSONDecodeError:
+                failures.append((name, f"result is not valid JSON: {result[:200]!r}"))
 
         if failures:
             msg = "\n".join(f"  {n}: {e}" for n, e in failures[:20])

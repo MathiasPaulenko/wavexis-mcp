@@ -9,7 +9,7 @@ from __future__ import annotations
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
 
-from wavexis_mcp.formatter import format_error, format_json_response
+from wavexis_mcp.formatter import format_error, format_json_response, validate_url
 from wavexis_mcp.models import (
     ActivateTabInput,
     CloseTabInput,
@@ -70,6 +70,8 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """
         try:
             session = session_manager.get(input.session_id)
+            if input.url and input.url.lower() not in ("about:blank", ""):
+                validate_url(input.url)
             tab_id = await session_manager.call_backend(session.backend.new_tab(input.url))
             return format_json_response({"tab_id": tab_id, "url": input.url})
         except Exception as e:

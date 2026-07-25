@@ -25,6 +25,23 @@ from wavexis_mcp.models import (
 )
 from wavexis_mcp.session import SessionManager
 
+_POLL_INITIAL_INTERVAL = 0.05
+_POLL_MAX_INTERVAL = 1.0
+_POLL_BACKOFF_MULTIPLIER = 1.5
+
+
+def _is_truthy(value: object) -> bool:
+    """Normalize a JavaScript truthiness result to a Python bool.
+
+    JavaScript may return ``true``, ``"true"``, ``1``, or other truthy
+    values; this helper accepts all of them without being overly permissive.
+    """
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.lower() in ("true", "1", "yes")
+    return bool(value)
+
 
 def register(mcp: FastMCP, session_manager: SessionManager) -> None:
     """Register all testing tools on the FastMCP server.
@@ -62,15 +79,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             )
             deadline = time.monotonic() + input.timeout / 1000
             visible = False
-            interval = 0.05
-            max_interval = 1.0
+            interval = _POLL_INITIAL_INTERVAL
             while time.monotonic() < deadline:
                 result = await session.backend.eval(js)
-                if result is True or result == "true":
+                if _is_truthy(result):
                     visible = True
                     break
                 await asyncio.sleep(interval)
-                interval = min(interval * 1.5, max_interval)
+                interval = min(interval * _POLL_BACKOFF_MULTIPLIER, _POLL_MAX_INTERVAL)
 
             if visible:
                 return format_json_response(
@@ -119,15 +135,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             js = f"(function(){{return document.body.innerText.indexOf({escaped})!==-1;}})()"
             deadline = time.monotonic() + input.timeout / 1000
             visible = False
-            interval = 0.05
-            max_interval = 1.0
+            interval = _POLL_INITIAL_INTERVAL
             while time.monotonic() < deadline:
                 result = await session.backend.eval(js)
-                if result is True or result == "true":
+                if _is_truthy(result):
                     visible = True
                     break
                 await asyncio.sleep(interval)
-                interval = min(interval * 1.5, max_interval)
+                interval = min(interval * _POLL_BACKOFF_MULTIPLIER, _POLL_MAX_INTERVAL)
 
             if visible:
                 return format_json_response(
@@ -183,16 +198,15 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             )
             deadline = time.monotonic() + input.timeout / 1000
             passed = False
-            interval = 0.05
-            max_interval = 1.0
+            interval = _POLL_INITIAL_INTERVAL
             result: list[bool] | None = None
             while time.monotonic() < deadline:
                 result = await session.backend.eval(js)
-                if result is True or result == "true":
+                if _is_truthy(result):
                     passed = True
                     break
                 await asyncio.sleep(interval)
-                interval = min(interval * 1.5, max_interval)
+                interval = min(interval * _POLL_BACKOFF_MULTIPLIER, _POLL_MAX_INTERVAL)
 
             if passed:
                 return format_json_response(
@@ -253,8 +267,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             )
             deadline = time.monotonic() + input.timeout / 1000
             passed = False
-            interval = 0.05
-            max_interval = 1.0
+            interval = _POLL_INITIAL_INTERVAL
             result: list[bool] | None = None
             while time.monotonic() < deadline:
                 result = await session.backend.eval(js)
@@ -262,7 +275,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                     passed = True
                     break
                 await asyncio.sleep(interval)
-                interval = min(interval * 1.5, max_interval)
+                interval = min(interval * _POLL_BACKOFF_MULTIPLIER, _POLL_MAX_INTERVAL)
 
             if passed:
                 return format_json_response(

@@ -327,6 +327,8 @@ class SessionManager:
             A tuple of ``(backend, session_id_or_None)``.
         """
         async with self._cond:
+            if self._shutting_down:
+                raise RuntimeError("SessionManager is shutting down")
             if session_id:
                 session = self.get(session_id)
                 session.ref_count += 1

@@ -202,11 +202,13 @@ async def test_set_files(mock_backend: AsyncMock, tmp_path: Any) -> None:
     mgr._backend_manager.select = MagicMock(return_value=mock_backend)
     register(mcp, mgr)
 
+    file_path = tmp_path / "a.txt"
+    file_path.write_text("hello")
     tool = mcp._tool_manager.get_tool("wavexis_set_files")
     result = await tool.fn(
         SetFilesInput(
             selector="input[type=file]",
-            files=[str(tmp_path / "a.txt")],
+            files=[str(file_path)],
             url="https://example.com",
         )
     )
@@ -366,12 +368,14 @@ async def test_drop(mock_backend: AsyncMock, tmp_path: Any) -> None:
     mock_backend.eval = AsyncMock(return_value={"x": 100, "y": 200})
     mock_backend.input_dispatch_drag_event = AsyncMock(return_value=None)
 
+    file_path = tmp_path / "file.txt"
+    file_path.write_text("drop data")
     tool = mcp._tool_manager.get_tool("wavexis_drop")
     result = await tool.fn(
         DropInput(
             selector="#dropzone",
             data={"text/plain": "hello"},
-            paths=[str(tmp_path / "file.txt")],
+            paths=[str(file_path)],
             url="https://example.com",
         )
     )

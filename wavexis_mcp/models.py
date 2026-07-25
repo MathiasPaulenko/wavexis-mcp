@@ -11,16 +11,50 @@ from __future__ import annotations
 
 from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
 
 SelectorStr = Annotated[str, StringConstraints(min_length=1, strip_whitespace=True)]
 
 _WaitStrategy = Literal["load", "domcontentloaded", "networkidle", "selector", "url", "none"]
 
+# Reasonable limits to prevent DoS from maliciously large payloads.
+_MAX_STRING_LENGTH = 50_000
+_MAX_CONTAINER_SIZE = 1_000
+
+
+def _limit_input_size(data: Any) -> Any:
+    """Reject oversized strings, lists, and dicts before field validation."""
+    if isinstance(data, dict):
+        if len(data) > _MAX_CONTAINER_SIZE:
+            raise ValueError(f"input exceeds {_MAX_CONTAINER_SIZE} fields")
+        return {k: _limit_input_size(v) for k, v in data.items()}
+    if isinstance(data, list):
+        if len(data) > _MAX_CONTAINER_SIZE:
+            raise ValueError(f"input list exceeds {_MAX_CONTAINER_SIZE} items")
+        return [_limit_input_size(v) for v in data]
+    if isinstance(data, str) and len(data) > _MAX_STRING_LENGTH:
+        raise ValueError(f"input string exceeds {_MAX_STRING_LENGTH} characters")
+    return data
+
+
+class BaseInput(BaseModel):
+    """Base class for all tool inputs.
+
+    Provides a reusable ``model_validator`` that limits string lengths and
+    container sizes so a single request cannot exhaust server memory or
+    browser resources.
+    """
+
+    @model_validator(mode="before")
+    @classmethod
+    def _limit(cls, data: Any) -> Any:
+        return _limit_input_size(data)
+
+
 # ── Session management ──────────────────────────────────────────
 
 
-class SessionOpenInput(BaseModel):
+class SessionOpenInput(BaseInput):
     """Input for opening a new browser session."""
 
     backend: Literal["cdp", "bidi", "auto"] = Field(
@@ -43,13 +77,13 @@ class SessionOpenInput(BaseModel):
     stealth: bool = Field(default=False, description="Enable anti-bot stealth mode")
 
 
-class SessionCloseInput(BaseModel):
+class SessionCloseInput(BaseInput):
     """Input for closing an existing browser session."""
 
     session_id: str = Field(..., description="Session ID from wavexis_session_open")
 
 
-class SessionInfoInput(BaseModel):
+class SessionInfoInput(BaseInput):
     """Input for querying session metadata."""
 
     session_id: str = Field(...)
@@ -58,7 +92,7 @@ class SessionInfoInput(BaseModel):
 # ── Navigation ──────────────────────────────────────────────────
 
 
-class NavigateInput(BaseModel):
+class NavigateInput(BaseInput):
     """Input for navigating to a URL."""
 
     url: str = Field(..., description="URL to navigate to")
@@ -71,20 +105,20 @@ class NavigateInput(BaseModel):
     backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
-class SimpleNavInput(BaseModel):
+class SimpleNavInput(BaseInput):
     """Input for session-only navigation actions (back, forward, stop)."""
 
     session_id: str = Field(..., description="Active session ID")
 
 
-class ReloadInput(BaseModel):
+class ReloadInput(BaseInput):
     """Input for reloading the current page."""
 
     session_id: str = Field(...)
     ignore_cache: bool = Field(default=False, description="Bypass cache on reload")
 
 
-class WaitInput(BaseModel):
+class WaitInput(BaseInput):
     """Input for waiting on a page condition."""
 
     session_id: str = Field(...)
@@ -100,7 +134,7 @@ class WaitInput(BaseModel):
 # ── Capture ─────────────────────────────────────────────────────
 
 
-class ScreenshotInput(BaseModel):
+class ScreenshotInput(BaseInput):
     """Input for taking a screenshot."""
 
     url: str | None = Field(
@@ -129,7 +163,7 @@ class ScreenshotInput(BaseModel):
     backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
-class PDFInput(BaseModel):
+class PDFInput(BaseInput):
     """Input for generating a PDF."""
 
     url: str | None = Field(default=None)
@@ -150,7 +184,7 @@ class PDFInput(BaseModel):
     backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
-class PagePDFInput(BaseModel):
+class PagePDFInput(BaseInput):
     """Input for generating a PDF via the low-level Page.printToPDF CDP method."""
 
     url: str | None = Field(default=None)
@@ -171,7 +205,7 @@ class PagePDFInput(BaseModel):
     backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
-class PageSnapshotInput(BaseModel):
+class PageSnapshotInput(BaseInput):
     """Input for capturing a page snapshot as MHTML or text."""
 
     url: str | None = Field(default=None)
@@ -185,7 +219,7 @@ class PageSnapshotInput(BaseModel):
     backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
-class ScrapeInput(BaseModel):
+class ScrapeInput(BaseInput):
     """Input for scraping multiple URLs."""
 
     urls: list[str] = Field(..., min_length=1, max_length=50, description="URLs to scrape")
@@ -204,7 +238,7 @@ class ScrapeInput(BaseModel):
     offset: int = Field(default=0, ge=0, description="Skip first N results for pagination")
 
 
-class ScreencastInput(BaseModel):
+class ScreencastInput(BaseInput):
     """Input for capturing a frame sequence."""
 
     url: str | None = Field(default=None)
@@ -224,7 +258,7 @@ class ScreencastInput(BaseModel):
 # ── JavaScript ──────────────────────────────────────────────────
 
 
-class EvalInput(BaseModel):
+class EvalInput(BaseInput):
     """Input for evaluating a JavaScript expression."""
 
     expression: str = Field(..., description="JavaScript expression to evaluate")
@@ -241,7 +275,7 @@ class EvalInput(BaseModel):
 # ── DOM ─────────────────────────────────────────────────────────
 
 
-class DOMGetInput(BaseModel):
+class DOMGetInput(BaseInput):
     """Input for getting HTML of an element."""
 
     selector: SelectorStr = Field(..., description="CSS selector for the target element")
@@ -253,7 +287,7 @@ class DOMGetInput(BaseModel):
     backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
-class DOMQueryInput(BaseModel):
+class DOMQueryInput(BaseInput):
     """Input for querying elements by CSS selector."""
 
     selector: SelectorStr = Field(...)
@@ -267,7 +301,7 @@ class DOMQueryInput(BaseModel):
     backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
-class DOMSetAttrInput(BaseModel):
+class DOMSetAttrInput(BaseInput):
     """Input for setting an attribute on an element."""
 
     selector: SelectorStr = Field(...)
@@ -276,7 +310,7 @@ class DOMSetAttrInput(BaseModel):
     session_id: str = Field(...)
 
 
-class DOMGetAttrInput(BaseModel):
+class DOMGetAttrInput(BaseInput):
     """Input for getting an attribute value from an element."""
 
     selector: SelectorStr = Field(...)
@@ -284,7 +318,7 @@ class DOMGetAttrInput(BaseModel):
     session_id: str = Field(...)
 
 
-class DOMRemoveAttrInput(BaseModel):
+class DOMRemoveAttrInput(BaseInput):
     """Input for removing an attribute from an element."""
 
     selector: SelectorStr = Field(...)
@@ -292,21 +326,21 @@ class DOMRemoveAttrInput(BaseModel):
     session_id: str = Field(...)
 
 
-class DOMRemoveInput(BaseModel):
+class DOMRemoveInput(BaseInput):
     """Input for removing an element from the DOM."""
 
     selector: SelectorStr = Field(...)
     session_id: str = Field(...)
 
 
-class DOMFocusInput(BaseModel):
+class DOMFocusInput(BaseInput):
     """Input for focusing an element."""
 
     selector: SelectorStr = Field(...)
     session_id: str = Field(...)
 
 
-class DOMScrollInput(BaseModel):
+class DOMScrollInput(BaseInput):
     """Input for scrolling to an element or by offset."""
 
     session_id: str = Field(...)
@@ -315,7 +349,7 @@ class DOMScrollInput(BaseModel):
     y: int = Field(default=0, description="Vertical scroll offset")
 
 
-class DOMSnapshotInput(BaseModel):
+class DOMSnapshotInput(BaseInput):
     """Input for capturing a full DOM snapshot."""
 
     session_id: str = Field(...)
@@ -324,7 +358,7 @@ class DOMSnapshotInput(BaseModel):
 # ── Input ───────────────────────────────────────────────────────
 
 
-class ClickInput(BaseModel):
+class ClickInput(BaseInput):
     """Input for clicking an element."""
 
     selector: SelectorStr = Field(..., description="CSS selector for element to click")
@@ -339,7 +373,7 @@ class ClickInput(BaseModel):
     backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
-class DoubleClickInput(BaseModel):
+class DoubleClickInput(BaseInput):
     """Input for double-clicking an element."""
 
     selector: SelectorStr = Field(..., description="CSS selector for element to double-click")
@@ -351,7 +385,7 @@ class DoubleClickInput(BaseModel):
     backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
-class RightClickInput(BaseModel):
+class RightClickInput(BaseInput):
     """Input for right-clicking an element."""
 
     selector: SelectorStr = Field(..., description="CSS selector for element to right-click")
@@ -363,7 +397,7 @@ class RightClickInput(BaseModel):
     backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
-class TypeInput(BaseModel):
+class TypeInput(BaseInput):
     """Input for typing text into an element."""
 
     selector: SelectorStr = Field(...)
@@ -376,7 +410,7 @@ class TypeInput(BaseModel):
     backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
-class FillInput(BaseModel):
+class FillInput(BaseInput):
     """Input for filling an input element."""
 
     selector: SelectorStr = Field(...)
@@ -388,7 +422,7 @@ class FillInput(BaseModel):
     backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
-class FindByTextInput(BaseModel):
+class FindByTextInput(BaseInput):
     """Input for finding elements by visible text content."""
 
     query: str = Field(..., description="Text to search for in visible page content")
@@ -396,7 +430,7 @@ class FindByTextInput(BaseModel):
     session_id: str = Field(...)
 
 
-class NLClickInput(BaseModel):
+class NLClickInput(BaseInput):
     """Input for clicking an element by natural language query."""
 
     query: str = Field(..., description="Natural language description of the element to click")
@@ -406,7 +440,7 @@ class NLClickInput(BaseModel):
     session_id: str = Field(...)
 
 
-class NLFillInput(BaseModel):
+class NLFillInput(BaseInput):
     """Input for filling an element by natural language query."""
 
     query: str = Field(..., description="Natural language description of the element to fill")
@@ -424,7 +458,7 @@ class FormField(BaseModel):
     value: str = Field(..., description="Value to fill")
 
 
-class FillFormInput(BaseModel):
+class FillFormInput(BaseInput):
     """Input for filling multiple form fields in one call."""
 
     fields: list[FormField] = Field(..., min_length=1, description="Form fields to fill")
@@ -435,7 +469,7 @@ class FillFormInput(BaseModel):
     backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
-class SelectOptionInput(BaseModel):
+class SelectOptionInput(BaseInput):
     """Input for selecting an option in a ``<select>`` element."""
 
     selector: SelectorStr = Field(..., description="CSS selector for <select> element")
@@ -447,7 +481,7 @@ class SelectOptionInput(BaseModel):
     backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
-class HoverInput(BaseModel):
+class HoverInput(BaseInput):
     """Input for hovering over an element."""
 
     selector: SelectorStr = Field(...)
@@ -458,14 +492,14 @@ class HoverInput(BaseModel):
     backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
-class KeyPressInput(BaseModel):
+class KeyPressInput(BaseInput):
     """Input for pressing a keyboard key."""
 
     key: str = Field(..., description="Key to press (e.g. 'Enter', 'Tab', 'Escape', 'a')")
     session_id: str = Field(...)
 
 
-class DragInput(BaseModel):
+class DragInput(BaseInput):
     """Input for dragging an element from source to target."""
 
     source: str = Field(..., description="CSS selector for drag source")
@@ -477,7 +511,7 @@ class DragInput(BaseModel):
     backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
-class TapInput(BaseModel):
+class TapInput(BaseInput):
     """Input for tapping an element (touch emulation)."""
 
     selector: SelectorStr = Field(..., description="CSS selector for element to tap")
@@ -488,7 +522,7 @@ class TapInput(BaseModel):
     backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
-class SetFilesInput(BaseModel):
+class SetFilesInput(BaseInput):
     """Input for uploading files to a file input element."""
 
     selector: SelectorStr = Field(..., description="CSS selector for <input type='file'> element")
@@ -500,7 +534,7 @@ class SetFilesInput(BaseModel):
     backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
-class DropInput(BaseModel):
+class DropInput(BaseInput):
     """Input for dropping files or MIME-typed data onto an element."""
 
     selector: SelectorStr = Field(..., description="CSS selector for the drop target")
@@ -515,7 +549,7 @@ class DropInput(BaseModel):
     backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
-class CheckInput(BaseModel):
+class CheckInput(BaseInput):
     """Input for checking/unchecking a checkbox or radio."""
 
     selector: SelectorStr = Field(..., description="CSS selector for checkbox/radio")
@@ -525,7 +559,7 @@ class CheckInput(BaseModel):
 # ── Cookies ─────────────────────────────────────────────────────
 
 
-class CookiesGetInput(BaseModel):
+class CookiesGetInput(BaseInput):
     """Input for getting cookies."""
 
     session_id: str | None = Field(default=None)
@@ -535,7 +569,7 @@ class CookiesGetInput(BaseModel):
     backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
-class CookiesSetInput(BaseModel):
+class CookiesSetInput(BaseInput):
     """Input for setting a cookie."""
 
     name: str = Field(...)
@@ -552,7 +586,7 @@ class CookiesSetInput(BaseModel):
     backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
-class CookiesDeleteInput(BaseModel):
+class CookiesDeleteInput(BaseInput):
     """Input for deleting cookies."""
 
     name: str = Field(...)
@@ -564,7 +598,7 @@ class CookiesDeleteInput(BaseModel):
     backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
-class CookiesClearInput(BaseModel):
+class CookiesClearInput(BaseInput):
     """Input for clearing all cookies."""
 
     session_id: str = Field(...)
@@ -573,27 +607,27 @@ class CookiesClearInput(BaseModel):
 # ── Tabs ────────────────────────────────────────────────────────
 
 
-class ListTabsInput(BaseModel):
+class ListTabsInput(BaseInput):
     """Input for listing browser tabs."""
 
     session_id: str = Field(...)
 
 
-class NewTabInput(BaseModel):
+class NewTabInput(BaseInput):
     """Input for creating a new browser tab."""
 
     session_id: str = Field(...)
     url: str = Field(default="about:blank")
 
 
-class CloseTabInput(BaseModel):
+class CloseTabInput(BaseInput):
     """Input for closing a browser tab."""
 
     session_id: str = Field(...)
     tab_id: str = Field(...)
 
 
-class ActivateTabInput(BaseModel):
+class ActivateTabInput(BaseInput):
     """Input for activating (focusing) a browser tab."""
 
     session_id: str = Field(...)
@@ -603,7 +637,7 @@ class ActivateTabInput(BaseModel):
 # ── Utility ─────────────────────────────────────────────────────
 
 
-class BrowserVersionInput(BaseModel):
+class BrowserVersionInput(BaseInput):
     """Input for getting the browser version."""
 
     session_id: str | None = Field(default=None)
@@ -613,28 +647,28 @@ class BrowserVersionInput(BaseModel):
 # ── Network ─────────────────────────────────────────────────────
 
 
-class SetHeadersInput(BaseModel):
+class SetHeadersInput(BaseInput):
     """Input for setting extra HTTP headers."""
 
     headers: dict[str, str] = Field(...)
     session_id: str = Field(...)
 
 
-class SetUserAgentInput(BaseModel):
+class SetUserAgentInput(BaseInput):
     """Input for setting a custom User-Agent string."""
 
     user_agent: str = Field(...)
     session_id: str = Field(...)
 
 
-class BlockRequestsInput(BaseModel):
+class BlockRequestsInput(BaseInput):
     """Input for blocking requests matching URL patterns."""
 
     patterns: list[str] = Field(..., description="URL patterns to block (glob-style)")
     session_id: str = Field(...)
 
 
-class ThrottleNetworkInput(BaseModel):
+class ThrottleNetworkInput(BaseInput):
     """Input for throttling network speed."""
 
     session_id: str = Field(...)
@@ -645,21 +679,21 @@ class ThrottleNetworkInput(BaseModel):
     offline: bool = Field(default=False)
 
 
-class SetNetworkStateInput(BaseModel):
+class SetNetworkStateInput(BaseInput):
     """Input for overriding the browser network state (online/offline)."""
 
     session_id: str = Field(...)
     state: str = Field(default="online", pattern=r"^(online|offline)$")
 
 
-class SetCacheDisabledInput(BaseModel):
+class SetCacheDisabledInput(BaseInput):
     """Input for enabling or disabling the browser cache."""
 
     session_id: str = Field(...)
     disabled: bool = Field(default=True)
 
 
-class CaptureHARInput(BaseModel):
+class CaptureHARInput(BaseInput):
     """Input for capturing HAR data for a page load."""
 
     url: str = Field(..., description="URL to navigate to for HAR capture")
@@ -671,7 +705,7 @@ class CaptureHARInput(BaseModel):
     backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
-class InterceptRequestsInput(BaseModel):
+class InterceptRequestsInput(BaseInput):
     """Input for registering a request interception pattern."""
 
     session_id: str = Field(...)
@@ -680,7 +714,7 @@ class InterceptRequestsInput(BaseModel):
     )
 
 
-class MockResponseInput(BaseModel):
+class MockResponseInput(BaseInput):
     """Input for registering a mock response for a URL pattern."""
 
     session_id: str = Field(...)
@@ -691,7 +725,7 @@ class MockResponseInput(BaseModel):
     headers: dict[str, str] = Field(default_factory=dict)
 
 
-class NetworkRequestsInput(BaseModel):
+class NetworkRequestsInput(BaseInput):
     """Input for listing network requests with pagination."""
 
     session_id: str = Field(...)
@@ -707,7 +741,7 @@ class NetworkRequestsInput(BaseModel):
     )
 
 
-class NetworkRequestInput(BaseModel):
+class NetworkRequestInput(BaseInput):
     """Input for getting full details of a single network request by index."""
 
     session_id: str = Field(...)
@@ -717,13 +751,13 @@ class NetworkRequestInput(BaseModel):
     )
 
 
-class NetworkClearInput(BaseModel):
+class NetworkClearInput(BaseInput):
     """Input for clearing the network event log."""
 
     session_id: str = Field(...)
 
 
-class RouteInput(BaseModel):
+class RouteInput(BaseInput):
     """Input for adding a network route/mock."""
 
     session_id: str = Field(...)
@@ -739,14 +773,14 @@ class RouteInput(BaseModel):
     )
 
 
-class UnrouteInput(BaseModel):
+class UnrouteInput(BaseInput):
     """Input for removing network routes."""
 
     session_id: str = Field(...)
     pattern: str | None = Field(default=None, description="Pattern to remove; omit to remove all")
 
 
-class RouteListInput(BaseModel):
+class RouteListInput(BaseInput):
     """Input for listing active network routes."""
 
     session_id: str = Field(...)
@@ -755,14 +789,14 @@ class RouteListInput(BaseModel):
 # ── Storage ─────────────────────────────────────────────────────
 
 
-class LocalStorageGetInput(BaseModel):
+class LocalStorageGetInput(BaseInput):
     """Input for getting a localStorage value."""
 
     key: str = Field(...)
     session_id: str = Field(...)
 
 
-class LocalStorageSetInput(BaseModel):
+class LocalStorageSetInput(BaseInput):
     """Input for setting a localStorage key/value pair."""
 
     key: str = Field(...)
@@ -770,33 +804,33 @@ class LocalStorageSetInput(BaseModel):
     session_id: str = Field(...)
 
 
-class LocalStorageDeleteInput(BaseModel):
+class LocalStorageDeleteInput(BaseInput):
     """Input for deleting a localStorage key."""
 
     key: str = Field(...)
     session_id: str = Field(...)
 
 
-class LocalStorageClearInput(BaseModel):
+class LocalStorageClearInput(BaseInput):
     """Input for clearing all localStorage entries."""
 
     session_id: str = Field(...)
 
 
-class LocalStorageListInput(BaseModel):
+class LocalStorageListInput(BaseInput):
     """Input for listing all localStorage entries."""
 
     session_id: str = Field(...)
 
 
-class SessionStorageGetInput(BaseModel):
+class SessionStorageGetInput(BaseInput):
     """Input for getting a sessionStorage value."""
 
     key: str = Field(...)
     session_id: str = Field(...)
 
 
-class SessionStorageSetInput(BaseModel):
+class SessionStorageSetInput(BaseInput):
     """Input for setting a sessionStorage key/value pair."""
 
     key: str = Field(...)
@@ -804,52 +838,52 @@ class SessionStorageSetInput(BaseModel):
     session_id: str = Field(...)
 
 
-class SessionStorageDeleteInput(BaseModel):
+class SessionStorageDeleteInput(BaseInput):
     """Input for deleting a sessionStorage key."""
 
     key: str = Field(...)
     session_id: str = Field(...)
 
 
-class SessionStorageClearInput(BaseModel):
+class SessionStorageClearInput(BaseInput):
     """Input for clearing all sessionStorage entries."""
 
     session_id: str = Field(...)
 
 
-class SessionStorageListInput(BaseModel):
+class SessionStorageListInput(BaseInput):
     """Input for listing all sessionStorage entries."""
 
     session_id: str = Field(...)
 
 
-class CacheStorageListInput(BaseModel):
+class CacheStorageListInput(BaseInput):
     """Input for listing Cache Storage cache names."""
 
     session_id: str = Field(...)
 
 
-class CacheStorageEntriesInput(BaseModel):
+class CacheStorageEntriesInput(BaseInput):
     """Input for listing entries in a Cache Storage cache."""
 
     cache_name: str = Field(...)
     session_id: str = Field(...)
 
 
-class CacheStorageDeleteInput(BaseModel):
+class CacheStorageDeleteInput(BaseInput):
     """Input for deleting a Cache Storage cache."""
 
     cache_name: str = Field(...)
     session_id: str = Field(...)
 
 
-class IndexedDBListInput(BaseModel):
+class IndexedDBListInput(BaseInput):
     """Input for listing IndexedDB databases."""
 
     session_id: str = Field(...)
 
 
-class IndexedDBGetDataInput(BaseModel):
+class IndexedDBGetDataInput(BaseInput):
     """Input for getting data from an IndexedDB object store."""
 
     database: str = Field(...)
@@ -858,7 +892,7 @@ class IndexedDBGetDataInput(BaseModel):
     session_id: str = Field(...)
 
 
-class IndexedDBClearInput(BaseModel):
+class IndexedDBClearInput(BaseInput):
     """Input for clearing an IndexedDB object store."""
 
     database: str = Field(...)
@@ -866,14 +900,14 @@ class IndexedDBClearInput(BaseModel):
     session_id: str = Field(...)
 
 
-class StorageStateSaveInput(BaseModel):
+class StorageStateSaveInput(BaseInput):
     """Input for saving browser state to a JSON file."""
 
     session_id: str = Field(...)
     output_path: str = Field(..., description="File path to save state JSON")
 
 
-class StorageStateRestoreInput(BaseModel):
+class StorageStateRestoreInput(BaseInput):
     """Input for restoring browser state from a JSON file."""
 
     session_id: str = Field(...)
@@ -883,7 +917,7 @@ class StorageStateRestoreInput(BaseModel):
 # ── Emulation ───────────────────────────────────────────────────
 
 
-class EmulateDeviceInput(BaseModel):
+class EmulateDeviceInput(BaseInput):
     """Input for emulating a specific device."""
 
     session_id: str = Field(...)
@@ -894,7 +928,7 @@ class EmulateDeviceInput(BaseModel):
     )
 
 
-class SetViewportInput(BaseModel):
+class SetViewportInput(BaseInput):
     """Input for setting a custom viewport size."""
 
     session_id: str = Field(...)
@@ -903,7 +937,7 @@ class SetViewportInput(BaseModel):
     device_scale_factor: float = Field(default=1.0, ge=0.1, le=10.0)
 
 
-class SetGeolocationInput(BaseModel):
+class SetGeolocationInput(BaseInput):
     """Input for overriding the browser geolocation."""
 
     session_id: str = Field(...)
@@ -912,28 +946,28 @@ class SetGeolocationInput(BaseModel):
     accuracy: float = Field(default=100.0, ge=0)
 
 
-class SetTimezoneInput(BaseModel):
+class SetTimezoneInput(BaseInput):
     """Input for overriding the browser timezone."""
 
     session_id: str = Field(...)
     timezone: str = Field(..., description="IANA timezone ID (e.g. 'America/New_York')")
 
 
-class SetDarkModeInput(BaseModel):
+class SetDarkModeInput(BaseInput):
     """Input for enabling or disabling dark mode emulation."""
 
     session_id: str = Field(...)
     enabled: bool = Field(default=True)
 
 
-class SetLocaleInput(BaseModel):
+class SetLocaleInput(BaseInput):
     """Input for overriding the browser locale."""
 
     session_id: str = Field(...)
     locale: str = Field(..., description="Locale code (e.g. 'en-US', 'fr-FR', 'ja-JP')")
 
 
-class SetCPUThrottleInput(BaseModel):
+class SetCPUThrottleInput(BaseInput):
     """Input for enabling CPU throttling."""
 
     session_id: str = Field(...)
@@ -942,14 +976,14 @@ class SetCPUThrottleInput(BaseModel):
     )
 
 
-class SetTouchEmulationInput(BaseModel):
+class SetTouchEmulationInput(BaseInput):
     """Input for enabling or disabling touch emulation."""
 
     session_id: str = Field(...)
     enabled: bool = Field(default=True)
 
 
-class SetSensorsInput(BaseModel):
+class SetSensorsInput(BaseInput):
     """Input for overriding sensor values."""
 
     session_id: str = Field(...)
@@ -964,7 +998,7 @@ class SetSensorsInput(BaseModel):
 # ── A11y ────────────────────────────────────────────────────────
 
 
-class A11ySnapshotInput(BaseModel):
+class A11ySnapshotInput(BaseInput):
     """Input for capturing the full accessibility tree."""
 
     session_id: str | None = Field(default=None)
@@ -976,14 +1010,14 @@ class A11ySnapshotInput(BaseModel):
     backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
-class A11yNodeInput(BaseModel):
+class A11yNodeInput(BaseInput):
     """Input for getting a specific accessibility node."""
 
     node_id: str = Field(..., description="Node ID from a11y_snapshot")
     session_id: str = Field(...)
 
 
-class A11yAncestorsInput(BaseModel):
+class A11yAncestorsInput(BaseInput):
     """Input for getting the ancestor chain of a node."""
 
     node_id: str = Field(...)
@@ -993,20 +1027,20 @@ class A11yAncestorsInput(BaseModel):
 # ── Interactions ────────────────────────────────────────────────
 
 
-class DialogAcceptInput(BaseModel):
+class DialogAcceptInput(BaseInput):
     """Input for accepting a JavaScript dialog."""
 
     session_id: str = Field(...)
     prompt_text: str | None = Field(default=None, description="Text for prompt dialogs")
 
 
-class DialogDismissInput(BaseModel):
+class DialogDismissInput(BaseInput):
     """Input for dismissing a JavaScript dialog."""
 
     session_id: str = Field(...)
 
 
-class InterceptDownloadInput(BaseModel):
+class InterceptDownloadInput(BaseInput):
     """Input for intercepting a download."""
 
     session_id: str = Field(...)
@@ -1016,7 +1050,7 @@ class InterceptDownloadInput(BaseModel):
     )
 
 
-class GrantPermissionInput(BaseModel):
+class GrantPermissionInput(BaseInput):
     """Input for granting a browser permission."""
 
     session_id: str = Field(...)
@@ -1026,7 +1060,7 @@ class GrantPermissionInput(BaseModel):
     )
 
 
-class ResetPermissionsInput(BaseModel):
+class ResetPermissionsInput(BaseInput):
     """Input for resetting all granted permissions."""
 
     session_id: str = Field(...)
@@ -1035,13 +1069,13 @@ class ResetPermissionsInput(BaseModel):
 # ── DevTools — Performance ──────────────────────────────────────
 
 
-class PerfMetricsInput(BaseModel):
+class PerfMetricsInput(BaseInput):
     """Input for getting performance metrics."""
 
     session_id: str = Field(...)
 
 
-class PerfTraceInput(BaseModel):
+class PerfTraceInput(BaseInput):
     """Input for capturing a performance trace."""
 
     session_id: str = Field(...)
@@ -1049,7 +1083,7 @@ class PerfTraceInput(BaseModel):
     output_path: str | None = Field(default=None)
 
 
-class PerfProfileInput(BaseModel):
+class PerfProfileInput(BaseInput):
     """Input for capturing a CPU profile."""
 
     session_id: str = Field(...)
@@ -1057,20 +1091,20 @@ class PerfProfileInput(BaseModel):
     output_path: str | None = Field(default=None)
 
 
-class PerfHeapSnapshotInput(BaseModel):
+class PerfHeapSnapshotInput(BaseInput):
     """Input for capturing a heap snapshot."""
 
     session_id: str = Field(...)
     output_path: str | None = Field(default=None)
 
 
-class PerfCoverageInput(BaseModel):
+class PerfCoverageInput(BaseInput):
     """Input for getting JavaScript code coverage."""
 
     session_id: str = Field(...)
 
 
-class PerfCSSCoverageInput(BaseModel):
+class PerfCSSCoverageInput(BaseInput):
     """Input for getting CSS code coverage."""
 
     session_id: str = Field(...)
@@ -1079,27 +1113,27 @@ class PerfCSSCoverageInput(BaseModel):
 # ── DevTools — CSS ──────────────────────────────────────────────
 
 
-class CSSGetStylesInput(BaseModel):
+class CSSGetStylesInput(BaseInput):
     """Input for getting inline and matched CSS styles."""
 
     selector: SelectorStr = Field(...)
     session_id: str = Field(...)
 
 
-class CSSGetStylesheetsInput(BaseModel):
+class CSSGetStylesheetsInput(BaseInput):
     """Input for listing all stylesheets."""
 
     session_id: str = Field(...)
 
 
-class CSSGetRulesInput(BaseModel):
+class CSSGetRulesInput(BaseInput):
     """Input for getting CSS rules from a stylesheet."""
 
     stylesheet_id: str = Field(...)
     session_id: str = Field(...)
 
 
-class CSSGetComputedInput(BaseModel):
+class CSSGetComputedInput(BaseInput):
     """Input for getting computed styles for an element."""
 
     selector: SelectorStr = Field(...)
@@ -1109,7 +1143,7 @@ class CSSGetComputedInput(BaseModel):
 # ── DevTools — Debugging ────────────────────────────────────────
 
 
-class DebugSetBreakpointInput(BaseModel):
+class DebugSetBreakpointInput(BaseInput):
     """Input for setting a breakpoint by URL and line."""
 
     session_id: str = Field(...)
@@ -1118,33 +1152,33 @@ class DebugSetBreakpointInput(BaseModel):
     condition: str | None = Field(default=None, description="Optional condition expression")
 
 
-class DebugSetBreakpointFunctionInput(BaseModel):
+class DebugSetBreakpointFunctionInput(BaseInput):
     """Input for setting a breakpoint by function name."""
 
     session_id: str = Field(...)
     function_name: str = Field(...)
 
 
-class DebugRemoveBreakpointInput(BaseModel):
+class DebugRemoveBreakpointInput(BaseInput):
     """Input for removing a breakpoint by ID."""
 
     session_id: str = Field(...)
     breakpoint_id: str = Field(...)
 
 
-class DebugStepInput(BaseModel):
+class DebugStepInput(BaseInput):
     """Input for debugger step actions (over, into, out)."""
 
     session_id: str = Field(...)
 
 
-class DebugPauseInput(BaseModel):
+class DebugPauseInput(BaseInput):
     """Input for pausing or resuming script execution."""
 
     session_id: str = Field(...)
 
 
-class DebugGetListenersInput(BaseModel):
+class DebugGetListenersInput(BaseInput):
     """Input for getting event listeners on an element."""
 
     selector: SelectorStr = Field(...)
@@ -1154,7 +1188,7 @@ class DebugGetListenersInput(BaseModel):
 # ── DevTools — Overlay ──────────────────────────────────────────
 
 
-class OverlayHighlightInput(BaseModel):
+class OverlayHighlightInput(BaseInput):
     """Input for highlighting an element with a colored overlay."""
 
     selector: SelectorStr = Field(...)
@@ -1162,7 +1196,7 @@ class OverlayHighlightInput(BaseModel):
     session_id: str = Field(...)
 
 
-class OverlayClearInput(BaseModel):
+class OverlayClearInput(BaseInput):
     """Input for clearing all overlay highlights."""
 
     session_id: str = Field(...)
@@ -1171,7 +1205,7 @@ class OverlayClearInput(BaseModel):
 # ── DevTools — Console & Logs ───────────────────────────────────
 
 
-class ConsoleMessagesInput(BaseModel):
+class ConsoleMessagesInput(BaseInput):
     """Input for getting console messages with pagination."""
 
     session_id: str = Field(...)
@@ -1184,7 +1218,7 @@ class ConsoleMessagesInput(BaseModel):
     offset: int = Field(default=0, ge=0, description="Skip first N messages for pagination")
 
 
-class BrowserLogsInput(BaseModel):
+class BrowserLogsInput(BaseInput):
     """Input for getting browser-level log entries."""
 
     session_id: str = Field(...)
@@ -1193,13 +1227,13 @@ class BrowserLogsInput(BaseModel):
 # ── DevTools — Security ─────────────────────────────────────────
 
 
-class GetSecurityStateInput(BaseModel):
+class GetSecurityStateInput(BaseInput):
     """Input for getting the page security state."""
 
     session_id: str = Field(...)
 
 
-class IgnoreCertErrorsInput(BaseModel):
+class IgnoreCertErrorsInput(BaseInput):
     """Input for enabling or disabling certificate error ignoring."""
 
     session_id: str = Field(...)
@@ -1209,13 +1243,13 @@ class IgnoreCertErrorsInput(BaseModel):
 # ── DevTools — Window ───────────────────────────────────────────
 
 
-class GetWindowBoundsInput(BaseModel):
+class GetWindowBoundsInput(BaseInput):
     """Input for getting the browser window bounds."""
 
     session_id: str = Field(...)
 
 
-class SetWindowBoundsInput(BaseModel):
+class SetWindowBoundsInput(BaseInput):
     """Input for setting the browser window bounds."""
 
     session_id: str = Field(...)
@@ -1228,14 +1262,14 @@ class SetWindowBoundsInput(BaseModel):
 # ── Vision ───────────────────────────────────────────────────────
 
 
-class MouseMoveInput(BaseModel):
+class MouseMoveInput(BaseInput):
     """Input for moving the mouse to an element by CSS selector."""
 
     session_id: str = Field(...)
     selector: SelectorStr = Field(..., description="CSS selector for the target element")
 
 
-class MouseMoveXYInput(BaseModel):
+class MouseMoveXYInput(BaseInput):
     """Input for moving the mouse to absolute pixel coordinates."""
 
     session_id: str = Field(...)
@@ -1243,7 +1277,7 @@ class MouseMoveXYInput(BaseModel):
     y: int = Field(..., description="Y coordinate in CSS pixels")
 
 
-class MouseDownInput(BaseModel):
+class MouseDownInput(BaseInput):
     """Input for pressing a mouse button at coordinates."""
 
     session_id: str = Field(...)
@@ -1252,7 +1286,7 @@ class MouseDownInput(BaseModel):
     y: int = Field(default=0)
 
 
-class MouseUpInput(BaseModel):
+class MouseUpInput(BaseInput):
     """Input for releasing a mouse button at coordinates."""
 
     session_id: str = Field(...)
@@ -1261,7 +1295,7 @@ class MouseUpInput(BaseModel):
     y: int = Field(default=0)
 
 
-class MouseClickXYInput(BaseModel):
+class MouseClickXYInput(BaseInput):
     """Input for clicking at absolute pixel coordinates."""
 
     session_id: str = Field(...)
@@ -1271,7 +1305,7 @@ class MouseClickXYInput(BaseModel):
     click_count: int = Field(default=1, ge=1, le=10)
 
 
-class MouseDoubleClickXYInput(BaseModel):
+class MouseDoubleClickXYInput(BaseInput):
     """Input for double-clicking at absolute pixel coordinates."""
 
     session_id: str = Field(...)
@@ -1280,7 +1314,7 @@ class MouseDoubleClickXYInput(BaseModel):
     button: Literal["left", "right", "middle"] = Field(default="left")
 
 
-class MouseWheelInput(BaseModel):
+class MouseWheelInput(BaseInput):
     """Input for simulating a mouse wheel event at coordinates."""
 
     session_id: str = Field(...)
@@ -1293,7 +1327,7 @@ class MouseWheelInput(BaseModel):
 # ── Video ────────────────────────────────────────────────────────
 
 
-class VideoRecordInput(BaseModel):
+class VideoRecordInput(BaseInput):
     """Input for starting video recording."""
 
     session_id: str = Field(...)
@@ -1302,14 +1336,14 @@ class VideoRecordInput(BaseModel):
     height: int = Field(default=800)
 
 
-class VideoStopInput(BaseModel):
+class VideoStopInput(BaseInput):
     """Input for stopping video recording."""
 
     session_id: str = Field(...)
     output_path: str | None = Field(default=None, description="Output file path")
 
 
-class VideoAddChapterInput(BaseModel):
+class VideoAddChapterInput(BaseInput):
     """Input for adding a chapter marker to a recording."""
 
     session_id: str = Field(...)
@@ -1318,7 +1352,7 @@ class VideoAddChapterInput(BaseModel):
     timestamp_ms: int | None = Field(default=None, description="Timestamp in ms")
 
 
-class VideoActionOverlayInput(BaseModel):
+class VideoActionOverlayInput(BaseInput):
     """Input for toggling action overlay on video."""
 
     session_id: str = Field(...)
@@ -1328,7 +1362,7 @@ class VideoActionOverlayInput(BaseModel):
 # ── Testing ──────────────────────────────────────────────────────
 
 
-class AssertVisibleInput(BaseModel):
+class AssertVisibleInput(BaseInput):
     """Input for asserting element visibility."""
 
     session_id: str = Field(...)
@@ -1336,7 +1370,7 @@ class AssertVisibleInput(BaseModel):
     timeout: int = Field(default=5000, ge=100, le=30000)
 
 
-class AssertTextVisibleInput(BaseModel):
+class AssertTextVisibleInput(BaseInput):
     """Input for asserting text visibility on the page."""
 
     session_id: str = Field(...)
@@ -1344,7 +1378,7 @@ class AssertTextVisibleInput(BaseModel):
     timeout: int = Field(default=5000, ge=100, le=30000)
 
 
-class AssertValueInput(BaseModel):
+class AssertValueInput(BaseInput):
     """Input for asserting the value of a form element."""
 
     session_id: str = Field(...)
@@ -1353,7 +1387,7 @@ class AssertValueInput(BaseModel):
     timeout: int = Field(default=5000, ge=100, le=30000)
 
 
-class AssertListInput(BaseModel):
+class AssertListInput(BaseInput):
     """Input for asserting all text items appear inside a list element."""
 
     session_id: str = Field(...)
@@ -1362,14 +1396,14 @@ class AssertListInput(BaseModel):
     timeout: int = Field(default=5000, ge=100, le=30000)
 
 
-class AssertURLInput(BaseModel):
+class AssertURLInput(BaseInput):
     """Input for asserting the current URL matches a pattern."""
 
     session_id: str = Field(...)
     url_pattern: str = Field(..., description="URL substring or pattern to match")
 
 
-class GenerateLocatorInput(BaseModel):
+class GenerateLocatorInput(BaseInput):
     """Input for generating a robust CSS selector."""
 
     session_id: str = Field(...)
@@ -1380,7 +1414,7 @@ class GenerateLocatorInput(BaseModel):
 # ── Workflows ────────────────────────────────────────────────────
 
 
-class MultiActionInput(BaseModel):
+class MultiActionInput(BaseInput):
     """Input for executing multiple actions from a YAML config."""
 
     config: str = Field(..., description="YAML config string (not file path)")
@@ -1390,7 +1424,7 @@ class MultiActionInput(BaseModel):
     continue_on_error: bool = Field(default=False, description="Continue on action errors")
 
 
-class RawCDPInput(BaseModel):
+class RawCDPInput(BaseInput):
     """Input for sending a raw CDP command."""
 
     session_id: str = Field(...)
@@ -1398,7 +1432,7 @@ class RawCDPInput(BaseModel):
     params: dict[str, Any] | None = Field(default=None)
 
 
-class RawBiDiInput(BaseModel):
+class RawBiDiInput(BaseInput):
     """Input for sending a raw BiDi command."""
 
     session_id: str = Field(...)
@@ -1406,26 +1440,26 @@ class RawBiDiInput(BaseModel):
     params: dict[str, Any] | None = Field(default=None)
 
 
-class BrowserContextCreateInput(BaseModel):
+class BrowserContextCreateInput(BaseInput):
     """Input for creating an isolated browser context."""
 
     session_id: str = Field(...)
 
 
-class BrowserContextCloseInput(BaseModel):
+class BrowserContextCloseInput(BaseInput):
     """Input for closing a browser context."""
 
     session_id: str = Field(...)
     context_id: str = Field(...)
 
 
-class BrowserContextListInput(BaseModel):
+class BrowserContextListInput(BaseInput):
     """Input for listing browser contexts."""
 
     session_id: str = Field(...)
 
 
-class InvokeInput(BaseModel):
+class InvokeInput(BaseInput):
     """Input for invoking any wavexis backend method by name.
 
     This is a generic escape hatch that exposes the hundreds of high-level
@@ -1484,7 +1518,7 @@ class InvokeInput(BaseModel):
 # ── Data ─────────────────────────────────────────────────────────
 
 
-class RecordInput(BaseModel):
+class RecordInput(BaseInput):
     """Input for recording browser interactions."""
 
     session_id: str | None = Field(
@@ -1497,7 +1531,7 @@ class RecordInput(BaseModel):
     backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
-class LighthouseInput(BaseModel):
+class LighthouseInput(BaseInput):
     """Input for running a Lighthouse-style audit."""
 
     url: str = Field(..., description="URL to audit")
@@ -1513,7 +1547,7 @@ class LighthouseInput(BaseModel):
     backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
-class ExtractInput(BaseModel):
+class ExtractInput(BaseInput):
     """Input for structured data extraction via CSS selector schema."""
 
     model_config = ConfigDict(populate_by_name=True)
@@ -1533,7 +1567,7 @@ class ExtractInput(BaseModel):
     backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
-class WebsocketInterceptInput(BaseModel):
+class WebsocketInterceptInput(BaseInput):
     """Input for capturing WebSocket frames."""
 
     url: str = Field(..., description="URL to navigate to")
@@ -1551,7 +1585,7 @@ class WebsocketInterceptInput(BaseModel):
     backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
-class CrawlInput(BaseModel):
+class CrawlInput(BaseInput):
     """Input for crawling a website."""
 
     start_url: str = Field(..., description="Starting URL for the crawl")
@@ -1565,7 +1599,7 @@ class CrawlInput(BaseModel):
     backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
-class VisualDiffInput(BaseModel):
+class VisualDiffInput(BaseInput):
     """Input for visual regression comparison."""
 
     url: str = Field(..., description="URL to navigate to")
@@ -1585,54 +1619,54 @@ class VisualDiffInput(BaseModel):
 # ── Experimental ─────────────────────────────────────────────────
 
 
-class ServiceWorkerListInput(BaseModel):
+class ServiceWorkerListInput(BaseInput):
     """Input for listing service workers."""
 
     session_id: str = Field(...)
 
 
-class ServiceWorkerUnregisterInput(BaseModel):
+class ServiceWorkerUnregisterInput(BaseInput):
     """Input for unregistering a service worker."""
 
     session_id: str = Field(...)
     registration_id: str = Field(...)
 
 
-class ServiceWorkerUpdateInput(BaseModel):
+class ServiceWorkerUpdateInput(BaseInput):
     """Input for triggering a service worker update."""
 
     session_id: str = Field(...)
     registration_id: str = Field(...)
 
 
-class ServiceWorkerEmulateInput(BaseModel):
+class ServiceWorkerEmulateInput(BaseInput):
     """Input for emulating a service worker."""
 
     session_id: str = Field(...)
     script_url: str = Field(..., description="Script URL for the emulated service worker")
 
 
-class AnimationListInput(BaseModel):
+class AnimationListInput(BaseInput):
     """Input for listing active animations."""
 
     session_id: str = Field(...)
 
 
-class AnimationPlayInput(BaseModel):
+class AnimationPlayInput(BaseInput):
     """Input for playing/resuming an animation."""
 
     session_id: str = Field(...)
     animation_id: str = Field(...)
 
 
-class AnimationPauseInput(BaseModel):
+class AnimationPauseInput(BaseInput):
     """Input for pausing an animation."""
 
     session_id: str = Field(...)
     animation_id: str = Field(...)
 
 
-class AnimationSetRateInput(BaseModel):
+class AnimationSetRateInput(BaseInput):
     """Input for setting animation playback rate."""
 
     session_id: str = Field(...)
@@ -1640,7 +1674,7 @@ class AnimationSetRateInput(BaseModel):
     playback_rate: float = Field(default=1.0, ge=0.0, description="Playback rate multiplier")
 
 
-class WebAuthnAddAuthenticatorInput(BaseModel):
+class WebAuthnAddAuthenticatorInput(BaseInput):
     """Input for adding a virtual WebAuthn authenticator."""
 
     session_id: str = Field(...)
@@ -1654,7 +1688,7 @@ class WebAuthnAddAuthenticatorInput(BaseModel):
     )
 
 
-class WebAuthnAddCredentialInput(BaseModel):
+class WebAuthnAddCredentialInput(BaseInput):
     """Input for adding a WebAuthn credential."""
 
     session_id: str = Field(...)
@@ -1662,61 +1696,61 @@ class WebAuthnAddCredentialInput(BaseModel):
     credential: dict[str, Any] = Field(...)
 
 
-class WebAuthnGetCredentialInput(BaseModel):
+class WebAuthnGetCredentialInput(BaseInput):
     """Input for getting WebAuthn credentials."""
 
     session_id: str = Field(...)
     authenticator_id: str = Field(...)
 
 
-class WebAuthnRemoveCredentialInput(BaseModel):
+class WebAuthnRemoveCredentialInput(BaseInput):
     """Input for removing a WebAuthn authenticator."""
 
     session_id: str = Field(...)
     authenticator_id: str = Field(...)
 
 
-class WebAudioCaptureInput(BaseModel):
+class WebAudioCaptureInput(BaseInput):
     """Input for capturing WebAudio context data."""
 
     session_id: str = Field(...)
     context_id: str | None = Field(default=None, description="Specific context ID (empty = all)")
 
 
-class WebAudioStopCaptureInput(BaseModel):
+class WebAudioStopCaptureInput(BaseInput):
     """Input for stopping WebAudio capture."""
 
     session_id: str = Field(...)
 
 
-class MediaGetPlayersInput(BaseModel):
+class MediaGetPlayersInput(BaseInput):
     """Input for listing media players."""
 
     session_id: str = Field(...)
 
 
-class MediaGetMessagesInput(BaseModel):
+class MediaGetMessagesInput(BaseInput):
     """Input for getting messages from a media player."""
 
     session_id: str = Field(...)
     player_id: str = Field(...)
 
 
-class MediaPlayerPlayInput(BaseModel):
+class MediaPlayerPlayInput(BaseInput):
     """Input for playing a media player."""
 
     session_id: str = Field(...)
     player_id: str = Field(...)
 
 
-class MediaPlayerPauseInput(BaseModel):
+class MediaPlayerPauseInput(BaseInput):
     """Input for pausing a media player."""
 
     session_id: str = Field(...)
     player_id: str = Field(...)
 
 
-class MediaPlayerSeekInput(BaseModel):
+class MediaPlayerSeekInput(BaseInput):
     """Input for seeking a media player."""
 
     session_id: str = Field(...)
@@ -1724,33 +1758,33 @@ class MediaPlayerSeekInput(BaseModel):
     time_ms: int = Field(..., ge=0, description="Seek time in milliseconds")
 
 
-class CastListInput(BaseModel):
+class CastListInput(BaseInput):
     """Input for listing available cast sinks."""
 
     session_id: str = Field(...)
 
 
-class CastStartInput(BaseModel):
+class CastStartInput(BaseInput):
     """Input for starting tab casting."""
 
     session_id: str = Field(...)
     sink_name: str = Field(..., description="Cast sink name")
 
 
-class CastStopInput(BaseModel):
+class CastStopInput(BaseInput):
     """Input for stopping casting."""
 
     session_id: str = Field(...)
 
 
-class BluetoothAdapterStateInput(BaseModel):
+class BluetoothAdapterStateInput(BaseInput):
     """Input for setting Bluetooth adapter state."""
 
     session_id: str = Field(...)
     state: str = Field(..., description="Adapter state: 'powered-on' or 'powered-off'")
 
 
-class BluetoothDeviceConnectInput(BaseModel):
+class BluetoothDeviceConnectInput(BaseInput):
     """Input for connecting a Bluetooth device."""
 
     session_id: str = Field(...)
@@ -1758,33 +1792,33 @@ class BluetoothDeviceConnectInput(BaseModel):
     address: str = Field(default="00:00:00:00:00:01", description="Device MAC address")
 
 
-class BluetoothDeviceDisconnectInput(BaseModel):
+class BluetoothDeviceDisconnectInput(BaseInput):
     """Input for disconnecting Bluetooth emulation."""
 
     session_id: str = Field(...)
 
 
-class BluetoothDeviceListInput(BaseModel):
+class BluetoothDeviceListInput(BaseInput):
     """Input for listing Bluetooth devices."""
 
     session_id: str = Field(...)
 
 
-class GetRequestBodyInput(BaseModel):
+class GetRequestBodyInput(BaseInput):
     """Input for getting a network request body (W3)."""
 
     session_id: str = Field(...)
     request_id: str = Field(..., description="Network request ID")
 
 
-class GetResponseBodyInput(BaseModel):
+class GetResponseBodyInput(BaseInput):
     """Input for getting a network response body (W3)."""
 
     session_id: str = Field(...)
     request_id: str = Field(..., description="Network request ID")
 
 
-class ModifyRequestInput(BaseModel):
+class ModifyRequestInput(BaseInput):
     """Input for modifying requests in-flight (W6)."""
 
     session_id: str = Field(...)
@@ -1797,7 +1831,7 @@ class ModifyRequestInput(BaseModel):
     )
 
 
-class ModifyResponseInput(BaseModel):
+class ModifyResponseInput(BaseInput):
     """Input for modifying responses in-flight."""
 
     session_id: str = Field(...)
@@ -1810,7 +1844,7 @@ class ModifyResponseInput(BaseModel):
     )
 
 
-class ReplayHARInput(BaseModel):
+class ReplayHARInput(BaseInput):
     """Input for replaying HAR entries (W7)."""
 
     har_path: str = Field(..., description="Path to HAR file")
@@ -1821,7 +1855,7 @@ class ReplayHARInput(BaseModel):
     backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
-class StartCombinedTraceInput(BaseModel):
+class StartCombinedTraceInput(BaseInput):
     """Input for starting a combined trace (W8)."""
 
     session_id: str = Field(...)
@@ -1830,14 +1864,14 @@ class StartCombinedTraceInput(BaseModel):
     capture_console: bool = Field(default=True)
 
 
-class StopCombinedTraceInput(BaseModel):
+class StopCombinedTraceInput(BaseInput):
     """Input for stopping a combined trace (W8)."""
 
     session_id: str = Field(...)
     trace_id: str = Field(..., description="Trace ID from start_combined_trace")
 
 
-class CoreWebVitalsInput(BaseModel):
+class CoreWebVitalsInput(BaseInput):
     """Input for measuring Core Web Vitals (LCP, CLS, INP)."""
 
     url: str = Field(..., description="URL to navigate to for measurement")
@@ -1853,7 +1887,7 @@ class CoreWebVitalsInput(BaseModel):
     backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
-class AxeAuditInput(BaseModel):
+class AxeAuditInput(BaseInput):
     """Input for running axe-core accessibility audit (W9)."""
 
     session_id: str | None = Field(default=None)
@@ -1862,7 +1896,7 @@ class AxeAuditInput(BaseModel):
     backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
-class ActInput(BaseModel):
+class ActInput(BaseInput):
     """Input for natural language interaction (M1)."""
 
     instruction: str = Field(
@@ -1879,7 +1913,7 @@ class ActInput(BaseModel):
 # ── Annotated screenshot ────────────────────────────────────────
 
 
-class AnnotatedScreenshotInput(BaseModel):
+class AnnotatedScreenshotInput(BaseInput):
     """Input for taking a screenshot with numbered labels on elements."""
 
     session_id: str = Field(...)
@@ -1893,7 +1927,7 @@ class AnnotatedScreenshotInput(BaseModel):
 # ── iframe ──────────────────────────────────────────────────────
 
 
-class IframeEvalInput(BaseModel):
+class IframeEvalInput(BaseInput):
     """Input for evaluating JS inside an iframe."""
 
     session_id: str = Field(...)
@@ -1902,7 +1936,7 @@ class IframeEvalInput(BaseModel):
     await_promise: bool = Field(default=False)
 
 
-class IframeClickInput(BaseModel):
+class IframeClickInput(BaseInput):
     """Input for clicking an element inside an iframe."""
 
     session_id: str = Field(...)
@@ -1910,7 +1944,7 @@ class IframeClickInput(BaseModel):
     selector: SelectorStr = Field(..., description="CSS selector inside the iframe")
 
 
-class IframeFillInput(BaseModel):
+class IframeFillInput(BaseInput):
     """Input for filling an input inside an iframe."""
 
     session_id: str = Field(...)
@@ -1922,7 +1956,7 @@ class IframeFillInput(BaseModel):
 # ── Shadow DOM ──────────────────────────────────────────────────
 
 
-class ShadowEvalInput(BaseModel):
+class ShadowEvalInput(BaseInput):
     """Input for evaluating JS inside a shadow DOM tree."""
 
     session_id: str = Field(...)
@@ -1936,7 +1970,7 @@ class ShadowEvalInput(BaseModel):
     await_promise: bool = Field(default=False)
 
 
-class ShadowClickInput(BaseModel):
+class ShadowClickInput(BaseInput):
     """Input for clicking an element inside a shadow DOM tree."""
 
     session_id: str = Field(...)
@@ -1947,7 +1981,7 @@ class ShadowClickInput(BaseModel):
     )
 
 
-class ShadowFillInput(BaseModel):
+class ShadowFillInput(BaseInput):
     """Input for filling an input inside a shadow DOM tree."""
 
     session_id: str = Field(...)
@@ -1962,7 +1996,7 @@ class ShadowFillInput(BaseModel):
 # ── Event subscription (W10) ────────────────────────────────────
 
 
-class SubscribeEventsInput(BaseModel):
+class SubscribeEventsInput(BaseInput):
     """Input for subscribing to real-time browser events (W10)."""
 
     session_id: str = Field(...)
@@ -1974,7 +2008,7 @@ class SubscribeEventsInput(BaseModel):
     )
 
 
-class UnsubscribeEventsInput(BaseModel):
+class UnsubscribeEventsInput(BaseInput):
     """Input for unsubscribing from browser events (W10)."""
 
     session_id: str = Field(...)
@@ -1984,21 +2018,21 @@ class UnsubscribeEventsInput(BaseModel):
 # ── WebExtensions ───────────────────────────────────────────────
 
 
-class ExtensionInstallInput(BaseModel):
+class ExtensionInstallInput(BaseInput):
     """Input for installing a browser extension."""
 
     session_id: str = Field(...)
     path: str = Field(..., description="Path to .crx file or unpacked extension directory")
 
 
-class ExtensionUninstallInput(BaseModel):
+class ExtensionUninstallInput(BaseInput):
     """Input for uninstalling a browser extension."""
 
     session_id: str = Field(...)
     extension_id: str = Field(..., description="Extension ID returned by extension_install")
 
 
-class ExtensionListInput(BaseModel):
+class ExtensionListInput(BaseInput):
     """Input for listing installed browser extensions."""
 
     session_id: str = Field(...)
@@ -2007,14 +2041,14 @@ class ExtensionListInput(BaseModel):
 # ── Browser preferences ─────────────────────────────────────────
 
 
-class GetPrefInput(BaseModel):
+class GetPrefInput(BaseInput):
     """Input for getting a browser preference value."""
 
     session_id: str = Field(...)
     key: str = Field(..., description="Preference key (e.g. 'download.default_directory')")
 
 
-class SetPrefInput(BaseModel):
+class SetPrefInput(BaseInput):
     """Input for setting a browser preference value."""
 
     session_id: str = Field(...)

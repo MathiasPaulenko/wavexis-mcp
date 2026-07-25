@@ -199,7 +199,8 @@ def format_error(tool: str, error: Exception) -> str:
     """
     from wavexis_mcp.errors import get_suggestion
 
-    _logger.exception("Tool %s failed: %s", tool, error)
+    safe_message = str(error).replace("\r", "").replace("\n", " ")
+    _logger.exception("Tool %s failed: %s", tool, safe_message)
     return json.dumps(
         {
             "error": str(error),

@@ -153,10 +153,10 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                 if input.url:
                     wait = session_manager.make_wait(timeout=input.wait_timeout)
                     validate_url(input.url)
-                    await backend.navigate(input.url, wait)
+                    await session_manager.call_backend(backend.navigate(input.url, wait))
 
                 if input.js:
-                    await backend.eval(input.js, await_promise=True)
+                    await session_manager.call_backend(backend.eval(input.js, await_promise=True))
 
                 params = PDFParams(
                     url=input.url or "",
@@ -167,7 +167,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                     media=input.media,
                     js=input.js,
                 )
-                data = await backend.pdf(params)
+                data = await session_manager.call_backend(backend.pdf(params))
 
                 if input.output_path:
                     result = await save_to_file(data, input.output_path)
@@ -218,8 +218,10 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                         selector=input.selector,
                         timeout=input.wait_timeout,
                     )
-                    await backend.navigate(url, wait)
-                    data = await backend.eval(input.expression, await_promise=True)
+                    await session_manager.call_backend(backend.navigate(url, wait))
+                    data = await session_manager.call_backend(
+                        backend.eval(input.expression, await_promise=True)
+                    )
                     results.append({"url": url, "data": data})
 
                 paginated = results[input.offset : input.offset + input.limit]

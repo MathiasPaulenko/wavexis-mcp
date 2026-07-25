@@ -18,6 +18,9 @@ from pydantic import BaseModel, Field
 from wavexis_mcp.formatter import format_error, format_json_response
 from wavexis_mcp.session import SessionManager
 
+_MAX_FIND_PATTERN_LENGTH = 500
+_MAX_FIND_PATTERN_WILDCARDS = 50
+
 
 def _modifiers(alt: bool, ctrl: bool, meta: bool, shift: bool) -> int:
     """Convert modifier booleans to CDP modifiers bitmask."""
@@ -366,6 +369,11 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """Find nodes in the accessibility snapshot matching the given text/regex."""
         try:
             from wavexis_mcp.tools.a11y import _build_a11y_tree, _extract_name, _extract_role
+
+            if len(input.text) > _MAX_FIND_PATTERN_LENGTH:
+                raise ValueError(f"Pattern exceeds {_MAX_FIND_PATTERN_LENGTH} characters")
+            if input.text.count("*") + input.text.count("?") > _MAX_FIND_PATTERN_WILDCARDS:
+                raise ValueError("Pattern contains too many wildcards")
 
             session = session_manager.get(input.session_id)
             raw = await session.backend.a11y_tree()

@@ -10,6 +10,7 @@ from __future__ import annotations
 import asyncio
 import base64
 import json
+import time
 from collections import deque
 from typing import Any
 from urllib.parse import urlparse
@@ -37,6 +38,9 @@ from wavexis_mcp.models import (
     WebsocketInterceptInput,
 )
 from wavexis_mcp.session import SessionManager
+
+_MAX_CRAWL_QUEUE_SIZE = 1_000
+_MAX_CRAWL_DURATION_S = 300.0
 
 
 async def _try_navigate(backend: AbstractBackend, url: str, wait: WaitStrategy) -> bool:
@@ -343,8 +347,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                 visited: set[str] = set()
                 pages: list[dict[str, Any]] = []
                 queue: deque[tuple[str, int]] = deque([(input.start_url, 0)])
+                start_time = time.monotonic()
 
                 while queue and len(pages) < input.max_pages:
+                    if time.monotonic() - start_time > _MAX_CRAWL_DURATION_S:
+                        break
+                    if len(queue) > _MAX_CRAWL_QUEUE_SIZE:
+                        break
+
                     url, depth = queue.popleft()
                     if url in visited or depth > input.max_depth:
                         continue

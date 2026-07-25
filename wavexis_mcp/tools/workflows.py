@@ -10,6 +10,7 @@ from __future__ import annotations
 import os
 from typing import Any
 
+import yaml
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
 
@@ -23,6 +24,25 @@ from wavexis_mcp.models import (
     RawCDPInput,
 )
 from wavexis_mcp.session import SessionManager
+
+_MAX_ACTIONS = 100
+_MAX_YAML_DEPTH = 20
+
+
+def _check_yaml_depth(obj: Any, depth: int = 0) -> bool:
+    """Return True if *obj* does not exceed the configured YAML depth."""
+    if depth > _MAX_YAML_DEPTH:
+        return False
+    if isinstance(obj, dict):
+        for value in obj.values():
+            if not _check_yaml_depth(value, depth + 1):
+                return False
+    elif isinstance(obj, list):
+        for item in obj:
+            if not _check_yaml_depth(item, depth + 1):
+                return False
+    return True
+
 
 # Methods that raw CDP/BiDi callers may use without the escape-hatch env
 # variable.  Everything else is blocked by default to limit abuse of the
@@ -98,8 +118,6 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             JSON string with ``actions`` count, ``results``, and ``errors``.
         """
         try:
-            import yaml
-
             config = yaml.safe_load(input.config)
             if config is None:
                 config = {}
@@ -108,7 +126,17 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                     "wavexis_multi_action",
                     ValueError("YAML config must be a dictionary"),
                 )
+            if not _check_yaml_depth(config):
+                return format_error(
+                    "wavexis_multi_action",
+                    ValueError(f"YAML config exceeds depth limit of {_MAX_YAML_DEPTH}"),
+                )
             actions = config.get("actions", [])
+            if len(actions) > _MAX_ACTIONS:
+                return format_error(
+                    "wavexis_multi_action",
+                    ValueError(f"YAML config exceeds {_MAX_ACTIONS} actions"),
+                )
 
             backend, sid = await session_manager.acquire_backend(
                 input.session_id,
