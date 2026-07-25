@@ -63,7 +63,7 @@ async def test_extract(session_manager_with_mock: SessionManager, mock_session_i
     _register(mcp, session_manager_with_mock)
 
     session_manager_with_mock.get(mock_session_id).backend.eval = AsyncMock(
-        return_value="Example Title"
+        return_value=[{"title": "Example Title"}]
     )
 
     tool = mcp._tool_manager.get_tool("wavexis_extract")

@@ -397,3 +397,40 @@ async def test_storage_state_restore(
     assert data["cookies_restored"] == 1
     assert data["localStorage_restored"] == 1
     assert data["sessionStorage_restored"] == 1
+
+
+@pytest.mark.unit
+async def test_storage_state_restore_batches_storage_evals(
+    session_manager_with_mock: SessionManager, mock_session_id: str, tmp_path
+) -> None:
+    from mcp.server.fastmcp import FastMCP
+
+    from wavexis_mcp.tools.storage import register
+
+    mcp = FastMCP("test")
+    register(mcp, session_manager_with_mock)
+
+    state = {
+        "cookies": [
+            {"name": "c1", "value": "v1", "domain": "example.com", "path": "/"},
+            {"name": "c2", "value": "v2", "domain": "example.com", "path": "/"},
+        ],
+        "localStorage": {"key1": "val1", "key2": "val2"},
+        "sessionStorage": {"sk1": "sv1", "sk2": "sv2"},
+    }
+    state_path = tmp_path / "state.json"
+    state_path.write_text(json.dumps(state))
+
+    session = session_manager_with_mock.get(mock_session_id)
+    session.backend.eval.reset_mock()
+    session.backend.set_cookie.reset_mock()
+
+    tool = mcp._tool_manager.get_tool("wavexis_storage_state_restore")
+    result = await tool.fn(
+        StorageStateRestoreInput(session_id=mock_session_id, input_path=str(state_path))
+    )
+    data = json.loads(result)
+    assert data["status"] == "ok"
+    # set_cookie is called once per cookie, eval is batched to one call per storage type.
+    assert session.backend.set_cookie.call_count == 2
+    assert session.backend.eval.call_count == 2

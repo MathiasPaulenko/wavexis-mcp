@@ -85,7 +85,7 @@ class TestRateLimiter:
     @pytest.mark.unit
     async def test_configure_updates_defaults(self) -> None:
         limiter = RateLimiter(rate=60, burst=10)
-        limiter.configure(rate=1, burst=1)
+        await limiter.configure(rate=1, burst=1)
         # New session should use new defaults
         assert await limiter.acquire("new-session") is True
         assert await limiter.acquire("new-session") is False
@@ -94,7 +94,7 @@ class TestRateLimiter:
     async def test_cleanup_removes_bucket(self) -> None:
         limiter = RateLimiter(rate=60, burst=10)
         await limiter.acquire("session-1")
-        limiter.cleanup("session-1")
+        await limiter.cleanup("session-1")
         assert "session-1" not in limiter._buckets
 
     @pytest.mark.unit
@@ -105,6 +105,27 @@ class TestRateLimiter:
         # Wait for refill
         await asyncio.sleep(0.02)  # 20ms = 2 tokens at rate=100
         assert await limiter.acquire("session-1") is True
+
+    @pytest.mark.unit
+    async def test_invalid_rate_burst_clamped(self) -> None:
+        limiter = RateLimiter(rate=-5, burst=0)
+        assert limiter.default_rate == 1.0
+        assert limiter.default_burst == 1
+        assert await limiter.acquire("session-1") is True
+        await limiter.configure(rate=0, burst=-1)
+        assert limiter.default_rate == 1.0
+        assert limiter.default_burst == 1
+
+    @pytest.mark.unit
+    async def test_concurrent_acquires_are_serialised(self) -> None:
+        limiter = RateLimiter(rate=1000, burst=1)
+
+        async def _acquire() -> bool:
+            return await limiter.acquire("session-1")
+
+        results = await asyncio.gather(*(_acquire() for _ in range(20)))
+        assert results.count(True) == 1
+        assert results.count(False) == 19
 
 
 @pytest.mark.unit

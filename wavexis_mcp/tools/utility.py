@@ -10,15 +10,84 @@ from __future__ import annotations
 import base64
 import inspect
 import os
+import typing
 from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
 from wavexis.backend.base import AbstractBackend
 
-from wavexis_mcp.formatter import encode_base64, format_error, format_json_response, save_to_file
+from wavexis_mcp.formatter import (
+    encode_base64,
+    format_error,
+    format_json_response,
+    save_to_file,
+    secure_output_path,
+)
 from wavexis_mcp.models import BrowserVersionInput, InvokeInput
 from wavexis_mcp.session import SessionManager
+
+# Methods that should never be exposed through the generic invoke tool.
+_INVOKE_DENYLIST = frozenset(
+    {
+        "launch",
+        "close",
+        "eval",
+        "raw",
+        "execute",
+        "__init__",
+        "extension_install",
+        "extension_uninstall",
+    }
+)
+
+# Safe builtins that may appear as string annotations for methods defined
+# outside of the wavexis package (e.g. test doubles).  Arbitrary expressions
+# are not evaluated.
+_SAFE_TYPE_NS = {
+    "dict": dict,
+    "list": list,
+    "str": str,
+    "int": int,
+    "float": float,
+    "bool": bool,
+    "None": type(None),
+}
+
+
+def _resolve_params_type(method: Any) -> Any:
+    """Safely resolve the type hint of a method's ``params`` parameter.
+
+    If the first parameter already has a real class annotation, it is used
+    directly.  String annotations are only resolved via ``typing.get_type_hints``
+    for methods shipped with the ``wavexis`` package, avoiding evaluation of
+    arbitrary code from untrusted sources.
+    """
+    try:
+        sig = inspect.signature(method)
+        first_param = next(iter(sig.parameters.values()))
+    except (ValueError, StopIteration):
+        return None
+    annotation = first_param.annotation
+    if inspect.isclass(annotation) and annotation is not inspect.Parameter.empty:
+        return annotation
+
+    if isinstance(annotation, str):
+        module = getattr(method, "__module__", "")
+        if isinstance(module, str) and module.startswith("wavexis."):
+            try:
+                hints = typing.get_type_hints(method)
+            except Exception:
+                return None
+            return hints.get("params")
+        # For non-wavexis methods, resolve only a whitelist of safe type names
+        # so that test doubles with ``from __future__ import annotations`` work
+        # without evaluating arbitrary expressions.
+        resolved = _SAFE_TYPE_NS.get(annotation)
+        if inspect.isclass(resolved):
+            return resolved
+
+    return None
 
 
 def register(mcp: FastMCP, session_manager: SessionManager) -> None:
@@ -83,7 +152,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_backends", e)
 
-    def _build_result(result: object, output_path: str | None) -> dict[str, Any] | str:
+    async def _build_result(result: object, output_path: str | None) -> dict[str, Any] | str:
         """Format a raw backend result into a JSON-ready payload or file path.
 
         Bytes are returned as base64 or written to disk; lists of bytes are
@@ -98,7 +167,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """
         if isinstance(result, bytes):
             if output_path:
-                meta = save_to_file(result, output_path)
+                meta = await save_to_file(result, output_path)
                 return {"status": "ok", "type": "bytes", **meta}
             return {
                 "status": "ok",
@@ -110,16 +179,17 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             if output_path and (
                 output_path.endswith(("/", "\\")) or os.path.splitext(output_path)[1] == ""
             ):
-                os.makedirs(output_path, exist_ok=True)
+                validated_dir = secure_output_path(output_path)
+                os.makedirs(validated_dir, exist_ok=True)
                 frames = []
                 for i, frame in enumerate(result):
-                    frame_path = os.path.join(output_path, f"frame_{i:04d}.bin")
-                    frame_meta = save_to_file(frame, frame_path)
+                    frame_path = os.path.join(str(validated_dir), f"frame_{i:04d}.bin")
+                    frame_meta = await save_to_file(frame, frame_path)
                     frames.append(frame_meta)
                 return {
                     "status": "ok",
                     "type": "bytes_list",
-                    "dir": output_path,
+                    "dir": str(validated_dir),
                     "count": len(frames),
                     "frames": frames,
                 }
@@ -146,21 +216,21 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
 
         Raises:
             AttributeError: If the backend does not expose the requested method.
-            ValueError: If the method name refers to a private method.
+            ValueError: If the method name refers to a private or denied method.
         """
         method = getattr(backend, method_name, None)
         if method is None or not callable(method):
             raise AttributeError(f"Backend has no method '{method_name}'")
-        if method_name.startswith("_"):
-            raise ValueError(f"Cannot invoke private method '{method_name}'")
+        if method_name.startswith("_") or method_name in _INVOKE_DENYLIST:
+            raise ValueError(f"Cannot invoke method '{method_name}'")
 
-        sig = inspect.signature(method, eval_str=True)
+        sig = inspect.signature(method)
         sig_params = list(sig.parameters.items())
 
         # If the first parameter is named 'params' and annotated with a class,
         # treat the provided JSON dict as the dataclass constructor kwargs.
         if sig_params and sig_params[0][0] == "params":
-            annotation = sig_params[0][1].annotation
+            annotation: Any = _resolve_params_type(method)
             if inspect.isclass(annotation) and annotation is not inspect.Parameter.empty:
                 param_obj = annotation(**params)
                 return await method(param_obj)
@@ -219,7 +289,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                 await backend.navigate(input.url, wait)
 
             result = await _call_backend_method(backend, input.method, input.params)
-            payload = _build_result(result, input.output_path)
+            payload = await _build_result(result, input.output_path)
             return format_json_response(payload)
         except Exception as e:
             return format_error("wavexis_invoke", e)

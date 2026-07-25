@@ -16,11 +16,9 @@ from wavexis_mcp.session import BrowserSession, SessionManager
 __version__ = "1.6.6"
 
 __all__ = [
-    "__version__",
     "BackendError",
     "BrowserSession",
     "CapsError",
-    "get_suggestion",
     "OperationTimeoutError",
     "SessionExpiredError",
     "SessionManager",
@@ -28,4 +26,6 @@ __all__ = [
     "TimeoutError",
     "ToolError",
     "WaveXisMCPError",
+    "__version__",
+    "get_suggestion",
 ]

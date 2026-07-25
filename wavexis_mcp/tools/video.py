@@ -23,16 +23,22 @@ from wavexis_mcp.models import (
 )
 from wavexis_mcp.session import SessionManager
 
-_recordings: dict[str, dict[str, Any]] = {}
 
-
-def register(mcp: FastMCP, session_manager: SessionManager) -> None:
+def register(
+    mcp: FastMCP,
+    session_manager: SessionManager,
+    recordings: dict[str, dict[str, Any]] | None = None,
+) -> None:
     """Register all video tools on the FastMCP server.
 
     Args:
         mcp: The FastMCP server instance.
         session_manager: The shared session manager.
+        recordings: Optional shared recordings dictionary for testing.
     """
+    if recordings is None:
+        recordings = {}
+    mcp._wavexis_video_recordings = recordings  # type: ignore[attr-defined]
 
     @mcp.tool(
         annotations=ToolAnnotations(
@@ -64,7 +70,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                 },
             )
             recording_id = f"rec-{int(time.time() * 1000)}"
-            _recordings[recording_id] = {
+            recordings[recording_id] = {
                 "session_id": input.session_id,
                 "start_time": time.time(),
                 "output_path": input.output_path,
@@ -102,7 +108,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             await session.backend.raw("Page.stopScreencast", {})
 
             recording_id = next(
-                (rid for rid, rec in _recordings.items() if rec["session_id"] == input.session_id),
+                (rid for rid, rec in recordings.items() if rec["session_id"] == input.session_id),
                 None,
             )
             if recording_id is None:
@@ -111,7 +117,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                     RuntimeError("No active recording for this session"),
                 )
 
-            rec = _recordings.pop(recording_id)
+            rec = recordings.pop(recording_id)
             start_time = rec["start_time"]
             duration_ms = int((time.time() - start_time) * 1000)
 
@@ -120,7 +126,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
 
             output_path = input.output_path or rec.get("output_path")
             if output_path and video_data:
-                meta = save_to_file(video_data, output_path)
+                meta = await save_to_file(video_data, output_path)
                 return format_json_response(
                     {
                         "path": meta["path"],
@@ -166,7 +172,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             JSON string with ``status`` and ``chapter`` info.
         """
         try:
-            rec = _recordings.get(input.recording_id)
+            rec = recordings.get(input.recording_id)
             if rec is None:
                 return format_error(
                     "wavexis_video_add_chapter",

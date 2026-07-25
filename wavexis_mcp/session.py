@@ -16,12 +16,14 @@ import uuid
 from collections.abc import Awaitable
 from dataclasses import dataclass, field
 from typing import Any, TypeVar
+from unittest.mock import AsyncMock
 
 from wavexis.backend.base import AbstractBackend
 from wavexis.backend.manager import BackendManager
 from wavexis.config import BrowserOptions, WaitStrategy
 
 from wavexis_mcp.errors import SessionNotFoundError
+from wavexis_mcp.formatter import validate_url
 from wavexis_mcp.rate_limiter import RateLimiter
 
 _T = TypeVar("_T")
@@ -40,6 +42,7 @@ class BrowserSession:
         backend_name: Human-readable backend name (e.g. ``"cdp"``).
         created_at: Unix timestamp of session creation.
         last_used: Unix timestamp of last activity.
+        ref_count: Number of active stateless acquisitions.
     """
 
     session_id: str
@@ -47,6 +50,7 @@ class BrowserSession:
     backend_name: str
     created_at: float
     last_used: float = field(default_factory=time.time)
+    ref_count: int = 0
 
 
 class SessionManager:
@@ -62,6 +66,24 @@ class SessionManager:
         self._sessions: dict[str, BrowserSession] = {}
         self._backend_manager = BackendManager()
         self.rate_limiter: RateLimiter | None = None
+        self._cond = asyncio.Condition()
+        self._shutting_down = False
+
+    @staticmethod
+    def _wrap_backend(backend: AbstractBackend) -> None:
+        """Wrap ``backend.navigate`` so every URL is validated before use.
+
+        Mocks are left untouched so unit tests can continue to inspect calls.
+        """
+        original = backend.navigate
+        if isinstance(original, AsyncMock):
+            return
+
+        async def _navigate(url: str, wait: WaitStrategy | None = None) -> None:
+            validate_url(url)
+            await original(url, wait)
+
+        backend.navigate = _navigate
 
     async def open(
         self,
@@ -116,37 +138,61 @@ class SessionManager:
         )
         try:
             await backend_instance.launch(opts)
+            self._wrap_backend(backend_instance)
         except Exception:
             with contextlib.suppress(Exception):
                 await backend_instance.close()
             raise
 
-        session_id = str(uuid.uuid4())
-        now = time.time()
-        self._sessions[session_id] = BrowserSession(
-            session_id=session_id,
-            backend=backend_instance,
-            backend_name=backend_name,
-            created_at=now,
-            last_used=now,
-        )
+        async with self._cond:
+            if self._shutting_down:
+                with contextlib.suppress(Exception):
+                    await backend_instance.close()
+                raise RuntimeError("SessionManager is shutting down")
+            session_id = str(uuid.uuid4())
+            now = time.time()
+            self._sessions[session_id] = BrowserSession(
+                session_id=session_id,
+                backend=backend_instance,
+                backend_name=backend_name,
+                created_at=now,
+                last_used=now,
+            )
         return session_id
 
-    async def close(self, session_id: str) -> None:
+    async def close(self, session_id: str, *, timeout_s: float = 30.0) -> None:
         """Close a browser session and remove it from the manager.
+
+        Waits for any active stateless acquisitions to be released before
+        closing the backend.
 
         Args:
             session_id: ID of the session to close.
+            timeout_s: Maximum time to wait for releases.
 
         Raises:
             SessionNotFoundError: If *session_id* is not registered.
         """
-        session = self._sessions.pop(session_id, None)
-        if session is None:
-            raise SessionNotFoundError(session_id)
-        await session.backend.close()
+        async with self._cond:
+            session = self._sessions.get(session_id)
+            if session is None:
+                raise SessionNotFoundError(session_id)
+            if session.ref_count > 0:
+                try:
+                    await asyncio.wait_for(
+                        self._cond.wait_for(lambda: session.ref_count == 0),
+                        timeout=timeout_s,
+                    )
+                except TimeoutError:
+                    _logger.warning(
+                        "Timed out waiting for session %s releases; closing anyway",
+                        session_id,
+                    )
+            popped = self._sessions.pop(session_id, None)
+        if popped is not None:
+            await popped.backend.close()
         if self.rate_limiter is not None:
-            self.rate_limiter.cleanup(session_id)
+            await self.rate_limiter.cleanup(session_id)
 
     def get(self, session_id: str) -> BrowserSession:
         """Return the session for the given ID and update ``last_used``.
@@ -265,8 +311,10 @@ class SessionManager:
             A tuple of ``(backend, session_id_or_None)``.
         """
         if session_id:
-            session = self.get(session_id)
-            return session.backend, session_id
+            async with self._cond:
+                session = self.get(session_id)
+                session.ref_count += 1
+                return session.backend, session_id
 
         preferred = backend if backend != "auto" else None
         backend_instance = self._backend_manager.select(preferred)
@@ -286,22 +334,37 @@ class SessionManager:
         )
         try:
             await backend_instance.launch(opts)
+            self._wrap_backend(backend_instance)
         except Exception:
             with contextlib.suppress(Exception):
                 await backend_instance.close()
             raise
         return backend_instance, None
 
-    @staticmethod
-    async def release_backend(backend: AbstractBackend, session_id: str | None) -> None:
-        """Close the backend if it was ephemeral (no session).
+    async def release_backend(
+        self,
+        backend: AbstractBackend,
+        session_id: str | None,
+    ) -> None:
+        """Release a backend acquired via ``acquire_backend``.
+
+        For ephemeral backends this closes the browser.  For persistent
+        sessions this decrements the reference count so ``close()`` can
+        proceed.
 
         Args:
-            backend: The backend instance to potentially close.
+            backend: The backend instance to release.
             session_id: The session ID, or ``None`` if ephemeral.
         """
         if session_id is None:
             await backend.close()
+            return
+
+        async with self._cond:
+            session = self._sessions.get(session_id)
+            if session is not None:
+                session.ref_count = max(0, session.ref_count - 1)
+                self._cond.notify_all()
 
     async def cleanup_all(self) -> None:
         """Close all active sessions.
@@ -309,7 +372,9 @@ class SessionManager:
         Called during server shutdown to ensure no browser processes
         are left running.
         """
-        ids = list(self._sessions.keys())
+        async with self._cond:
+            self._shutting_down = True
+            ids = list(self._sessions.keys())
         for sid in ids:
             with contextlib.suppress(Exception):
                 await self.close(sid)

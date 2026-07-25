@@ -92,6 +92,10 @@ follow_imports = "skip"
 asyncio_mode = "auto"
 asyncio_default_test_loop_scope = "function"
 testpaths = ["tests"]
+filterwarnings = [
+    "ignore:'asyncio.get_event_loop_policy' is deprecated:DeprecationWarning",
+    "ignore:'asyncio.set_event_loop_policy' is deprecated:DeprecationWarning",
+]
 markers = [
     "unit: fast isolated tests with mocks",
     "integration: tests against a real Chrome browser",

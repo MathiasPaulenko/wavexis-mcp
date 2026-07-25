@@ -13,13 +13,17 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+_WaitStrategy = Literal["load", "domcontentloaded", "networkidle", "selector", "url", "none"]
+
 # ── Session management ──────────────────────────────────────────
 
 
 class SessionOpenInput(BaseModel):
     """Input for opening a new browser session."""
 
-    backend: str = Field(default="cdp", description="Backend: 'cdp', 'bidi', or 'auto'")
+    backend: Literal["cdp", "bidi", "auto"] = Field(
+        default="cdp", description="Backend: 'cdp', 'bidi', or 'auto'"
+    )
     headless: bool = Field(default=True)
     width: int = Field(default=1280, ge=320, le=3840)
     height: int = Field(default=800, ge=240, le=2160)
@@ -57,12 +61,12 @@ class NavigateInput(BaseModel):
 
     url: str = Field(..., description="URL to navigate to")
     session_id: str | None = Field(default=None)
-    wait_strategy: str = Field(default="load")
+    wait_strategy: _WaitStrategy = Field(default="load")
     wait_selector: str | None = Field(default=None)
     wait_url_pattern: str | None = Field(default=None)
     wait_timeout: int = Field(default=30000, ge=1000, le=300000)
     headless: bool = Field(default=True)
-    backend: str = Field(default="cdp")
+    backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
 class SimpleNavInput(BaseModel):
@@ -82,7 +86,7 @@ class WaitInput(BaseModel):
     """Input for waiting on a page condition."""
 
     session_id: str = Field(...)
-    strategy: str = Field(
+    strategy: _WaitStrategy = Field(
         default="load",
         description="load, domcontentloaded, networkidle, selector, url, none",
     )
@@ -102,7 +106,9 @@ class ScreenshotInput(BaseModel):
     )
     session_id: str | None = Field(default=None)
     full_page: bool = Field(default=True, description="Capture full scrollable page")
-    format: str = Field(default="png", description="Image format: 'png' or 'jpeg'")
+    format: Literal["png", "jpeg"] = Field(
+        default="png", description="Image format: 'png' or 'jpeg'"
+    )
     quality: int = Field(default=80, ge=1, le=100, description="JPEG quality (ignored for PNG)")
     selector: str | None = Field(
         default=None, description="CSS selector — screenshot only this element"
@@ -112,13 +118,13 @@ class ScreenshotInput(BaseModel):
     output_path: str | None = Field(
         default=None, description="Save to file instead of returning base64"
     )
-    wait_strategy: str = Field(default="load")
+    wait_strategy: _WaitStrategy = Field(default="load")
     wait_selector: str | None = Field(default=None)
     wait_timeout: int = Field(default=30000, ge=1000, le=300000)
     headless: bool = Field(default=True)
     width: int = Field(default=1280, ge=320, le=3840)
     height: int = Field(default=800, ge=240, le=2160)
-    backend: str = Field(default="cdp")
+    backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
 class PDFInput(BaseModel):
@@ -126,16 +132,20 @@ class PDFInput(BaseModel):
 
     url: str | None = Field(default=None)
     session_id: str | None = Field(default=None)
-    paper: str = Field(default="letter", description="Paper size: a4, letter, legal, a3, a5")
+    paper: Literal["a4", "letter", "legal", "a3", "a5"] = Field(
+        default="letter", description="Paper size: a4, letter, legal, a3, a5"
+    )
     landscape: bool = Field(default=False)
     margin: str = Field(default="0.4in")
     no_header_footer: bool = Field(default=False)
-    media: str = Field(default="print", description="CSS media: 'print' or 'screen'")
+    media: Literal["print", "screen"] = Field(
+        default="print", description="CSS media: 'print' or 'screen'"
+    )
     js: str | None = Field(default=None)
     output_path: str | None = Field(default=None)
-    wait_timeout: int = Field(default=30000)
+    wait_timeout: int = Field(default=30000, ge=1000, le=300000)
     headless: bool = Field(default=True)
-    backend: str = Field(default="cdp")
+    backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
 class PagePDFInput(BaseModel):
@@ -154,9 +164,9 @@ class PagePDFInput(BaseModel):
     margin_left: float = Field(default=0.4, ge=0.0)
     margin_right: float = Field(default=0.4, ge=0.0)
     output_path: str | None = Field(default=None, description="Path to save the decoded PDF bytes")
-    wait_timeout: int = Field(default=30000)
+    wait_timeout: int = Field(default=30000, ge=1000, le=300000)
     headless: bool = Field(default=True)
-    backend: str = Field(default="cdp")
+    backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
 class PageSnapshotInput(BaseModel):
@@ -164,11 +174,13 @@ class PageSnapshotInput(BaseModel):
 
     url: str | None = Field(default=None)
     session_id: str | None = Field(default=None)
-    format: str = Field(default="mhtml", description="Output format: 'mhtml' or 'text'")
+    format: Literal["mhtml", "text"] = Field(
+        default="mhtml", description="Output format: 'mhtml' or 'text'"
+    )
     output_path: str | None = Field(default=None)
-    wait_timeout: int = Field(default=30000)
+    wait_timeout: int = Field(default=30000, ge=1000, le=300000)
     headless: bool = Field(default=True)
-    backend: str = Field(default="cdp")
+    backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
 class ScrapeInput(BaseModel):
@@ -179,11 +191,13 @@ class ScrapeInput(BaseModel):
     expression: str = Field(
         default="document.title", description="JS expression to evaluate on each page"
     )
-    output_format: str = Field(default="json", description="Output format: 'json' or 'csv'")
+    output_format: Literal["json", "csv"] = Field(
+        default="json", description="Output format: 'json' or 'csv'"
+    )
     selector: str | None = Field(default=None, description="CSS selector to wait for")
-    wait_timeout: int = Field(default=30000)
+    wait_timeout: int = Field(default=30000, ge=1000, le=300000)
     headless: bool = Field(default=True)
-    backend: str = Field(default="cdp")
+    backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
     limit: int = Field(default=50, ge=1, le=500, description="Max results to return")
     offset: int = Field(default=0, ge=0, description="Skip first N results for pagination")
 
@@ -193,16 +207,16 @@ class ScreencastInput(BaseModel):
 
     url: str | None = Field(default=None)
     session_id: str | None = Field(default=None)
-    format: str = Field(default="png")
+    format: Literal["png", "jpeg"] = Field(default="png")
     quality: int = Field(default=80, ge=1, le=100)
     max_width: int = Field(default=1280, ge=320, le=3840)
     max_height: int = Field(default=800, ge=240, le=2160)
     duration: float = Field(default=5.0, ge=0.5, le=60.0, description="Capture duration in seconds")
     interval: float = Field(default=1.0, ge=0.1, le=10.0, description="Seconds between frames")
     output_dir: str | None = Field(default=None, description="Save frames to directory")
-    wait_timeout: int = Field(default=30000)
+    wait_timeout: int = Field(default=30000, ge=1000, le=300000)
     headless: bool = Field(default=True)
-    backend: str = Field(default="cdp")
+    backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
 # ── JavaScript ──────────────────────────────────────────────────
@@ -217,9 +231,9 @@ class EvalInput(BaseModel):
         default=None, description="URL to navigate to first (required without session)"
     )
     await_promise: bool = Field(default=False, description="Await a returned Promise")
-    wait_timeout: int = Field(default=30000)
+    wait_timeout: int = Field(default=30000, ge=1000, le=300000)
     headless: bool = Field(default=True)
-    backend: str = Field(default="cdp")
+    backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
 # ── DOM ─────────────────────────────────────────────────────────
@@ -232,9 +246,9 @@ class DOMGetInput(BaseModel):
     session_id: str | None = Field(default=None)
     url: str | None = Field(default=None)
     outer: bool = Field(default=True, description="Return outerHTML (True) or innerHTML (False)")
-    wait_timeout: int = Field(default=30000)
+    wait_timeout: int = Field(default=30000, ge=1000, le=300000)
     headless: bool = Field(default=True)
-    backend: str = Field(default="cdp")
+    backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
 class DOMQueryInput(BaseModel):
@@ -246,9 +260,9 @@ class DOMQueryInput(BaseModel):
     all: bool = Field(default=False, description="Return all matches (True) or first only (False)")
     limit: int = Field(default=50, ge=1, le=500, description="Max elements to return when all=True")
     offset: int = Field(default=0, ge=0, description="Skip first N elements for pagination")
-    wait_timeout: int = Field(default=30000)
+    wait_timeout: int = Field(default=30000, ge=1000, le=300000)
     headless: bool = Field(default=True)
-    backend: str = Field(default="cdp")
+    backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
 class DOMSetAttrInput(BaseModel):
@@ -314,11 +328,13 @@ class ClickInput(BaseModel):
     selector: str = Field(..., description="CSS selector for element to click")
     session_id: str | None = Field(default=None)
     url: str | None = Field(default=None)
-    button: str = Field(default="left", description="left, right, middle")
+    button: Literal["left", "right", "middle"] = Field(
+        default="left", description="left, right, middle"
+    )
     click_count: int = Field(default=1, ge=1, le=10)
-    wait_timeout: int = Field(default=30000)
+    wait_timeout: int = Field(default=30000, ge=1000, le=300000)
     headless: bool = Field(default=True)
-    backend: str = Field(default="cdp")
+    backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
 class DoubleClickInput(BaseModel):
@@ -328,9 +344,9 @@ class DoubleClickInput(BaseModel):
     session_id: str | None = Field(default=None)
     url: str | None = Field(default=None)
     auto_wait: bool = Field(default=True, description="Wait for the element before clicking")
-    wait_timeout: int = Field(default=30000)
+    wait_timeout: int = Field(default=30000, ge=1000, le=300000)
     headless: bool = Field(default=True)
-    backend: str = Field(default="cdp")
+    backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
 class RightClickInput(BaseModel):
@@ -340,9 +356,9 @@ class RightClickInput(BaseModel):
     session_id: str | None = Field(default=None)
     url: str | None = Field(default=None)
     auto_wait: bool = Field(default=True, description="Wait for the element before clicking")
-    wait_timeout: int = Field(default=30000)
+    wait_timeout: int = Field(default=30000, ge=1000, le=300000)
     headless: bool = Field(default=True)
-    backend: str = Field(default="cdp")
+    backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
 class TypeInput(BaseModel):
@@ -353,9 +369,9 @@ class TypeInput(BaseModel):
     session_id: str | None = Field(default=None)
     url: str | None = Field(default=None)
     delay: int = Field(default=0, ge=0, le=1000, description="Delay between keystrokes in ms")
-    wait_timeout: int = Field(default=30000)
+    wait_timeout: int = Field(default=30000, ge=1000, le=300000)
     headless: bool = Field(default=True)
-    backend: str = Field(default="cdp")
+    backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
 class FillInput(BaseModel):
@@ -365,9 +381,9 @@ class FillInput(BaseModel):
     value: str = Field(..., description="Value to fill (replaces existing content)")
     session_id: str | None = Field(default=None)
     url: str | None = Field(default=None)
-    wait_timeout: int = Field(default=30000)
+    wait_timeout: int = Field(default=30000, ge=1000, le=300000)
     headless: bool = Field(default=True)
-    backend: str = Field(default="cdp")
+    backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
 class FindByTextInput(BaseModel):
@@ -400,7 +416,7 @@ class NLFillInput(BaseModel):
 class FormField(BaseModel):
     """A single form field descriptor for ``FillFormInput``."""
 
-    selector: str = Field(..., description="CSS selector for the input element")
+    selector: str = Field(..., min_length=1, description="CSS selector for the input element")
     value: str = Field(..., description="Value to fill")
 
 
@@ -410,9 +426,9 @@ class FillFormInput(BaseModel):
     fields: list[FormField] = Field(..., min_length=1, description="Form fields to fill")
     session_id: str | None = Field(default=None)
     url: str | None = Field(default=None)
-    wait_timeout: int = Field(default=30000)
+    wait_timeout: int = Field(default=30000, ge=1000, le=300000)
     headless: bool = Field(default=True)
-    backend: str = Field(default="cdp")
+    backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
 class SelectOptionInput(BaseModel):
@@ -422,9 +438,9 @@ class SelectOptionInput(BaseModel):
     value: str = Field(..., description="Option value to select")
     session_id: str | None = Field(default=None)
     url: str | None = Field(default=None)
-    wait_timeout: int = Field(default=30000)
+    wait_timeout: int = Field(default=30000, ge=1000, le=300000)
     headless: bool = Field(default=True)
-    backend: str = Field(default="cdp")
+    backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
 class HoverInput(BaseModel):
@@ -433,9 +449,9 @@ class HoverInput(BaseModel):
     selector: str = Field(...)
     session_id: str | None = Field(default=None)
     url: str | None = Field(default=None)
-    wait_timeout: int = Field(default=30000)
+    wait_timeout: int = Field(default=30000, ge=1000, le=300000)
     headless: bool = Field(default=True)
-    backend: str = Field(default="cdp")
+    backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
 class KeyPressInput(BaseModel):
@@ -452,9 +468,9 @@ class DragInput(BaseModel):
     target: str = Field(..., description="CSS selector for drop target")
     session_id: str | None = Field(default=None)
     url: str | None = Field(default=None)
-    wait_timeout: int = Field(default=30000)
+    wait_timeout: int = Field(default=30000, ge=1000, le=300000)
     headless: bool = Field(default=True)
-    backend: str = Field(default="cdp")
+    backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
 class TapInput(BaseModel):
@@ -463,9 +479,9 @@ class TapInput(BaseModel):
     selector: str = Field(..., description="CSS selector for element to tap")
     session_id: str | None = Field(default=None)
     url: str | None = Field(default=None)
-    wait_timeout: int = Field(default=30000)
+    wait_timeout: int = Field(default=30000, ge=1000, le=300000)
     headless: bool = Field(default=True)
-    backend: str = Field(default="cdp")
+    backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
 class SetFilesInput(BaseModel):
@@ -475,9 +491,9 @@ class SetFilesInput(BaseModel):
     files: list[str] = Field(..., min_length=1, description="Absolute file paths to upload")
     session_id: str | None = Field(default=None)
     url: str | None = Field(default=None)
-    wait_timeout: int = Field(default=30000)
+    wait_timeout: int = Field(default=30000, ge=1000, le=300000)
     headless: bool = Field(default=True)
-    backend: str = Field(default="cdp")
+    backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
 class DropInput(BaseModel):
@@ -490,9 +506,9 @@ class DropInput(BaseModel):
     paths: list[str] = Field(default_factory=list, description="Absolute file paths to drop")
     session_id: str | None = Field(default=None)
     url: str | None = Field(default=None)
-    wait_timeout: int = Field(default=30000)
+    wait_timeout: int = Field(default=30000, ge=1000, le=300000)
     headless: bool = Field(default=True)
-    backend: str = Field(default="cdp")
+    backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
 class CheckInput(BaseModel):
@@ -510,9 +526,9 @@ class CookiesGetInput(BaseModel):
 
     session_id: str | None = Field(default=None)
     url: str | None = Field(default=None)
-    wait_timeout: int = Field(default=30000)
+    wait_timeout: int = Field(default=30000, ge=1000, le=300000)
     headless: bool = Field(default=True)
-    backend: str = Field(default="cdp")
+    backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
 class CookiesSetInput(BaseModel):
@@ -524,12 +540,12 @@ class CookiesSetInput(BaseModel):
     path: str = Field(default="/")
     secure: bool = Field(default=True)
     http_only: bool = Field(default=False)
-    same_site: str = Field(default="Lax")
+    same_site: Literal["Strict", "Lax", "None"] = Field(default="Lax")
     session_id: str | None = Field(default=None)
     url: str | None = Field(default=None)
-    wait_timeout: int = Field(default=30000)
+    wait_timeout: int = Field(default=30000, ge=1000, le=300000)
     headless: bool = Field(default=True)
-    backend: str = Field(default="cdp")
+    backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
 class CookiesDeleteInput(BaseModel):
@@ -539,9 +555,9 @@ class CookiesDeleteInput(BaseModel):
     domain: str = Field(...)
     session_id: str | None = Field(default=None)
     url: str | None = Field(default=None)
-    wait_timeout: int = Field(default=30000)
+    wait_timeout: int = Field(default=30000, ge=1000, le=300000)
     headless: bool = Field(default=True)
-    backend: str = Field(default="cdp")
+    backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
 class CookiesClearInput(BaseModel):
@@ -587,7 +603,7 @@ class BrowserVersionInput(BaseModel):
     """Input for getting the browser version."""
 
     session_id: str | None = Field(default=None)
-    backend: str = Field(default="cdp")
+    backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
 # ── Network ─────────────────────────────────────────────────────
@@ -646,9 +662,9 @@ class CaptureHARInput(BaseModel):
     session_id: str | None = Field(default=None)
     wait_ms: int = Field(default=3000, ge=500, le=30000)
     filter: str | None = Field(default=None, description="URL filter pattern")
-    timeout: int = Field(default=30000)
+    timeout: int = Field(default=30000, ge=1000, le=300000)
     headless: bool = Field(default=True)
-    backend: str = Field(default="cdp")
+    backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
 class InterceptRequestsInput(BaseModel):
@@ -951,9 +967,9 @@ class A11ySnapshotInput(BaseModel):
     url: str | None = Field(
         default=None, description="URL to navigate to first (required without session)"
     )
-    wait_timeout: int = Field(default=30000)
+    wait_timeout: int = Field(default=30000, ge=1000, le=300000)
     headless: bool = Field(default=True)
-    backend: str = Field(default="cdp")
+    backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
 class A11yNodeInput(BaseModel):
@@ -1227,7 +1243,7 @@ class MouseDownInput(BaseModel):
     """Input for pressing a mouse button at coordinates."""
 
     session_id: str = Field(...)
-    button: str = Field(default="left")
+    button: Literal["left", "right", "middle"] = Field(default="left")
     x: int = Field(default=0)
     y: int = Field(default=0)
 
@@ -1236,7 +1252,7 @@ class MouseUpInput(BaseModel):
     """Input for releasing a mouse button at coordinates."""
 
     session_id: str = Field(...)
-    button: str = Field(default="left")
+    button: Literal["left", "right", "middle"] = Field(default="left")
     x: int = Field(default=0)
     y: int = Field(default=0)
 
@@ -1247,7 +1263,7 @@ class MouseClickXYInput(BaseModel):
     session_id: str = Field(...)
     x: int = Field(...)
     y: int = Field(...)
-    button: str = Field(default="left")
+    button: Literal["left", "right", "middle"] = Field(default="left")
     click_count: int = Field(default=1, ge=1, le=10)
 
 
@@ -1257,7 +1273,7 @@ class MouseDoubleClickXYInput(BaseModel):
     session_id: str = Field(...)
     x: int = Field(...)
     y: int = Field(...)
-    button: str = Field(default="left")
+    button: Literal["left", "right", "middle"] = Field(default="left")
 
 
 class MouseWheelInput(BaseModel):
@@ -1365,7 +1381,7 @@ class MultiActionInput(BaseModel):
 
     config: str = Field(..., description="YAML config string (not file path)")
     session_id: str | None = Field(default=None)
-    backend: str = Field(default="cdp")
+    backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
     headless: bool = Field(default=True)
     continue_on_error: bool = Field(default=False, description="Continue on action errors")
 
@@ -1456,9 +1472,9 @@ class InvokeInput(BaseModel):
     browser_url: str | None = Field(default=None)
     remote_url: str | None = Field(default=None)
     stealth: bool = Field(default=False)
-    wait_strategy: str = Field(default="load")
+    wait_strategy: _WaitStrategy = Field(default="load")
     wait_selector: str | None = Field(default=None)
-    wait_timeout: int = Field(default=30000)
+    wait_timeout: int = Field(default=30000, ge=1000, le=300000)
 
 
 # ── Data ─────────────────────────────────────────────────────────
@@ -1470,7 +1486,7 @@ class RecordInput(BaseModel):
     url: str = Field(..., description="URL to navigate to for recording")
     duration: int = Field(default=60, ge=5, le=300, description="Recording duration in seconds")
     headless: bool = Field(default=False, description="Must be False for user interaction")
-    backend: str = Field(default="cdp")
+    backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
 class LighthouseInput(BaseModel):
@@ -1484,9 +1500,9 @@ class LighthouseInput(BaseModel):
         ),
     )
     session_id: str | None = Field(default=None)
-    wait_timeout: int = Field(default=30000)
+    wait_timeout: int = Field(default=30000, ge=1000, le=300000)
     headless: bool = Field(default=True)
-    backend: str = Field(default="cdp")
+    backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
 class ExtractInput(BaseModel):
@@ -1504,9 +1520,9 @@ class ExtractInput(BaseModel):
         default=None, description="Optional scoping selector for repeating elements"
     )
     session_id: str | None = Field(default=None)
-    wait_timeout: int = Field(default=30000)
+    wait_timeout: int = Field(default=30000, ge=1000, le=300000)
     headless: bool = Field(default=True)
-    backend: str = Field(default="cdp")
+    backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
 class WebsocketInterceptInput(BaseModel):
@@ -1522,9 +1538,9 @@ class WebsocketInterceptInput(BaseModel):
         default_factory=dict, description="Map request payloads to mock response payloads"
     )
     session_id: str | None = Field(default=None)
-    wait_timeout: int = Field(default=30000)
+    wait_timeout: int = Field(default=30000, ge=1000, le=300000)
     headless: bool = Field(default=True)
-    backend: str = Field(default="cdp")
+    backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
 class CrawlInput(BaseModel):
@@ -1536,9 +1552,9 @@ class CrawlInput(BaseModel):
     same_origin: bool = Field(default=True, description="Only crawl same-origin links")
     url_pattern: str = Field(default="", description="Regex pattern to filter URLs (empty = all)")
     session_id: str | None = Field(default=None)
-    wait_timeout: int = Field(default=30000)
+    wait_timeout: int = Field(default=30000, ge=1000, le=300000)
     headless: bool = Field(default=True)
-    backend: str = Field(default="cdp")
+    backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
 class VisualDiffInput(BaseModel):
@@ -1553,9 +1569,9 @@ class VisualDiffInput(BaseModel):
     threshold: float = Field(default=0.1, ge=0.0, le=1.0, description="Pixel difference threshold")
     output_path: str | None = Field(default=None, description="Save diff image to this path")
     session_id: str | None = Field(default=None)
-    wait_timeout: int = Field(default=30000)
+    wait_timeout: int = Field(default=30000, ge=1000, le=300000)
     headless: bool = Field(default=True)
-    backend: str = Field(default="cdp")
+    backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
 # ── Experimental ─────────────────────────────────────────────────
@@ -1794,7 +1810,7 @@ class ReplayHARInput(BaseModel):
     session_id: str | None = Field(default=None)
     url: str = Field(default="", description="URL to navigate to before replay")
     headless: bool = Field(default=True)
-    backend: str = Field(default="cdp")
+    backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
 class StartCombinedTraceInput(BaseModel):
@@ -1826,7 +1842,7 @@ class CoreWebVitalsInput(BaseModel):
         description="Optional budgets: lcp_ms, cls, inp_ms, fcp_ms, ttfb_ms, tbt_ms, load_ms",
     )
     headless: bool = Field(default=True)
-    backend: str = Field(default="cdp")
+    backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
 class AxeAuditInput(BaseModel):
@@ -1835,7 +1851,7 @@ class AxeAuditInput(BaseModel):
     session_id: str | None = Field(default=None)
     url: str = Field(default="", description="URL to navigate to before audit")
     headless: bool = Field(default=True)
-    backend: str = Field(default="cdp")
+    backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 
 
 class ActInput(BaseModel):

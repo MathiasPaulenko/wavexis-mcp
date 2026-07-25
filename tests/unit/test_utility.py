@@ -90,3 +90,22 @@ async def test_invoke_private_method(
     data = json.loads(result)
     assert "error" in data
     assert data["tool"] == "wavexis_invoke"
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("denied", ["raw", "eval", "execute", "__init__"])
+async def test_invoke_denies_dangerous_methods(
+    session_manager_with_mock: SessionManager, mock_session_id: str, denied: str
+) -> None:
+    from mcp.server.fastmcp import FastMCP
+
+    from wavexis_mcp.tools.utility import register
+
+    mcp = FastMCP("test")
+    register(mcp, session_manager_with_mock)
+
+    tool = mcp._tool_manager.get_tool("wavexis_invoke")
+    result = await tool.fn(InvokeInput(session_id=mock_session_id, method=denied, params={}))
+    data = json.loads(result)
+    assert "error" in data
+    assert data["tool"] == "wavexis_invoke"

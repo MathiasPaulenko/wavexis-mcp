@@ -228,7 +228,7 @@ def _numeric_bounds(info: Any) -> tuple[float | None, float | None]:
 
 def _clamp_numeric(value: Any, info: Any) -> Any:
     ge, le = _numeric_bounds(info)
-    if isinstance(value, (int, float)):
+    if isinstance(value, int | float):
         if ge is not None:
             value = max(value, ge)
         if le is not None:

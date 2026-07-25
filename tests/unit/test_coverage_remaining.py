@@ -110,6 +110,7 @@ async def test_wavexis_invoke_errors_and_dataclass(
         InvokeInput(session_id=mock_session_id, method="some_method", params={"x": 1})
     )
     data = json.loads(result)
+    print("DEBUG:", data)
     assert data["result"]["ok"] is True
 
     result = await tool.fn(InvokeInput(session_id=mock_session_id, method="missing_method"))
@@ -275,7 +276,6 @@ async def test_video_stop_and_add_chapter(
 async def test_key_down_modifiers(
     coverage_mcp: Any, session_manager_with_mock: SessionManager, mock_session_id: str
 ) -> None:
-
     session = session_manager_with_mock.get(mock_session_id)
     session.backend.input_dispatch_key_event = AsyncMock()
 
@@ -298,7 +298,6 @@ async def test_key_down_modifiers(
 async def test_press_keys_delay(
     coverage_mcp: Any, session_manager_with_mock: SessionManager, mock_session_id: str
 ) -> None:
-
     session = session_manager_with_mock.get(mock_session_id)
     session.backend.input_dispatch_key_event = AsyncMock()
 
@@ -311,7 +310,6 @@ async def test_press_keys_delay(
 async def test_cookie_list_filters(
     coverage_mcp: Any, session_manager_with_mock: SessionManager, mock_session_id: str
 ) -> None:
-
     session = session_manager_with_mock.get(mock_session_id)
     session.backend.get_cookies = AsyncMock(
         return_value=[
@@ -332,7 +330,6 @@ async def test_cookie_list_filters(
 async def test_close_page_with_tab_id(
     coverage_mcp: Any, session_manager_with_mock: SessionManager, mock_session_id: str
 ) -> None:
-
     session = session_manager_with_mock.get(mock_session_id)
     session.backend.target_close_target = AsyncMock()
 
@@ -346,7 +343,6 @@ async def test_close_page_with_tab_id(
 async def test_wavexis_find_and_get_config_exception(
     coverage_mcp: Any, session_manager_with_mock: SessionManager, mock_session_id: str, monkeypatch
 ) -> None:
-
     session = session_manager_with_mock.get(mock_session_id)
     session.backend.a11y_tree = AsyncMock(
         return_value=[{"role": "button", "name": "Submit", "children": []}]
@@ -377,7 +373,12 @@ async def test_extract_with_selector(
     from wavexis_mcp.models import ExtractInput
 
     session = session_manager_with_mock.get(mock_session_id)
-    session.backend.eval = AsyncMock(side_effect=["2", "Title 1", "Body 1", "Title 2", "Body 2"])
+    session.backend.eval = AsyncMock(
+        return_value=[
+            {"title": "Title 1", "body": "Body 1"},
+            {"title": "Title 2", "body": "Body 2"},
+        ]
+    )
 
     tool = coverage_mcp._tool_manager.get_tool("wavexis_extract")
     result = await tool.fn(
@@ -733,18 +734,17 @@ async def test_video_stop_output_path_and_base64(
     coverage_mcp: Any, session_manager_with_mock: SessionManager, mock_session_id: str, tmp_path
 ) -> None:
     from wavexis_mcp.models import VideoRecordInput, VideoStopInput
-    from wavexis_mcp.tools import video as video_module
 
     tool_record = coverage_mcp._tool_manager.get_tool("wavexis_video_record")
     tool_stop = coverage_mcp._tool_manager.get_tool("wavexis_video_stop")
 
     # Save to file branch
-    video_module._recordings.clear()
+    coverage_mcp._wavexis_video_recordings.clear()
     result = await tool_record.fn(
         VideoRecordInput(session_id=mock_session_id, output_path=str(tmp_path / "out.mp4"))
     )
     rid = json.loads(result)["recording_id"]
-    video_module._recordings[rid]["frames"].append(b"frame1")
+    coverage_mcp._wavexis_video_recordings[rid]["frames"].append(b"frame1")
 
     result = await tool_stop.fn(
         VideoStopInput(session_id=mock_session_id, output_path=str(tmp_path / "out.mp4"))
@@ -753,10 +753,10 @@ async def test_video_stop_output_path_and_base64(
     assert data["path"] == str(tmp_path / "out.mp4")
 
     # Base64 branch
-    video_module._recordings.clear()
+    coverage_mcp._wavexis_video_recordings.clear()
     result = await tool_record.fn(VideoRecordInput(session_id=mock_session_id))
     rid = json.loads(result)["recording_id"]
-    video_module._recordings[rid]["frames"].append(b"frame2")
+    coverage_mcp._wavexis_video_recordings[rid]["frames"].append(b"frame2")
 
     result = await tool_stop.fn(VideoStopInput(session_id=mock_session_id))
     data = json.loads(result)
@@ -766,16 +766,15 @@ async def test_video_stop_output_path_and_base64(
 @pytest.mark.unit
 async def test_video_add_chapter_exception(coverage_mcp: Any, mock_session_id: str) -> None:
     from wavexis_mcp.models import VideoAddChapterInput
-    from wavexis_mcp.tools import video as video_module
 
-    video_module._recordings["bad"] = "not-a-dict"
+    coverage_mcp._wavexis_video_recordings["bad"] = "not-a-dict"
 
     tool = coverage_mcp._tool_manager.get_tool("wavexis_video_add_chapter")
     result = await tool.fn(
         VideoAddChapterInput(session_id=mock_session_id, recording_id="bad", title="x")
     )
     assert "error" in json.loads(result)
-    del video_module._recordings["bad"]
+    del coverage_mcp._wavexis_video_recordings["bad"]
 
 
 @pytest.mark.unit

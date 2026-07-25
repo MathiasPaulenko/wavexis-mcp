@@ -586,10 +586,10 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                 return format_json_response({"status": "error", "error": "Invalid state file"})
 
             cookies = state.get("cookies", [])
-            for cookie in cookies:
-                from wavexis.config import CookieParams
+            from wavexis.config import CookieParams
 
-                await session.backend.set_cookie(
+            cookie_tasks = [
+                session.backend.set_cookie(
                     CookieParams(
                         name=cookie.get("name", ""),
                         value=cookie.get("value", ""),
@@ -599,20 +599,25 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                         http_only=cookie.get("httpOnly", False),
                     )
                 )
+                for cookie in cookies
+            ]
+            await asyncio.gather(*cookie_tasks, return_exceptions=True)
 
             local_storage = state.get("localStorage", {})
-            for key, value in local_storage.items():
-                await session.backend.eval(
-                    f"localStorage.setItem({json.dumps(key)}, {json.dumps(value)})",
-                    await_promise=False,
+            if local_storage:
+                local_js = ";".join(
+                    f"localStorage.setItem({json.dumps(key)}, {json.dumps(value)})"
+                    for key, value in local_storage.items()
                 )
+                await session.backend.eval(local_js, await_promise=False)
 
             session_storage = state.get("sessionStorage", {})
-            for key, value in session_storage.items():
-                await session.backend.eval(
-                    f"sessionStorage.setItem({json.dumps(key)}, {json.dumps(value)})",
-                    await_promise=False,
+            if session_storage:
+                session_js = ";".join(
+                    f"sessionStorage.setItem({json.dumps(key)}, {json.dumps(value)})"
+                    for key, value in session_storage.items()
                 )
+                await session.backend.eval(session_js, await_promise=False)
 
             return format_json_response(
                 {

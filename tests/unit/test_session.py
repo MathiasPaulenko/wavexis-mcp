@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -64,3 +65,23 @@ async def test_info_returns_metadata(
     assert info["session_id"] == mock_session_id
     assert info["backend"] == "cdp"
     assert "created_at" in info
+
+
+@pytest.mark.unit
+async def test_close_waits_for_pending_acquire_release(
+    session_manager_with_mock: SessionManager, mock_session_id: str
+) -> None:
+    backend, sid = await session_manager_with_mock.acquire_backend(
+        session_id=mock_session_id,
+    )
+    assert sid == mock_session_id
+    assert session_manager_with_mock._sessions[mock_session_id].ref_count == 1
+
+    async def _close_after_release() -> None:
+        await session_manager_with_mock.release_backend(backend, sid)
+
+    task = asyncio.create_task(_close_after_release())
+    await session_manager_with_mock.close(mock_session_id)
+    await task
+
+    assert mock_session_id not in session_manager_with_mock._sessions

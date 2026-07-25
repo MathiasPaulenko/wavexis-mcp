@@ -48,7 +48,7 @@ async def test_rate_limiter_update_existing_buckets() -> None:
     # Create two buckets implicitly by acquiring tokens.
     await rl.acquire("s1")
     await rl.acquire("s2")
-    rl.configure(10, 20)
+    await rl.configure(10, 20)
     assert rl.default_rate == 10.0
     assert rl.default_burst == 20
     for bucket in rl._buckets.values():

@@ -107,7 +107,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                     data = await session_manager.call_backend(backend.screenshot(params))
 
                 if input.output_path:
-                    result = save_to_file(data, input.output_path)
+                    result = await save_to_file(data, input.output_path)
                     result["status"] = "ok"
                     return format_json_response(result)
 
@@ -167,7 +167,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                 data = await backend.pdf(params)
 
                 if input.output_path:
-                    result = save_to_file(data, input.output_path)
+                    result = await save_to_file(data, input.output_path)
                     result["status"] = "ok"
                     return format_json_response(result)
 
@@ -201,14 +201,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             JSON string with paginated results and total count.
         """
         try:
-            results: list[dict[str, object]] = []
-            for url in input.urls:
-                backend, sid = await session_manager.acquire_backend(
-                    input.session_id,
-                    backend=input.backend,
-                    headless=input.headless,
-                )
-                try:
+            backend, sid = await session_manager.acquire_backend(
+                input.session_id,
+                backend=input.backend,
+                headless=input.headless,
+            )
+            try:
+                results: list[dict[str, object]] = []
+                for url in input.urls:
                     wait = session_manager.make_wait(
                         strategy="selector" if input.selector else "load",
                         selector=input.selector,
@@ -217,10 +217,10 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                     await backend.navigate(url, wait)
                     data = await backend.eval(input.expression, await_promise=True)
                     results.append({"url": url, "data": data})
-                finally:
-                    await session_manager.release_backend(backend, sid)
 
-            paginated = results[input.offset : input.offset + input.limit]
+                paginated = results[input.offset : input.offset + input.limit]
+            finally:
+                await session_manager.release_backend(backend, sid)
             return format_json_response(
                 {
                     "results": paginated,
@@ -322,7 +322,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             )
 
             if input.output_path:
-                result = save_to_file(data, input.output_path)
+                result = await save_to_file(data, input.output_path)
                 result["status"] = "ok"
                 result["labels"] = label_map
                 return format_json_response(result)
@@ -385,7 +385,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
 
                 if input.output_path:
                     pdf_bytes = base64.b64decode(result)
-                    meta = save_to_file(pdf_bytes, input.output_path)
+                    meta = await save_to_file(pdf_bytes, input.output_path)
                     return format_json_response({"status": "ok", "type": "pdf", **meta})
 
                 return format_json_response(
@@ -432,7 +432,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                 snapshot = await backend.page_capture_snapshot(format=input.format)
 
                 if input.output_path:
-                    meta = save_to_file(snapshot.encode("utf-8"), input.output_path)
+                    meta = await save_to_file(snapshot.encode("utf-8"), input.output_path)
                     return format_json_response({"status": "ok", "format": input.format, **meta})
 
                 return format_json_response(

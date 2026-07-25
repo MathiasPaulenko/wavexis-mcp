@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from typing import Any
 
 import pytest
 
@@ -13,13 +14,12 @@ from wavexis_mcp.models import (
     VideoStopInput,
 )
 from wavexis_mcp.session import SessionManager
-from wavexis_mcp.tools.video import _recordings
 
 
-def _register(mcp, mgr):
+def _register(mcp, mgr, recordings=None):
     from wavexis_mcp.tools.video import register
 
-    register(mcp, mgr)
+    register(mcp, mgr, recordings)
 
 
 @pytest.mark.unit
@@ -28,24 +28,25 @@ async def test_video_record(
 ) -> None:
     from mcp.server.fastmcp import FastMCP
 
-    _recordings.clear()
+    recordings: dict[str, Any] = {}
     mcp = FastMCP("test")
-    _register(mcp, session_manager_with_mock)
+    _register(mcp, session_manager_with_mock, recordings)
 
     tool = mcp._tool_manager.get_tool("wavexis_video_record")
     result = await tool.fn(VideoRecordInput(session_id=mock_session_id))
     data = json.loads(result)
     assert data["status"] == "recording"
     assert "recording_id" in data
+    assert data["recording_id"] in recordings
 
 
 @pytest.mark.unit
 async def test_video_stop(session_manager_with_mock: SessionManager, mock_session_id: str) -> None:
     from mcp.server.fastmcp import FastMCP
 
-    _recordings.clear()
+    recordings: dict[str, Any] = {}
     mcp = FastMCP("test")
-    _register(mcp, session_manager_with_mock)
+    _register(mcp, session_manager_with_mock, recordings)
 
     record_tool = mcp._tool_manager.get_tool("wavexis_video_record")
     result = await record_tool.fn(VideoRecordInput(session_id=mock_session_id))
@@ -57,7 +58,7 @@ async def test_video_stop(session_manager_with_mock: SessionManager, mock_sessio
     data = json.loads(result)
     assert "duration_ms" in data
     assert data["size_bytes"] == 0
-    assert recording_id not in _recordings
+    assert recording_id not in recordings
 
 
 @pytest.mark.unit
@@ -66,9 +67,9 @@ async def test_video_add_chapter(
 ) -> None:
     from mcp.server.fastmcp import FastMCP
 
-    _recordings.clear()
+    recordings: dict[str, Any] = {}
     mcp = FastMCP("test")
-    _register(mcp, session_manager_with_mock)
+    _register(mcp, session_manager_with_mock, recordings)
 
     record_tool = mcp._tool_manager.get_tool("wavexis_video_record")
     result = await record_tool.fn(VideoRecordInput(session_id=mock_session_id))
@@ -89,7 +90,7 @@ async def test_video_add_chapter(
     assert data["chapter"]["title"] == "Test chapter"
     assert data["chapter"]["timestamp_ms"] == 1000
 
-    _recordings.clear()
+    assert recordings[recording_id]["chapters"][0]["title"] == "Test chapter"
 
 
 @pytest.mark.unit

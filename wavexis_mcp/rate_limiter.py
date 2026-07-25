@@ -7,6 +7,7 @@ its own bucket with configurable rate (tokens per second) and burst
 
 from __future__ import annotations
 
+import asyncio
 import time
 from dataclasses import dataclass
 
@@ -78,11 +79,12 @@ class RateLimiter:
             rate: Default tokens per second (default: 60).
             burst: Default maximum burst size (default: 10).
         """
-        self.default_rate: float = float(rate)
-        self.default_burst: int = burst
+        self.default_rate: float = float(max(rate, 1))
+        self.default_burst: int = max(burst, 1)
         self._buckets: dict[str, _TokenBucket] = {}
+        self._lock = asyncio.Lock()
 
-    def configure(self, rate: int, burst: int) -> None:
+    async def configure(self, rate: int, burst: int) -> None:
         """Update the default rate and burst for new sessions.
 
         Existing session buckets are updated to the new values.
@@ -91,14 +93,17 @@ class RateLimiter:
             rate: New tokens per second.
             burst: New maximum burst size.
         """
-        self.default_rate = float(rate)
-        self.default_burst = burst
-        for bucket in self._buckets.values():
-            bucket.rate = self.default_rate
-            bucket.burst = burst
+        async with self._lock:
+            self.default_rate = float(max(rate, 1))
+            self.default_burst = max(burst, 1)
+            for bucket in self._buckets.values():
+                bucket.rate = self.default_rate
+                bucket.burst = self.default_burst
 
-    def _get_or_create(self, session_id: str) -> _TokenBucket:
+    def _get_or_create_bucket(self, session_id: str) -> _TokenBucket:
         """Get the bucket for a session, creating one if needed.
+
+        Must be called while holding ``self._lock``.
 
         Args:
             session_id: Session identifier.
@@ -106,15 +111,17 @@ class RateLimiter:
         Returns:
             The ``_TokenBucket`` for the session.
         """
-        if session_id not in self._buckets:
+        bucket = self._buckets.get(session_id)
+        if bucket is None:
             now = time.monotonic()
-            self._buckets[session_id] = _TokenBucket(
+            bucket = _TokenBucket(
                 rate=self.default_rate,
                 burst=self.default_burst,
                 tokens=float(self.default_burst),
                 last_refill=now,
             )
-        return self._buckets[session_id]
+            self._buckets[session_id] = bucket
+        return bucket
 
     async def acquire(self, session_id: str) -> bool:
         """Attempt to acquire a token for the given session.
@@ -125,9 +132,10 @@ class RateLimiter:
         Returns:
             ``True`` if the request is allowed, ``False`` if rate limited.
         """
-        bucket = self._get_or_create(session_id)
-        acquired, _ = bucket.try_acquire(time.monotonic())
-        return acquired
+        async with self._lock:
+            bucket = self._get_or_create_bucket(session_id)
+            acquired, _ = bucket.try_acquire(time.monotonic())
+            return acquired
 
     async def check(self, session_id: str) -> tuple[bool, int]:
         """Check rate limit and return status with retry hint.
@@ -139,14 +147,16 @@ class RateLimiter:
             Tuple of ``(allowed, retry_after_ms)``.  If ``allowed`` is
             ``False``, ``retry_after_ms`` indicates how long to wait.
         """
-        bucket = self._get_or_create(session_id)
-        acquired, retry_after_ms = bucket.try_acquire(time.monotonic())
-        return acquired, int(retry_after_ms)
+        async with self._lock:
+            bucket = self._get_or_create_bucket(session_id)
+            acquired, retry_after_ms = bucket.try_acquire(time.monotonic())
+            return acquired, int(retry_after_ms)
 
-    def cleanup(self, session_id: str) -> None:
+    async def cleanup(self, session_id: str) -> None:
         """Remove the bucket for a closed session.
 
         Args:
             session_id: Session identifier to clean up.
         """
-        self._buckets.pop(session_id, None)
+        async with self._lock:
+            self._buckets.pop(session_id, None)

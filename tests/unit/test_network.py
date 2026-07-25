@@ -497,3 +497,32 @@ async def test_modify_response(
     data = json.loads(result)
     assert data["status"] == "ok"
     assert data["pattern"] == {"urlPattern": "*://api.example.com/*"}
+
+
+@pytest.mark.unit
+def test_network_log_caps_growth() -> None:
+    from wavexis_mcp.tools.network import _NETWORK_LOG_MAX, _on_network_event
+
+    class FakeSession:
+        def __init__(self):
+            self.backend = type(
+                "Backend",
+                (),
+                {"_network_log": [], "_network_log_map": {}, "_network_log_sub_id": None},
+            )()
+
+    session = FakeSession()
+    for i in range(_NETWORK_LOG_MAX + 50):
+        _on_network_event(
+            session,
+            {
+                "type": "network_request",
+                "data": {
+                    "requestId": f"req-{i}",
+                    "request": {"url": f"https://example.com/{i}"},
+                },
+            },
+        )
+
+    assert len(session.backend._network_log) == _NETWORK_LOG_MAX
+    assert len(session.backend._network_log_map) <= _NETWORK_LOG_MAX * 2

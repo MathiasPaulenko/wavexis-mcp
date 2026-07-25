@@ -11,6 +11,7 @@ import asyncio
 import base64
 import contextlib
 import fnmatch
+import functools
 import json
 import re
 from collections.abc import Awaitable, Callable
@@ -21,7 +22,12 @@ from mcp.types import ToolAnnotations
 from wavexis.backend.base import AbstractBackend
 from wavexis.config import HarParams, ThrottleParams
 
-from wavexis_mcp.formatter import format_error, format_json_response, secure_output_path
+from wavexis_mcp.formatter import (
+    format_error,
+    format_json_response,
+    secure_output_path,
+    validate_url,
+)
 from wavexis_mcp.models import (
     BlockRequestsInput,
     CaptureHARInput,
@@ -61,6 +67,10 @@ _THROTTLE_PRESETS: dict[str, dict[str, int | bool]] = {
 }
 
 
+_NETWORK_LOG_MAX = 1000
+
+
+@functools.lru_cache(maxsize=256)
 def _glob_to_regex(pattern: str) -> re.Pattern[str]:
     """Convert a Playwright-style glob pattern to a compiled regex."""
     parts = []
@@ -124,7 +134,11 @@ def _on_network_event(session: BrowserSession, event: dict[str, Any]) -> None:
             "response_headers": {},
         }
         backend._network_log.append(entry)
+        if len(backend._network_log) > _NETWORK_LOG_MAX:
+            backend._network_log.pop(0)
         backend._network_log_map[request_id] = entry
+        if len(backend._network_log_map) > _NETWORK_LOG_MAX * 2:
+            backend._network_log_map.pop(next(iter(backend._network_log_map)))
     elif event_type == "network_response":
         entry = backend._network_log_map.get(request_id)
         if entry:
@@ -228,7 +242,7 @@ def _build_route_handler(
                 continue
             if route.body is not None or route.status is not None:
                 body = route.body or ""
-                if isinstance(body, (dict, list)):
+                if isinstance(body, dict | list):
                     body = json.dumps(body)
                 body_b64 = base64.b64encode(body.encode("utf-8")).decode("ascii")
                 response_headers = []
@@ -251,7 +265,7 @@ def _build_route_handler(
                 headers[k] = v
             for k in route.remove_headers:
                 remove_low = k.lower()
-                for header_name in list(headers.keys()):
+                for header_name in list(headers):
                     if header_name.lower() == remove_low:
                         headers.pop(header_name, None)
             with contextlib.suppress(Exception):
@@ -488,6 +502,8 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             JSON string with ``har`` data and ``entries`` count.
         """
         try:
+            if input.url:
+                validate_url(input.url)
             backend, sid = await session_manager.acquire_backend(
                 input.session_id,
                 backend=input.backend,

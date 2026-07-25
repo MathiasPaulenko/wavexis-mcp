@@ -36,6 +36,7 @@ class StreamingHandler:
         """
         self._session_manager = session_manager
         self._active: dict[str, asyncio.Task[None]] = {}
+        self._lock = asyncio.Lock()
 
     async def start_stream(
         self,
@@ -71,9 +72,10 @@ class StreamingHandler:
                 logger.warning("subscribe_events failed, falling back to polling")
 
         # Fallback: polling-based streaming
-        if stream_id not in self._active:
-            task = asyncio.create_task(self._poll_loop(session_id, event_types))
-            self._active[stream_id] = task
+        async with self._lock:
+            if stream_id not in self._active:
+                task = asyncio.create_task(self._poll_loop(session_id, event_types))
+                self._active[stream_id] = task
 
         return stream_id
 
@@ -84,15 +86,22 @@ class StreamingHandler:
             session_id: The session to stop streaming.
         """
         stream_id = f"stream-{session_id}"
-        task = self._active.pop(stream_id, None)
+        async with self._lock:
+            task = self._active.pop(stream_id, None)
         if task is not None:
             task.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await task
 
-        session = self._session_manager.get(session_id)
-        unsubscribe = getattr(session.backend, "unsubscribe_events", None)
-        if unsubscribe is not None:
-            with contextlib.suppress(Exception):
-                await unsubscribe()
+        try:
+            session = self._session_manager.get(session_id)
+        except Exception:
+            session = None
+        if session is not None:
+            unsubscribe = getattr(session.backend, "unsubscribe_events", None)
+            if unsubscribe is not None:
+                with contextlib.suppress(Exception):
+                    await unsubscribe()
 
     async def _poll_loop(
         self,
@@ -124,7 +133,10 @@ class StreamingHandler:
 
     async def stop_all(self) -> None:
         """Stop all active streaming tasks."""
-        for stream_id in list(self._active.keys()):
-            task = self._active.pop(stream_id, None)
-            if task is not None:
-                task.cancel()
+        async with self._lock:
+            tasks = list(self._active.values())
+            self._active.clear()
+        for task in tasks:
+            task.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await task

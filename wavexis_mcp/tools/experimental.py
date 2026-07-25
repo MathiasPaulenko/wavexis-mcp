@@ -10,7 +10,7 @@ from __future__ import annotations
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
 
-from wavexis_mcp.formatter import format_error, format_json_response
+from wavexis_mcp.formatter import format_error, format_json_response, secure_output_path
 from wavexis_mcp.models import (
     AnimationListInput,
     AnimationPauseInput,
@@ -778,7 +778,8 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """
         try:
             session = session_manager.get(input.session_id)
-            ext_id = await session.backend.extension_install(input.path)
+            safe_path = str(secure_output_path(input.path))
+            ext_id = await session.backend.extension_install(safe_path)
             return format_json_response({"extension_id": ext_id, "status": "installed"})
         except Exception as e:
             return format_error("wavexis_extension_install", e)

@@ -10,8 +10,11 @@ from __future__ import annotations
 import asyncio
 import base64
 import json
+from collections import deque
 from typing import Any
+from urllib.parse import urlparse
 
+import yaml
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
 from wavexis.backend.base import AbstractBackend
@@ -90,12 +93,13 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                 title = await backend.eval("document.title")
                 title = str(title) if title else "recorded"
 
-                yaml_text = (
-                    f"actions:\n"
-                    f"  - navigate:\n"
-                    f"      url: {input.url}\n"
-                    f"  - eval:\n"
-                    f"      expression: document.title\n"
+                yaml_text = yaml.safe_dump(
+                    {
+                        "actions": [
+                            {"navigate": {"url": input.url}},
+                            {"eval": {"expression": "document.title"}},
+                        ]
+                    }
                 )
 
                 return format_json_response(
@@ -219,40 +223,33 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                 wait = WaitStrategy(strategy="load", timeout=input.wait_timeout)
                 await backend.navigate(input.url, wait)
 
-                data: list[dict[str, Any]] = []
+                schema_entries = ",".join(
+                    f"{json.dumps(field)}:{json.dumps(sel)}"
+                    for field, sel in input.json_schema.items()
+                )
 
                 if input.selector:
                     escaped_scope = json.dumps(input.selector)
-                    count_js = f"document.querySelectorAll({escaped_scope}).length"
-                    count = await backend.eval(count_js, await_promise=True)
-                    count = int(count) if count else 0
-
-                    for i in range(count):
-                        row: dict[str, Any] = {}
-                        for field, sel in input.json_schema.items():
-                            escaped_sel = json.dumps(sel)
-                            js = (
-                                f"(function(){{var els=document.querySelectorAll"
-                                f"({escaped_scope});var el=els[{i}];"
-                                f"if(!el)return '';var t=el.querySelector"
-                                f"({escaped_sel});return t?t.innerText.trim()"
-                                f":'';}})()"
-                            )
-                            val = await backend.eval(js, await_promise=True)
-                            row[field] = str(val) if val else ""
-                        data.append(row)
+                    js = (
+                        f"(function(){{var schema={{{schema_entries}}};"
+                        f"var scope=document.querySelectorAll({escaped_scope});"
+                        f"var out=[];for(var i=0;i<scope.length;i++){{"
+                        f"var el=scope[i];var row={{}};"
+                        f"for(var key in schema){{var t=el.querySelector(schema[key]);"
+                        f"row[key]=t?t.innerText.trim():'';}}"
+                        f"out.push(row);}}return out;}})()"
+                    )
                 else:
-                    row = {}
-                    for field, sel in input.json_schema.items():
-                        escaped_sel = json.dumps(sel)
-                        js = (
-                            f"(function(){{var el=document.querySelector"
-                            f"({escaped_sel});return el?el.innerText.trim()"
-                            f":'';}})()"
-                        )
-                        val = await backend.eval(js, await_promise=True)
-                        row[field] = str(val) if val else ""
-                    data.append(row)
+                    js = (
+                        f"(function(){{var schema={{{schema_entries}}};"
+                        f"var row={{}};for(var key in schema){{"
+                        f"var t=document.querySelector(schema[key]);"
+                        f"row[key]=t?t.innerText.trim():'';}}"
+                        f"return[row];}})()"
+                    )
+
+                data = await backend.eval(js, await_promise=True)
+                data = data if isinstance(data, list) else []
 
                 return format_json_response(
                     {
@@ -338,10 +335,10 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             try:
                 visited: set[str] = set()
                 pages: list[dict[str, Any]] = []
-                queue: list[tuple[str, int]] = [(input.start_url, 0)]
+                queue: deque[tuple[str, int]] = deque([(input.start_url, 0)])
 
                 while queue and len(pages) < input.max_pages:
-                    url, depth = queue.pop(0)
+                    url, depth = queue.popleft()
                     if url in visited or depth > input.max_depth:
                         continue
                     visited.add(url)
@@ -373,8 +370,6 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                         for link in links:
                             if link not in visited:
                                 if input.same_origin:
-                                    from urllib.parse import urlparse
-
                                     base = urlparse(input.start_url)
                                     target = urlparse(link)
                                     if base.netloc != target.netloc:
@@ -433,7 +428,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                 threshold = max(0, min(255, round(input.threshold * 255)))
                 baseline_path = str(secure_output_path(input.baseline_path))
                 params = VisualDiffParams(
-                    url="",
+                    url=input.url,
                     baseline_path=baseline_path,
                     selector=input.selector,
                     threshold=threshold,
@@ -454,7 +449,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                 diff_b64 = raw.get("diff_base64", "")
                 if input.output_path:
                     diff_bytes = base64.b64decode(diff_b64) if diff_b64 else b""
-                    save_to_file(diff_bytes, input.output_path)
+                    await save_to_file(diff_bytes, input.output_path)
                     result["diff_path"] = input.output_path
                 else:
                     result["diff_base64"] = diff_b64
