@@ -371,6 +371,8 @@ async def execute_act(
                 await backend.fill(selector or f"#{match.ref}", text_value or "")
             elif match.action == "hover":
                 await backend.hover(selector or f"#{match.ref}")
+            elif match.action == "focus":
+                await backend.dom_focus(selector or f"#{match.ref}")
 
             result["status"] = "ok"
             result["attempts"] = attempt + 1

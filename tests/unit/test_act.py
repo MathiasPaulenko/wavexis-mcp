@@ -231,6 +231,16 @@ class TestExecuteAct:
         mock_backend.hover.assert_called_once()
 
     @pytest.mark.unit
+    async def test_execute_focus(self, mock_backend: pytest.fixture) -> None:
+        tree = [
+            {"ref": "el-1", "role": "textbox", "name": "Email", "children": []},
+        ]
+        result = await execute_act(mock_backend, "focus the email field", tree)
+        assert result["status"] == "ok"
+        assert result["action"] == "focus"
+        mock_backend.dom_focus.assert_called_once()
+
+    @pytest.mark.unit
     async def test_execute_retry_then_success(self, mock_backend: pytest.fixture) -> None:
         from unittest.mock import AsyncMock
 
