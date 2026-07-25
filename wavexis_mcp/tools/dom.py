@@ -10,7 +10,7 @@ from __future__ import annotations
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
 
-from wavexis_mcp.formatter import format_error, format_json_response
+from wavexis_mcp.formatter import format_error, format_json_response, validate_url
 from wavexis_mcp.models import (
     DOMFocusInput,
     DOMGetAttrInput,
@@ -65,6 +65,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             try:
                 if input.url:
                     wait = session_manager.make_wait(timeout=input.wait_timeout)
+                    validate_url(input.url)
                     await backend.navigate(input.url, wait)
                 html = await backend.dom_get(input.selector, outer=input.outer)
                 return format_json_response({"html": html, "selector": input.selector})
@@ -99,6 +100,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             try:
                 if input.url:
                     wait = session_manager.make_wait(timeout=input.wait_timeout)
+                    validate_url(input.url)
                     await backend.navigate(input.url, wait)
                 raw = await backend.dom_query(input.selector, all=input.all)
                 elements = raw if isinstance(raw, list) else [raw]

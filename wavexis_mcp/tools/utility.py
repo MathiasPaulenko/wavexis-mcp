@@ -23,6 +23,7 @@ from wavexis_mcp.formatter import (
     format_json_response,
     save_to_file,
     secure_output_path,
+    validate_url,
 )
 from wavexis_mcp.models import BrowserVersionInput, InvokeInput
 from wavexis_mcp.session import SessionManager
@@ -286,6 +287,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                     selector=input.wait_selector,
                     timeout=input.wait_timeout,
                 )
+                validate_url(input.url)
                 await backend.navigate(input.url, wait)
 
             result = await _call_backend_method(backend, input.method, input.params)

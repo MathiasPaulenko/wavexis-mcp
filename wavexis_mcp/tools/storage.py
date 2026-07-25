@@ -9,9 +9,11 @@ from __future__ import annotations
 
 import asyncio
 import json
+from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
+from wavexis.backend.base import AbstractBackend
 
 from wavexis_mcp.formatter import format_error, format_json_response, secure_output_path
 from wavexis_mcp.models import (
@@ -35,6 +37,11 @@ from wavexis_mcp.models import (
     StorageStateSaveInput,
 )
 from wavexis_mcp.session import SessionManager
+
+
+async def _eval(backend: AbstractBackend, expr: str, **kwargs: Any) -> Any:
+    """Evaluate *expr* on *backend* with a 5-second timeout."""
+    return await asyncio.wait_for(backend.eval(expr, **kwargs), timeout=5.0)
 
 
 def _write_json(path: str, data: object) -> str:
@@ -95,8 +102,10 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """
         try:
             session = session_manager.get(input.session_id)
-            value = await session.backend.eval(
-                f"localStorage.getItem({json.dumps(input.key)})", await_promise=False
+            value = await _eval(
+                session.backend,
+                f"localStorage.getItem({json.dumps(input.key)})",
+                await_promise=False,
             )
             return format_json_response({"key": input.key, "value": value})
         except Exception as e:
@@ -121,7 +130,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """
         try:
             session = session_manager.get(input.session_id)
-            await session.backend.eval(
+            await _eval(session.backend, 
                 f"localStorage.setItem({json.dumps(input.key)}, {json.dumps(input.value)})",
                 await_promise=False,
             )
@@ -148,7 +157,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """
         try:
             session = session_manager.get(input.session_id)
-            await session.backend.eval(
+            await _eval(session.backend, 
                 f"localStorage.removeItem({json.dumps(input.key)})", await_promise=False
             )
             return format_json_response({"status": "ok"})
@@ -174,7 +183,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """
         try:
             session = session_manager.get(input.session_id)
-            await session.backend.eval("localStorage.clear()", await_promise=False)
+            await _eval(session.backend, "localStorage.clear()", await_promise=False)
             return format_json_response({"status": "ok"})
         except Exception as e:
             return format_error("wavexis_localstorage_clear", e)
@@ -198,7 +207,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """
         try:
             session = session_manager.get(input.session_id)
-            raw = await session.backend.eval(
+            raw = await _eval(session.backend, 
                 "JSON.stringify(Object.fromEntries("
                 "Array.from({length: localStorage.length}, (_, i) => "
                 "[localStorage.key(i), localStorage.getItem(localStorage.key(i))])"
@@ -231,7 +240,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """
         try:
             session = session_manager.get(input.session_id)
-            value = await session.backend.eval(
+            value = await _eval(session.backend, 
                 f"sessionStorage.getItem({json.dumps(input.key)})", await_promise=False
             )
             return format_json_response({"key": input.key, "value": value})
@@ -257,7 +266,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """
         try:
             session = session_manager.get(input.session_id)
-            await session.backend.eval(
+            await _eval(session.backend, 
                 f"sessionStorage.setItem({json.dumps(input.key)}, {json.dumps(input.value)})",
                 await_promise=False,
             )
@@ -284,7 +293,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """
         try:
             session = session_manager.get(input.session_id)
-            await session.backend.eval(
+            await _eval(session.backend, 
                 f"sessionStorage.removeItem({json.dumps(input.key)})",
                 await_promise=False,
             )
@@ -311,7 +320,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """
         try:
             session = session_manager.get(input.session_id)
-            await session.backend.eval("sessionStorage.clear()", await_promise=False)
+            await _eval(session.backend, "sessionStorage.clear()", await_promise=False)
             return format_json_response({"status": "ok"})
         except Exception as e:
             return format_error("wavexis_sessionstorage_clear", e)
@@ -335,7 +344,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """
         try:
             session = session_manager.get(input.session_id)
-            raw = await session.backend.eval(
+            raw = await _eval(session.backend, 
                 "JSON.stringify(Object.fromEntries("
                 "Array.from({length: sessionStorage.length}, (_, i) => "
                 "[sessionStorage.key(i), sessionStorage.getItem(sessionStorage.key(i))])"
@@ -529,14 +538,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         try:
             session = session_manager.get(input.session_id)
             cookies = await session.backend.get_cookies()
-            ls_raw = await session.backend.eval(
+            ls_raw = await _eval(session.backend, 
                 "JSON.stringify(Object.fromEntries("
                 "Array.from({length: localStorage.length}, (_, i) => "
                 "[localStorage.key(i), localStorage.getItem(localStorage.key(i))])"
                 "))",
                 await_promise=False,
             )
-            ss_raw = await session.backend.eval(
+            ss_raw = await _eval(session.backend, 
                 "JSON.stringify(Object.fromEntries("
                 "Array.from({length: sessionStorage.length}, (_, i) => "
                 "[sessionStorage.key(i), sessionStorage.getItem(sessionStorage.key(i))])"
@@ -609,7 +618,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                     f"localStorage.setItem({json.dumps(key)}, {json.dumps(value)})"
                     for key, value in local_storage.items()
                 )
-                await session.backend.eval(local_js, await_promise=False)
+                await _eval(session.backend, local_js, await_promise=False)
 
             session_storage = state.get("sessionStorage", {})
             if session_storage:
@@ -617,7 +626,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                     f"sessionStorage.setItem({json.dumps(key)}, {json.dumps(value)})"
                     for key, value in session_storage.items()
                 )
-                await session.backend.eval(session_js, await_promise=False)
+                await _eval(session.backend, session_js, await_promise=False)
 
             return format_json_response(
                 {

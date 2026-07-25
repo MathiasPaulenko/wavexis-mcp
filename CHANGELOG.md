@@ -31,9 +31,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Replaced module-level `_REF_COUNTER` global in `wavexis_mcp/tools/a11y.py` with a per-call mutable counter.
 - Added logging for URL-fetch failures in `wavexis_mcp/session.py`.
 
+### Added
+
+- Added `validate_url()` validation before every tool-level `backend.navigate()` call, including discovered links during crawls.
+- Added a read-only allowlist for `wavexis_raw_cdp` and `wavexis_raw_bidi` with `WAVEXIS_MCP_ALLOW_RAW_COMMANDS=all` escape hatch.
+- Added header filtering to `wavexis_set_headers` and CRLF rejection to `wavexis_set_user_agent`.
+- Added sandboxing for `user_data_dir` in `SessionManager.open()` and `acquire_backend()`.
+- Added 5-second timeouts to storage `backend.eval()` calls and resource handlers.
+- Added stale-bucket eviction to `RateLimiter` to prevent unbounded memory growth.
+- Added `tests/unit/test_security.py` regression suite covering SSRF, raw CDP/BiDi filtering, header filtering, and user-data sandboxing.
+
 ### Fixed
 
 - Resolved all `bandit` security findings (B104, B110, B112) in `server.py`, `tools/data.py`, and `tools/network.py`.
+- Fixed `RateLimiter` race where captured `now` was earlier than the new bucket's `last_refill`.
+- Removed fragile `atexit` cleanup in `server.py` in favor of the lifespan context manager.
+- Removed redundant `call_backend()` wrapper around `get_current_url()` in `tools/session.py`.
+- Removed dead `finally: pass` block in `tools/workflows.py`.
 - Restored `ruff format` compliance for the codebase.
 
 ## [1.6.6] - 2025-07-24

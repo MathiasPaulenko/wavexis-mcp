@@ -20,6 +20,7 @@ from wavexis_mcp.formatter import (
     format_json_response,
     save_to_file,
     secure_output_path,
+    validate_url,
 )
 from wavexis_mcp.models import (
     AnnotatedScreenshotInput,
@@ -85,6 +86,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                         selector=input.wait_selector,
                         timeout=input.wait_timeout,
                     )
+                    validate_url(input.url)
                     await session_manager.call_backend(backend.navigate(input.url, wait))
 
                 if input.js:
@@ -150,6 +152,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             try:
                 if input.url:
                     wait = session_manager.make_wait(timeout=input.wait_timeout)
+                    validate_url(input.url)
                     await backend.navigate(input.url, wait)
 
                 if input.js:
@@ -209,6 +212,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             try:
                 results: list[dict[str, object]] = []
                 for url in input.urls:
+                    validate_url(url)
                     wait = session_manager.make_wait(
                         strategy="selector" if input.selector else "load",
                         selector=input.selector,
@@ -258,6 +262,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             try:
                 if input.url:
                     wait = session_manager.make_wait(timeout=input.wait_timeout)
+                    validate_url(input.url)
                     await backend.navigate(input.url, wait)
 
                 params = ScreencastParams(
@@ -368,6 +373,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             try:
                 if input.url:
                     wait = session_manager.make_wait(timeout=input.wait_timeout)
+                    validate_url(input.url)
                     await backend.navigate(input.url, wait)
 
                 result = await backend.page_print_to_pdf(
@@ -427,6 +433,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             try:
                 if input.url:
                     wait = session_manager.make_wait(timeout=input.wait_timeout)
+                    validate_url(input.url)
                     await backend.navigate(input.url, wait)
 
                 snapshot = await backend.page_capture_snapshot(format=input.format)

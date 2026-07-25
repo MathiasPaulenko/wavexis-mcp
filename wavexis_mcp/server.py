@@ -9,12 +9,9 @@ stdio and HTTP transports.
 from __future__ import annotations
 
 import argparse
-import asyncio
-import atexit
 import sys
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import AbstractAsyncContextManager, asynccontextmanager, suppress
-from functools import partial
 from typing import cast
 
 from mcp.server.fastmcp import FastMCP
@@ -44,8 +41,11 @@ def _make_lifespan(
         Yields:
             ``None`` — control returns to the server after cleanup.
         """
-        yield
-        await session_manager.cleanup_all()
+        try:
+            yield
+        finally:
+            with suppress(Exception):
+                await session_manager.cleanup_all()
 
     return _lifespan
 
@@ -281,12 +281,6 @@ def _register_act_tool(mcp: FastMCP, session_manager: SessionManager) -> None:
             return format_error("wavexis_act", e)
 
 
-def _atexit_cleanup(session_manager: SessionManager) -> None:
-    """Kill any orphaned browser processes on exit."""
-    with suppress(Exception):
-        asyncio.run(session_manager.cleanup_all())
-
-
 def _print_help(caps: str = "core") -> None:
     """Print help text showing available tiers and tool counts.
 
@@ -437,13 +431,9 @@ def main() -> None:
         rate_burst=args.rate_burst,
     )
 
-    session_manager = getattr(mcp, "_wavexis_session_manager", None)
     rate_limiter = getattr(mcp, "_wavexis_rate_limiter", None)
 
     _apply_rate_limiting(mcp, rate_limiter)
-
-    if isinstance(session_manager, SessionManager):
-        atexit.register(partial(_atexit_cleanup, session_manager))
 
     if args.transport == "http":
         # --allow-remote intentionally binds to all interfaces.

@@ -12,7 +12,7 @@ from typing import Any
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
 
-from wavexis_mcp.formatter import format_error, format_json_response
+from wavexis_mcp.formatter import format_error, format_json_response, validate_url
 from wavexis_mcp.models import (
     A11yAncestorsInput,
     A11yNodeInput,
@@ -241,6 +241,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             )
             try:
                 if input.url and not input.session_id:
+                    validate_url(input.url)
                     await session_manager.call_backend(backend.navigate(input.url))
                 raw = await session_manager.call_backend(backend.a11y_tree())
                 nodes = _build_a11y_tree(raw)
@@ -335,6 +336,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             )
             try:
                 if input.url and not input.session_id:
+                    validate_url(input.url)
                     await session_manager.call_backend(backend.navigate(input.url))
                 result = await session_manager.call_backend(backend.axe_audit())
                 return format_json_response(result)

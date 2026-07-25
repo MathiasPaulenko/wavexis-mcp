@@ -295,6 +295,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                 from wavexis.config import WaitStrategy
 
                 wait = WaitStrategy(strategy="load", timeout=input.wait_timeout)
+                validate_url(input.url)
                 await backend.navigate(input.url, wait)
 
                 await backend.raw("Network.enable", {})
@@ -375,6 +376,10 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                     if depth < input.max_depth:
                         for link in links:
                             if link not in visited:
+                                try:
+                                    validate_url(link)
+                                except ValueError:
+                                    continue
                                 if input.same_origin:
                                     base = urlparse(input.start_url)
                                     target = urlparse(link)

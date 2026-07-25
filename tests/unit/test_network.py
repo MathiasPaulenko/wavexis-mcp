@@ -57,6 +57,55 @@ async def test_set_user_agent(
 
 
 @pytest.mark.unit
+async def test_set_headers_filters_blocked_headers(
+    session_manager_with_mock: SessionManager, mock_session_id: str
+) -> None:
+    from mcp.server.fastmcp import FastMCP
+
+    from wavexis_mcp.tools.network import register
+
+    mcp = FastMCP("test")
+    register(mcp, session_manager_with_mock)
+
+    tool = mcp._tool_manager.get_tool("wavexis_set_headers")
+    result = await tool.fn(
+        SetHeadersInput(
+            headers={
+                "X-Test": "true",
+                "Host": "evil.com",
+                "Authorization": "Bearer secret",
+                "Cookie": "session=abc",
+            },
+            session_id=mock_session_id,
+        )
+    )
+    data = json.loads(result)
+    assert data["status"] == "ok"
+
+    session = session_manager_with_mock.get(mock_session_id)
+    session.backend.set_headers.assert_awaited_once_with({"X-Test": "true"})
+
+
+@pytest.mark.unit
+async def test_set_user_agent_rejects_crlf(
+    session_manager_with_mock: SessionManager, mock_session_id: str
+) -> None:
+    from mcp.server.fastmcp import FastMCP
+
+    from wavexis_mcp.tools.network import register
+
+    mcp = FastMCP("test")
+    register(mcp, session_manager_with_mock)
+
+    tool = mcp._tool_manager.get_tool("wavexis_set_user_agent")
+    result = await tool.fn(
+        SetUserAgentInput(user_agent="Evil\r\nX-Inject: true", session_id=mock_session_id)
+    )
+    data = json.loads(result)
+    assert "error" in data
+
+
+@pytest.mark.unit
 async def test_set_network_state(
     session_manager_with_mock: SessionManager, mock_session_id: str
 ) -> None:

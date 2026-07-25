@@ -10,7 +10,7 @@ from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
 from wavexis.config import CookieParams
 
-from wavexis_mcp.formatter import format_error, format_json_response
+from wavexis_mcp.formatter import format_error, format_json_response, validate_url
 from wavexis_mcp.models import (
     CookiesClearInput,
     CookiesDeleteInput,
@@ -54,6 +54,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             try:
                 if input.url:
                     wait = session_manager.make_wait(timeout=input.wait_timeout)
+                    validate_url(input.url)
                     await backend.navigate(input.url, wait)
                 cookies = await backend.get_cookies()
                 return format_json_response({"cookies": cookies, "count": len(cookies)})
@@ -88,6 +89,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             try:
                 if input.url:
                     wait = session_manager.make_wait(timeout=input.wait_timeout)
+                    validate_url(input.url)
                     await backend.navigate(input.url, wait)
                 await backend.set_cookie(
                     CookieParams(
@@ -132,6 +134,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             try:
                 if input.url:
                     wait = session_manager.make_wait(timeout=input.wait_timeout)
+                    validate_url(input.url)
                     await backend.navigate(input.url, wait)
                 await backend.delete_cookie(input.name, input.domain)
                 return format_json_response({"status": "ok"})

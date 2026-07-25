@@ -13,7 +13,12 @@ from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
 
 from wavexis_mcp.convenience import fill_form_composite
-from wavexis_mcp.formatter import format_error, format_json_response, secure_output_path
+from wavexis_mcp.formatter import (
+    format_error,
+    format_json_response,
+    secure_output_path,
+    validate_url,
+)
 from wavexis_mcp.models import (
     CheckInput,
     ClickInput,
@@ -70,6 +75,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             try:
                 if input.url:
                     wait = session_manager.make_wait(timeout=input.wait_timeout)
+                    validate_url(input.url)
                     await backend.navigate(input.url, wait)
                 await backend.click(
                     input.selector,
@@ -108,6 +114,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             try:
                 if input.url:
                     wait = session_manager.make_wait(timeout=input.wait_timeout)
+                    validate_url(input.url)
                     await backend.navigate(input.url, wait)
                 await backend.double_click(input.selector, auto_wait=input.auto_wait)
                 return format_json_response({"status": "ok"})
@@ -142,6 +149,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             try:
                 if input.url:
                     wait = session_manager.make_wait(timeout=input.wait_timeout)
+                    validate_url(input.url)
                     await backend.navigate(input.url, wait)
                 await backend.right_click(input.selector, auto_wait=input.auto_wait)
                 return format_json_response({"status": "ok"})
@@ -176,6 +184,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             try:
                 if input.url:
                     wait = session_manager.make_wait(timeout=input.wait_timeout)
+                    validate_url(input.url)
                     await backend.navigate(input.url, wait)
                 await backend.type_text(input.selector, input.text, delay=input.delay)
                 return format_json_response({"status": "ok"})
@@ -210,6 +219,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             try:
                 if input.url:
                     wait = session_manager.make_wait(timeout=input.wait_timeout)
+                    validate_url(input.url)
                     await backend.navigate(input.url, wait)
                 await backend.fill(input.selector, input.value)
                 return format_json_response({"status": "ok"})
@@ -244,6 +254,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             try:
                 if input.url:
                     wait = session_manager.make_wait(timeout=input.wait_timeout)
+                    validate_url(input.url)
                     await backend.navigate(input.url, wait)
                 count = await fill_form_composite(backend, input.fields)
                 return format_json_response({"status": "ok", "fields_filled": count})
@@ -278,6 +289,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             try:
                 if input.url:
                     wait = session_manager.make_wait(timeout=input.wait_timeout)
+                    validate_url(input.url)
                     await backend.navigate(input.url, wait)
                 await backend.select_option(input.selector, input.value)
                 return format_json_response({"status": "ok"})
@@ -312,6 +324,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             try:
                 if input.url:
                     wait = session_manager.make_wait(timeout=input.wait_timeout)
+                    validate_url(input.url)
                     await backend.navigate(input.url, wait)
                 await backend.hover(input.selector)
                 return format_json_response({"status": "ok"})
@@ -370,6 +383,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             try:
                 if input.url:
                     wait = session_manager.make_wait(timeout=input.wait_timeout)
+                    validate_url(input.url)
                     await backend.navigate(input.url, wait)
                 await backend.drag(input.source, input.target)
                 return format_json_response({"status": "ok"})
@@ -404,6 +418,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             try:
                 if input.url:
                     wait = session_manager.make_wait(timeout=input.wait_timeout)
+                    validate_url(input.url)
                     await backend.navigate(input.url, wait)
                 await backend.tap(input.selector)
                 return format_json_response({"status": "ok"})
@@ -438,6 +453,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             try:
                 if input.url:
                     wait = session_manager.make_wait(timeout=input.wait_timeout)
+                    validate_url(input.url)
                     await backend.navigate(input.url, wait)
                 validated_files = [str(secure_output_path(p)) for p in input.files]
                 await backend.set_files(input.selector, validated_files)
@@ -473,6 +489,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             try:
                 if input.url:
                     wait = session_manager.make_wait(timeout=input.wait_timeout)
+                    validate_url(input.url)
                     await backend.navigate(input.url, wait)
 
                 escaped = json.dumps(input.selector)

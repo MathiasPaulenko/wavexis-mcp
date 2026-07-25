@@ -1,3 +1,9 @@
+FROM python:3.12-slim AS builder
+
+WORKDIR /build
+COPY . .
+RUN pip install --no-cache-dir build && python -m build --wheel
+
 FROM python:3.12-slim
 
 # Install Chromium
@@ -6,7 +12,7 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Install wavexis-mcp
-COPY dist/wavexis_mcp-*.whl /tmp/
+COPY --from=builder /build/dist/wavexis_mcp-*.whl /tmp/
 RUN pip install --no-cache-dir /tmp/wavexis_mcp-*.whl
 
 # Create a non-root user and a writable output directory

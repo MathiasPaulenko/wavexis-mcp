@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling>=1.27.0"]
 build-backend = "hatchling.build"
 
 [project]
@@ -107,9 +107,6 @@ packages = ["wavexis_mcp"]
 [tool.hatch.build.targets.sdist]
 include = [
     "/wavexis_mcp",
-    "/tests",
-    "/docs",
-    "/scripts",
     "/README.md",
     "/LICENSE",
     "/CHANGELOG.md",

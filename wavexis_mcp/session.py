@@ -23,7 +23,7 @@ from wavexis.backend.manager import BackendManager
 from wavexis.config import BrowserOptions, WaitStrategy
 
 from wavexis_mcp.errors import SessionNotFoundError
-from wavexis_mcp.formatter import validate_url
+from wavexis_mcp.formatter import secure_output_path, validate_url
 from wavexis_mcp.rate_limiter import RateLimiter
 
 _T = TypeVar("_T")
@@ -119,6 +119,9 @@ class SessionManager:
         Returns:
             A unique session ID string.
         """
+        if user_data_dir is not None:
+            user_data_dir = str(secure_output_path(user_data_dir))
+
         preferred = backend if backend != "auto" else None
         backend_instance = self._backend_manager.select(preferred)
         backend_name = backend_instance.__class__.__name__.replace("Backend", "").lower()
@@ -315,6 +318,9 @@ class SessionManager:
                 session = self.get(session_id)
                 session.ref_count += 1
                 return session.backend, session_id
+
+        if user_data_dir is not None:
+            user_data_dir = str(secure_output_path(user_data_dir))
 
         preferred = backend if backend != "auto" else None
         backend_instance = self._backend_manager.select(preferred)

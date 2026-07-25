@@ -26,7 +26,9 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """Current URL of the session."""
         try:
             session = session_manager.get(session_id)
-            url = await session.backend.eval("window.location.href")
+            url = await session_manager.call_backend(
+                session.backend.eval("window.location.href"), timeout=10.0
+            )
             return str(url) if url else ""
         except Exception as e:
             return json.dumps({"error": str(e)})
@@ -36,7 +38,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """Cookies for the session as JSON."""
         try:
             session = session_manager.get(session_id)
-            cookies = await session.backend.get_cookies()
+            cookies = await session_manager.call_backend(session.backend.get_cookies())
             return json.dumps(cookies, default=str, ensure_ascii=False)
         except Exception as e:
             return json.dumps({"error": str(e)})
@@ -46,7 +48,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """Console messages for the session."""
         try:
             session = session_manager.get(session_id)
-            messages = await session.backend.capture_console()
+            messages = await session_manager.call_backend(session.backend.capture_console())
             return json.dumps(messages, default=str, ensure_ascii=False)
         except Exception as e:
             return json.dumps({"error": str(e)})
@@ -56,7 +58,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """Open tabs for the session."""
         try:
             session = session_manager.get(session_id)
-            tabs = await session.backend.list_tabs()
+            tabs = await session_manager.call_backend(session.backend.list_tabs())
             return json.dumps(tabs, default=str, ensure_ascii=False)
         except Exception as e:
             return json.dumps({"error": str(e)})

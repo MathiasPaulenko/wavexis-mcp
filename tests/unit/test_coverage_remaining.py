@@ -6,7 +6,6 @@ import builtins
 import json
 import runpy
 import sys
-import threading
 import types
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -499,7 +498,7 @@ def test_print_help_and_startup(capsys) -> None:
 
 
 @pytest.mark.unit
-async def test_lifespan_and_atexit_cleanup(coverage_mcp: Any, monkeypatch) -> None:
+async def test_lifespan_cleanup(coverage_mcp: Any, monkeypatch) -> None:
     fake_mgr = MagicMock()
     fake_mgr.cleanup_all = AsyncMock()
 
@@ -508,23 +507,16 @@ async def test_lifespan_and_atexit_cleanup(coverage_mcp: Any, monkeypatch) -> No
         pass
     fake_mgr.cleanup_all.assert_awaited_once()
 
-    fake_mgr.cleanup_all.reset_mock()
-    t = threading.Thread(target=server_module._atexit_cleanup, args=(fake_mgr,))
-    t.start()
-    t.join()
-    fake_mgr.cleanup_all.assert_awaited_once()
-
 
 @pytest.mark.unit
-async def test_atexit_cleanup_exception(coverage_mcp: Any, monkeypatch) -> None:
-    import threading
-
+async def test_lifespan_cleanup_suppresses_exception(coverage_mcp: Any, monkeypatch) -> None:
     fake_mgr = MagicMock()
     fake_mgr.cleanup_all = AsyncMock(side_effect=RuntimeError("boom"))
 
-    t = threading.Thread(target=server_module._atexit_cleanup, args=(fake_mgr,))
-    t.start()
-    t.join()
+    lifespan = server_module._make_lifespan(fake_mgr)
+    async with lifespan(None):
+        pass
+    fake_mgr.cleanup_all.assert_awaited_once()
 
 
 @pytest.mark.unit

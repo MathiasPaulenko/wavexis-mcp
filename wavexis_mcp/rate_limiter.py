@@ -83,6 +83,8 @@ class RateLimiter:
         self.default_burst: int = max(burst, 1)
         self._buckets: dict[str, _TokenBucket] = {}
         self._lock = asyncio.Lock()
+        self._bucket_ttl: float = 3600.0
+        self._last_cleanup: float = time.monotonic()
 
     async def configure(self, rate: int, burst: int) -> None:
         """Update the default rate and burst for new sessions.
@@ -100,20 +102,39 @@ class RateLimiter:
                 bucket.rate = self.default_rate
                 bucket.burst = self.default_burst
 
-    def _get_or_create_bucket(self, session_id: str) -> _TokenBucket:
+    def _cleanup_stale_buckets(self, now: float) -> None:
+        """Remove buckets that have been inactive longer than ``_bucket_ttl``.
+
+        Must be called while holding ``self._lock``.
+
+        Args:
+            now: Current monotonic timestamp.
+        """
+        if now - self._last_cleanup < 300:
+            return
+        self._last_cleanup = now
+        stale = [
+            sid
+            for sid, bucket in self._buckets.items()
+            if now - bucket.last_refill > self._bucket_ttl
+        ]
+        for sid in stale:
+            self._buckets.pop(sid, None)
+
+    def _get_or_create_bucket(self, session_id: str, now: float) -> _TokenBucket:
         """Get the bucket for a session, creating one if needed.
 
         Must be called while holding ``self._lock``.
 
         Args:
             session_id: Session identifier.
+            now: Current monotonic timestamp to use for a new bucket.
 
         Returns:
             The ``_TokenBucket`` for the session.
         """
         bucket = self._buckets.get(session_id)
         if bucket is None:
-            now = time.monotonic()
             bucket = _TokenBucket(
                 rate=self.default_rate,
                 burst=self.default_burst,
@@ -133,8 +154,10 @@ class RateLimiter:
             ``True`` if the request is allowed, ``False`` if rate limited.
         """
         async with self._lock:
-            bucket = self._get_or_create_bucket(session_id)
-            acquired, _ = bucket.try_acquire(time.monotonic())
+            now = time.monotonic()
+            self._cleanup_stale_buckets(now)
+            bucket = self._get_or_create_bucket(session_id, now)
+            acquired, _ = bucket.try_acquire(now)
             return acquired
 
     async def check(self, session_id: str) -> tuple[bool, int]:
@@ -148,8 +171,10 @@ class RateLimiter:
             ``False``, ``retry_after_ms`` indicates how long to wait.
         """
         async with self._lock:
-            bucket = self._get_or_create_bucket(session_id)
-            acquired, retry_after_ms = bucket.try_acquire(time.monotonic())
+            now = time.monotonic()
+            self._cleanup_stale_buckets(now)
+            bucket = self._get_or_create_bucket(session_id, now)
+            acquired, retry_after_ms = bucket.try_acquire(now)
             return acquired, int(retry_after_ms)
 
     async def cleanup(self, session_id: str) -> None:

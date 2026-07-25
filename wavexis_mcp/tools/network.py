@@ -52,6 +52,20 @@ from wavexis_mcp.models import (
 )
 from wavexis_mcp.session import BrowserSession, SessionManager
 
+# Headers that could be used to bypass security controls or perform
+# request smuggling when set by an MCP client.
+_BLOCKED_HEADERS = frozenset(
+    {
+        "host",
+        "authorization",
+        "proxy-authorization",
+        "cookie",
+        "set-cookie",
+        "content-length",
+        "transfer-encoding",
+    }
+)
+
 
 def _backend(session: BrowserSession) -> AbstractBackend:
     """Return the session backend."""
@@ -339,7 +353,12 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """
         try:
             session = session_manager.get(input.session_id)
-            await session.backend.set_headers(input.headers)
+            filtered = {
+                k: v
+                for k, v in input.headers.items()
+                if k.lower() not in _BLOCKED_HEADERS
+            }
+            await session.backend.set_headers(filtered)
             return format_json_response({"status": "ok"})
         except Exception as e:
             return format_error("wavexis_set_headers", e)
@@ -362,6 +381,8 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             JSON string with status ``"ok"``.
         """
         try:
+            if "\r" in input.user_agent or "\n" in input.user_agent:
+                raise ValueError("User-Agent cannot contain CRLF characters")
             session = session_manager.get(input.session_id)
             await session.backend.set_user_agent(input.user_agent)
             return format_json_response({"status": "ok"})

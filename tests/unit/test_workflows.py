@@ -32,9 +32,25 @@ async def test_raw_cdp(session_manager_with_mock: SessionManager, mock_session_i
     _register(mcp, session_manager_with_mock)
 
     tool = mcp._tool_manager.get_tool("wavexis_raw_cdp")
-    result = await tool.fn(RawCDPInput(session_id=mock_session_id, method="Page.reload"))
+    result = await tool.fn(
+        RawCDPInput(session_id=mock_session_id, method="Page.getResourceTree")
+    )
     data = json.loads(result)
     assert "result" in data
+
+
+@pytest.mark.unit
+async def test_raw_cdp_blocks_dangerous_method(
+    session_manager_with_mock: SessionManager, mock_session_id: str
+) -> None:
+    from mcp.server.fastmcp import FastMCP
+
+    mcp = FastMCP("test")
+    _register(mcp, session_manager_with_mock)
+    tool = mcp._tool_manager.get_tool("wavexis_raw_cdp")
+    result = await tool.fn(RawCDPInput(session_id=mock_session_id, method="Runtime.evaluate"))
+    data = json.loads(result)
+    assert "error" in data
 
 
 @pytest.mark.unit
@@ -48,8 +64,8 @@ async def test_raw_bidi(session_manager_with_mock: SessionManager, mock_session_
     result = await tool.fn(
         RawBiDiInput(
             session_id=mock_session_id,
-            method="browsingContext.navigate",
-            params={"url": "https://example.com"},
+            method="browsingContext.getTree",
+            params={},
         )
     )
     data = json.loads(result)

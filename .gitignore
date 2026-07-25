@@ -28,6 +28,15 @@ htmlcov/
 .mypy_cache/
 .ruff_cache/
 /test
+.env
+.env.*
+*.bak
+*.log
+*.tmp
+tmp_*.py
+mkdocs_output.txt
+mkdocs_out2.txt
+mkdocs_strict.txt
 
 # Build
 *.whl

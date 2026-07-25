@@ -7,6 +7,7 @@ automation workflows on a single session.
 
 from __future__ import annotations
 
+import os
 from typing import Any
 
 from mcp.server.fastmcp import FastMCP
@@ -22,6 +23,53 @@ from wavexis_mcp.models import (
     RawCDPInput,
 )
 from wavexis_mcp.session import SessionManager
+
+# Methods that raw CDP/BiDi callers may use without the escape-hatch env
+# variable.  Everything else is blocked by default to limit abuse of the
+# browser debugging protocols.  Set WAVEXIS_MCP_ALLOW_RAW_COMMANDS=all to
+# disable the filter.
+_ALLOWED_RAW_PREFIXES = (
+    "Page.get",
+    "Page.capture",
+    "Page.printToPDF",
+    "DOM.get",
+    "CSS.get",
+    "Runtime.get",
+    "Network.get",
+    "Target.get",
+    "Browser.get",
+    "Storage.get",
+    "CacheStorage.get",
+    "IndexedDB.get",
+    "Accessibility.get",
+    "Performance.get",
+    "Log.get",
+    "Tracing.get",
+    "HeapProfiler.get",
+    "Profiler.get",
+    "Audits.get",
+    "Memory.get",
+    "browsingContext.get",
+    "script.get",
+    "network.get",
+    "storage.get",
+)
+_ALLOWED_RAW_EXACT: frozenset[str] = frozenset({"session.status"})
+_ALLOW_RAW_ALL = os.environ.get("WAVEXIS_MCP_ALLOW_RAW_COMMANDS", "").lower() in {
+    "1",
+    "true",
+    "yes",
+    "all",
+}
+
+
+def _is_raw_method_allowed(method: str) -> bool:
+    """Return True if *method* is in the raw CDP/BiDi allowlist."""
+    if _ALLOW_RAW_ALL:
+        return True
+    if method in _ALLOWED_RAW_EXACT:
+        return True
+    return any(method.startswith(prefix) for prefix in _ALLOWED_RAW_PREFIXES)
 
 
 def register(mcp: FastMCP, session_manager: SessionManager) -> None:
@@ -137,8 +185,6 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                         errors.append({"action": i, "error": str(exc)})
                         if not input.continue_on_error:
                             break
-                    finally:
-                        pass
 
                 return format_json_response(
                     {
@@ -171,6 +217,11 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             JSON string with raw ``result`` from the CDP command.
         """
         try:
+            if not _is_raw_method_allowed(input.method):
+                raise ValueError(
+                    f"CDP method {input.method!r} is not in the raw command allowlist. "
+                    "Set WAVEXIS_MCP_ALLOW_RAW_COMMANDS=all to allow arbitrary commands."
+                )
             session = session_manager.get(input.session_id)
             result = await session.backend.raw(
                 input.method,
@@ -198,6 +249,11 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             JSON string with raw ``result`` from the BiDi command.
         """
         try:
+            if not _is_raw_method_allowed(input.method):
+                raise ValueError(
+                    f"BiDi method {input.method!r} is not in the raw command allowlist. "
+                    "Set WAVEXIS_MCP_ALLOW_RAW_COMMANDS=all to allow arbitrary commands."
+                )
             session = session_manager.get(input.session_id)
             result = await session.backend.raw(
                 input.method,
