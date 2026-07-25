@@ -23,7 +23,7 @@ from wavexis.backend.manager import BackendManager
 from wavexis.config import BrowserOptions, WaitStrategy
 
 from wavexis_mcp.errors import SessionNotFoundError
-from wavexis_mcp.formatter import secure_output_path, validate_url
+from wavexis_mcp.formatter import _validate_header_value, secure_output_path, validate_url
 from wavexis_mcp.rate_limiter import RateLimiter
 
 _T = TypeVar("_T")
@@ -122,6 +122,12 @@ class SessionManager:
         if user_data_dir is not None:
             user_data_dir = str(secure_output_path(user_data_dir))
 
+        if user_agent is not None:
+            _validate_header_value("User-Agent", user_agent)
+        if extra_headers:
+            for name, value in extra_headers.items():
+                _validate_header_value(name, value)
+
         preferred = backend if backend != "auto" else None
         backend_instance = self._backend_manager.select(preferred)
         backend_name = backend_instance.__class__.__name__.replace("Backend", "").lower()
@@ -193,6 +199,13 @@ class SessionManager:
                     )
             popped = self._sessions.pop(session_id, None)
         if popped is not None:
+            # Best-effort cleanup of any tool-specific subscriptions before
+            # closing the backend so callbacks are not leaked after close.
+            sub_id = getattr(popped.backend, "_network_log_sub_id", None)
+            if sub_id is not None:
+                with contextlib.suppress(Exception):
+                    await popped.backend.unsubscribe_events(sub_id)
+                popped.backend._network_log_sub_id = None
             await popped.backend.close()
         if self.rate_limiter is not None:
             await self.rate_limiter.cleanup(session_id)
@@ -322,6 +335,12 @@ class SessionManager:
         if user_data_dir is not None:
             user_data_dir = str(secure_output_path(user_data_dir))
 
+        if user_agent is not None:
+            _validate_header_value("User-Agent", user_agent)
+        if extra_headers:
+            for name, value in extra_headers.items():
+                _validate_header_value(name, value)
+
         preferred = backend if backend != "auto" else None
         backend_instance = self._backend_manager.select(preferred)
 
@@ -384,8 +403,10 @@ class SessionManager:
             self._shutting_down = True
             ids = list(self._sessions.keys())
         for sid in ids:
-            with contextlib.suppress(Exception):
+            try:
                 await self.close(sid)
+            except Exception:
+                _logger.exception("Failed to close session %s during cleanup", sid)
 
     def make_wait(
         self,

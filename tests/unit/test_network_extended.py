@@ -260,7 +260,7 @@ async def test_network_request_detail_and_clear(
     result = await clear_tool.fn(NetworkClearInput(session_id=mock_session_id))
     data = json.loads(result)
     assert data["status"] == "ok"
-    assert session.backend._network_log == []
+    assert len(session.backend._network_log) == 0
 
 
 @pytest.mark.unit

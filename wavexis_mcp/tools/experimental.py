@@ -7,10 +7,17 @@ These wrap less-common CDP domains for advanced automation.
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
 
-from wavexis_mcp.formatter import format_error, format_json_response, secure_output_path
+from wavexis_mcp.formatter import (
+    format_error,
+    format_json_response,
+    secure_output_path,
+    validate_url,
+)
 from wavexis_mcp.models import (
     AnimationListInput,
     AnimationPauseInput,
@@ -154,6 +161,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """
         try:
             session = session_manager.get(input.session_id)
+            validate_url(input.script_url)
             await session.backend.raw(
                 "ServiceWorker.dispatchEvent",
                 {"scriptURL": input.script_url},
@@ -255,7 +263,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """
         try:
             session = session_manager.get(input.session_id)
-            await session.backend.animation_set_playback_rate(input.playback_rate)
+            await cast(Any, session.backend).animation_set_playback_rate(input.playback_rate)
             return format_json_response(
                 {
                     "status": "ok",

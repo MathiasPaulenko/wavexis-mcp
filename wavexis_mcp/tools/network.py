@@ -13,9 +13,11 @@ import contextlib
 import fnmatch
 import functools
 import json
-import re
+from collections import deque
 from collections.abc import Awaitable, Callable
 from typing import Any, cast
+
+import regex as _regex
 
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
@@ -23,6 +25,7 @@ from wavexis.backend.base import AbstractBackend
 from wavexis.config import HarParams, ThrottleParams
 
 from wavexis_mcp.formatter import (
+    _validate_header_value,
     format_error,
     format_json_response,
     secure_output_path,
@@ -86,7 +89,7 @@ _MAX_ROUTE_ENTRIES = 100
 
 
 @functools.lru_cache(maxsize=256)
-def _glob_to_regex(pattern: str) -> re.Pattern[str]:
+def _glob_to_regex(pattern: str) -> Any:
     """Convert a Playwright-style glob pattern to a compiled regex."""
     parts = []
     for i, segment in enumerate(pattern.split("**")):
@@ -101,14 +104,18 @@ def _glob_to_regex(pattern: str) -> re.Pattern[str]:
         )
         parts.append(translated)
     regex = "".join(parts)
-    return re.compile(f"^{regex}$", re.IGNORECASE)
+    return _regex.compile(f"^{regex}$", _regex.IGNORECASE)
 
 
 def _matches_pattern(pattern: str, url: str) -> bool:
-    """Check if a URL matches a glob/wildcard pattern."""
+    """Check if a URL matches a glob/wildcard pattern.
+
+    Uses the ``regex`` package with a one-second timeout to avoid ReDoS
+    attacks from malicious patterns.
+    """
     try:
-        return _glob_to_regex(pattern).match(url) is not None
-    except re.error:
+        return _glob_to_regex(pattern).match(url, timeout=1.0) is not None
+    except Exception:
         return fnmatch.fnmatch(url, pattern)
 
 
@@ -118,8 +125,8 @@ def _matches_pattern(pattern: str, url: str) -> bool:
 def _init_network_log(session: BrowserSession) -> None:
     """Attach a per-session network event log to the backend if missing."""
     backend = cast(Any, _backend(session))
-    if not isinstance(getattr(backend, "_network_log", None), list):
-        backend._network_log = []
+    if not isinstance(getattr(backend, "_network_log", None), deque):
+        backend._network_log = deque(maxlen=_NETWORK_LOG_MAX)
         backend._network_log_map = {}
         backend._network_log_sub_id = None
 
@@ -149,10 +156,11 @@ def _on_network_event(session: BrowserSession, event: dict[str, Any]) -> None:
             "response_headers": {},
         }
         backend._network_log.append(entry)
-        if len(backend._network_log) > _NETWORK_LOG_MAX:
-            backend._network_log.pop(0)
         backend._network_log_map[request_id] = entry
-        if len(backend._network_log_map) > _NETWORK_LOG_MAX * 2:
+        while (
+            len(backend._network_log_map) > _NETWORK_LOG_MAX * 2
+            and backend._network_log_map
+        ):
             backend._network_log_map.pop(next(iter(backend._network_log_map)))
     elif event_type == "network_response":
         entry = backend._network_log_map.get(request_id)
@@ -168,12 +176,15 @@ async def _ensure_network_log(session: BrowserSession) -> list[dict[str, Any]]:
     _init_network_log(session)
     backend = cast(Any, _backend(session))
     if backend._network_log_sub_id is None:
-        backend._network_log_sub_id = await backend.subscribe_events(
-            ["network_request", "network_response"],
-            lambda event: _on_network_event(session, event),
+        backend._network_log_sub_id = await asyncio.wait_for(
+            backend.subscribe_events(
+                ["network_request", "network_response"],
+                lambda event: _on_network_event(session, event),
+            ),
+            timeout=10.0,
         )
-        # Allow one event loop tick for any already-buffered events to arrive.
-        await asyncio.sleep(0)
+        # Allow a short tick for any already-buffered events to arrive.
+        await asyncio.sleep(0.01)
     return cast(list[dict[str, Any]], backend._network_log)
 
 
@@ -217,8 +228,8 @@ class _RouteEntry:
         self.status = status
         self.body = body
         self.content_type = content_type
-        self.add_headers = add_headers or {}
-        self.remove_headers = remove_headers or []
+        self.add_headers = add_headers if add_headers is not None else {}
+        self.remove_headers = remove_headers if remove_headers is not None else []
 
 
 def _parse_header_list(headers: list[str] | None) -> dict[str, str]:
@@ -237,8 +248,8 @@ def _parse_header_list(headers: list[str] | None) -> dict[str, str]:
 def _init_routes(session: BrowserSession) -> None:
     """Attach per-session route state to the backend."""
     backend = cast(Any, _backend(session))
-    if not isinstance(getattr(backend, "_route_entries", None), list):
-        backend._route_entries = []
+    if not isinstance(getattr(backend, "_route_entries", None), deque):
+        backend._route_entries = deque(maxlen=_MAX_ROUTE_ENTRIES)
         backend._route_handler = None
 
 
@@ -323,6 +334,8 @@ async def _refresh_routes(session: BrowserSession) -> None:
     with contextlib.suppress(Exception):
         cdp_session = backend._require_session()
         cdp_session.on("Fetch.requestPaused", handler)
+        # Disable any previous Fetch interception before enabling with new patterns.
+        await backend.raw("Fetch.disable", {})
         await backend.raw("Fetch.enable", {"patterns": patterns})
 
 
@@ -353,6 +366,8 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """
         try:
             session = session_manager.get(input.session_id)
+            for name, value in input.headers.items():
+                _validate_header_value(name, value)
             filtered = {
                 k: v
                 for k, v in input.headers.items()
@@ -381,8 +396,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             JSON string with status ``"ok"``.
         """
         try:
-            if "\r" in input.user_agent or "\n" in input.user_agent:
-                raise ValueError("User-Agent cannot contain CRLF characters")
+            _validate_header_value("User-Agent", input.user_agent)
             session = session_manager.get(input.session_id)
             await session.backend.set_user_agent(input.user_agent)
             return format_json_response({"status": "ok"})
@@ -635,10 +649,16 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                     )
 
                 if input.filter:
+                    if len(input.filter) > 1000:
+                        raise ValueError("Filter pattern exceeds maximum length of 1000 characters")
                     try:
-                        rx = re.compile(input.filter, re.IGNORECASE)
-                        all_requests = [r for r in all_requests if rx.search(r.get("url", ""))]
-                    except re.error:
+                        rx = _regex.compile(input.filter, _regex.IGNORECASE)
+                        all_requests = [
+                            r
+                            for r in all_requests
+                            if rx.search(r.get("url", ""), timeout=1.0)
+                        ]
+                    except Exception:
                         all_requests = [r for r in all_requests if input.filter in r.get("url", "")]
                 if input.resource_type:
                     all_requests = [r for r in all_requests if r.get("type") == input.resource_type]
@@ -905,9 +925,18 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             session = session_manager.get(input.session_id)
             _init_routes(session)
             backend = cast(Any, _backend(session))
-            add_headers = _parse_header_list(input.headers)
+            parsed_headers = _parse_header_list(input.headers)
+            add_headers = {
+                name: value
+                for name, value in parsed_headers.items()
+                if name.lower() not in _BLOCKED_HEADERS
+            }
+            for name, value in add_headers.items():
+                _validate_header_value(name, value)
             remove_headers = (
-                [h.strip() for h in input.remove_headers.split(",")] if input.remove_headers else []
+                [h.strip() for h in input.remove_headers.split(",") if h.strip()]
+                if input.remove_headers
+                else []
             )
             route = _RouteEntry(
                 pattern=input.pattern,
@@ -918,8 +947,6 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                 remove_headers=remove_headers,
             )
             backend._route_entries.append(route)
-            while len(backend._route_entries) > _MAX_ROUTE_ENTRIES:
-                backend._route_entries.pop(0)
             await _refresh_routes(session)
             return format_json_response({"status": "ok", "pattern": input.pattern})
         except Exception as e:
@@ -970,9 +997,10 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             backend = cast(Any, _backend(session))
             before = len(backend._route_entries)
             if input.pattern:
-                backend._route_entries = [
-                    r for r in backend._route_entries if r.pattern != input.pattern
-                ]
+                backend._route_entries = deque(
+                    (r for r in backend._route_entries if r.pattern != input.pattern),
+                    maxlen=_MAX_ROUTE_ENTRIES,
+                )
             else:
                 backend._route_entries.clear()
             removed = before - len(backend._route_entries)

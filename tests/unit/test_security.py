@@ -11,6 +11,7 @@ from wavexis_mcp.models import (
     RawBiDiInput,
     RawCDPInput,
     ScrapeInput,
+    ServiceWorkerEmulateInput,
     WebsocketInterceptInput,
 )
 from wavexis_mcp.session import SessionManager
@@ -164,3 +165,46 @@ async def test_session_open_sandboxes_user_data_dir(
     """user_data_dir outside WAVEXIS_MCP_OUTPUT_DIR must be rejected."""
     with pytest.raises(ValueError):
         await session_manager_with_mock.open(user_data_dir="/tmp/outside-profile")
+
+
+@pytest.mark.unit
+async def test_session_open_rejects_crlf_in_user_agent(
+    session_manager_with_mock: SessionManager,
+) -> None:
+    """User-Agent values containing CRLF must be rejected."""
+    with pytest.raises(ValueError):
+        await session_manager_with_mock.open(user_agent="Evil\r\nX-Inject: true")
+
+
+@pytest.mark.unit
+async def test_session_open_rejects_crlf_in_extra_headers(
+    session_manager_with_mock: SessionManager,
+) -> None:
+    """Extra header values containing CRLF or null bytes must be rejected."""
+    with pytest.raises(ValueError):
+        await session_manager_with_mock.open(extra_headers={"X-Test": "evil\r\nvalue"})
+
+
+@pytest.mark.unit
+async def test_service_worker_emulate_rejects_internal_url(
+    session_manager_with_mock: SessionManager,
+    mock_session_id: str,
+) -> None:
+    """Service worker script URLs must pass URL validation."""
+    from mcp.server.fastmcp import FastMCP
+
+    from wavexis_mcp.tools.experimental import register
+
+    mcp = FastMCP("test")
+    register(mcp, session_manager_with_mock)
+
+    tool = mcp._tool_manager.get_tool("wavexis_service_worker_emulate")
+    result = await tool.fn(
+        ServiceWorkerEmulateInput(
+            session_id=mock_session_id,
+            registration_id="sw-1",
+            script_url="http://169.254.169.254/latest/meta-data/",
+        )
+    )
+    data = json.loads(result)
+    assert "error" in data

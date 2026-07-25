@@ -65,6 +65,22 @@ def secure_output_path(path: str, base_dir: str | os.PathLike[str] | None = None
     return resolved
 
 
+def _validate_header_value(name: str, value: str) -> None:
+    """Validate that a header value does not contain injection characters.
+
+    Args:
+        name: Header name (used in error messages).
+        value: Header value to validate.
+
+    Raises:
+        ValueError: If *value* contains a carriage return, line feed, or null byte.
+    """
+    if "\r" in value or "\n" in value or "\x00" in value:
+        raise ValueError(
+            f"Header value for {name!r} contains forbidden characters (CRLF or null)"
+        )
+
+
 # Hostnames/IPs that should never be reached via user-supplied URLs.
 _BLOCKED_HOSTS = frozenset(
     {

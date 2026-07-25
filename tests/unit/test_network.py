@@ -15,6 +15,7 @@ from wavexis_mcp.models import (
     MockResponseInput,
     ModifyResponseInput,
     NetworkRequestsInput,
+    RouteInput,
     SetCacheDisabledInput,
     SetHeadersInput,
     SetNetworkStateInput,
@@ -550,6 +551,8 @@ async def test_modify_response(
 
 @pytest.mark.unit
 def test_network_log_caps_growth() -> None:
+    from collections import deque
+
     from wavexis_mcp.tools.network import _NETWORK_LOG_MAX, _on_network_event
 
     class FakeSession:
@@ -557,7 +560,11 @@ def test_network_log_caps_growth() -> None:
             self.backend = type(
                 "Backend",
                 (),
-                {"_network_log": [], "_network_log_map": {}, "_network_log_sub_id": None},
+                {
+                    "_network_log": deque(maxlen=_NETWORK_LOG_MAX),
+                    "_network_log_map": {},
+                    "_network_log_sub_id": None,
+                },
             )()
 
     session = FakeSession()
@@ -575,3 +582,85 @@ def test_network_log_caps_growth() -> None:
 
     assert len(session.backend._network_log) == _NETWORK_LOG_MAX
     assert len(session.backend._network_log_map) <= _NETWORK_LOG_MAX * 2
+
+
+@pytest.mark.unit
+async def test_set_headers_rejects_crlf(
+    session_manager_with_mock: SessionManager, mock_session_id: str
+) -> None:
+    from mcp.server.fastmcp import FastMCP
+
+    from wavexis_mcp.tools.network import register
+
+    mcp = FastMCP("test")
+    register(mcp, session_manager_with_mock)
+
+    tool = mcp._tool_manager.get_tool("wavexis_set_headers")
+    result = await tool.fn(
+        SetHeadersInput(
+            headers={"X-Test": "evil\r\nX-Inject: true"},
+            session_id=mock_session_id,
+        )
+    )
+    data = json.loads(result)
+    assert "error" in data
+
+
+@pytest.mark.unit
+async def test_route_filters_blocked_headers(
+    session_manager_with_mock: SessionManager, mock_session_id: str
+) -> None:
+    from mcp.server.fastmcp import FastMCP
+
+    from wavexis_mcp.tools.network import register
+
+    mcp = FastMCP("test")
+    register(mcp, session_manager_with_mock)
+
+    session = session_manager_with_mock.get(mock_session_id)
+    cdp_session = MagicMock()
+    session.backend._require_session = MagicMock(return_value=cdp_session)
+    session.backend.raw = AsyncMock()
+
+    tool = mcp._tool_manager.get_tool("wavexis_route")
+    result = await tool.fn(
+        RouteInput(
+            session_id=mock_session_id,
+            pattern="**/*.json",
+            headers=["Host: evil.com", "Authorization: Bearer secret", "X-Custom: ok"],
+        )
+    )
+    data = json.loads(result)
+    assert data["status"] == "ok"
+    route = session.backend._route_entries[-1]
+    assert "Host" not in route.add_headers
+    assert "Authorization" not in route.add_headers
+    assert route.add_headers == {"X-Custom": "ok"}
+
+
+@pytest.mark.unit
+async def test_route_rejects_crlf_headers(
+    session_manager_with_mock: SessionManager, mock_session_id: str
+) -> None:
+    from mcp.server.fastmcp import FastMCP
+
+    from wavexis_mcp.tools.network import register
+
+    mcp = FastMCP("test")
+    register(mcp, session_manager_with_mock)
+
+    session = session_manager_with_mock.get(mock_session_id)
+    cdp_session = MagicMock()
+    session.backend._require_session = MagicMock(return_value=cdp_session)
+    session.backend.raw = AsyncMock()
+
+    tool = mcp._tool_manager.get_tool("wavexis_route")
+    result = await tool.fn(
+        RouteInput(
+            session_id=mock_session_id,
+            pattern="**/*.json",
+            headers=["X-Test: evil\r\nX-Inject: true"],
+        )
+    )
+    data = json.loads(result)
+    assert "error" in data
