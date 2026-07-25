@@ -223,12 +223,29 @@ def _wavexis_output_dir(tmp_path: pytest.Any, monkeypatch: pytest.MonkeyPatch) -
 
 
 @pytest.fixture(autouse=True)
-def _mock_backend_manager(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Prevent real browser process launches from BackendManager in unit tests."""
-    mock = MagicMock()
-    mock.return_value.list_available.return_value = ["cdp"]
-    mock.return_value.install_check.return_value = {"cdp": "1.0.0"}
-    monkeypatch.setattr("wavexis.backend.manager.BackendManager", mock)
+def _mock_backend_manager(
+    monkeypatch: pytest.MonkeyPatch,
+    mock_backend: AsyncMock,
+    request: pytest.FixtureRequest,
+) -> None:
+    """Prevent real browser process launches from BackendManager in unit tests.
+
+    Tests marked with ``@pytest.mark.chrome`` bypass this fixture so they can
+    run against a real Chrome browser.
+    """
+    if request.node.get_closest_marker("chrome"):
+        return
+
+    mgr = MagicMock()
+    # Calling BackendManager() should return the same mock so tests can replace
+    # ``select`` and ``SessionManager`` can call ``backend.launch`` safely.
+    mgr.return_value = mgr
+    mgr.list_available.return_value = ["cdp"]
+    mgr.install_check.return_value = {"cdp": "1.0.0"}
+    mgr.select.return_value = mock_backend
+    monkeypatch.setattr("wavexis.backend.manager.BackendManager", mgr)
+    # session.py imports BackendManager directly, so patch its reference too.
+    monkeypatch.setattr("wavexis_mcp.session.BackendManager", mgr)
 
 
 @pytest.fixture

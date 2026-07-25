@@ -102,8 +102,8 @@ class TestRateLimiter:
         limiter = RateLimiter(rate=100, burst=1)
         assert await limiter.acquire("session-1") is True
         assert await limiter.acquire("session-1") is False
-        # Wait for refill
-        await asyncio.sleep(0.02)  # 20ms = 2 tokens at rate=100
+        # Wait for refill (1 token at 100/s = 10ms; use 50ms for CI headroom)
+        await asyncio.sleep(0.05)
         assert await limiter.acquire("session-1") is True
 
     @pytest.mark.unit
