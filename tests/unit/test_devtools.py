@@ -140,6 +140,24 @@ async def test_perf_coverage(
 
 
 @pytest.mark.unit
+async def test_perf_coverage_handles_non_list_result(
+    session_manager_with_mock: SessionManager, mock_session_id: str
+) -> None:
+    from mcp.server.fastmcp import FastMCP
+
+    mcp = FastMCP("test")
+    _register(mcp, session_manager_with_mock)
+
+    session = session_manager_with_mock.get(mock_session_id)
+    session.backend.perf_coverage = AsyncMock(return_value={"result": [{}, {}]})
+
+    tool = mcp._tool_manager.get_tool("wavexis_perf_coverage")
+    result = await tool.fn(PerfCoverageInput(session_id=mock_session_id))
+    data = json.loads(result)
+    assert data["scripts"] == 2
+
+
+@pytest.mark.unit
 async def test_perf_css_coverage(
     session_manager_with_mock: SessionManager, mock_session_id: str
 ) -> None:

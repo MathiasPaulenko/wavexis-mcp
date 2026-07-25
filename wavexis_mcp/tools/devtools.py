@@ -197,10 +197,12 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         try:
             session = session_manager.get(input.session_id)
             coverage = await session.backend.perf_coverage()
-            if isinstance(coverage, list):
+            if isinstance(coverage, dict):
+                scripts = len(coverage.get("result", []))
+            elif isinstance(coverage, list):
                 scripts = len(coverage)
             else:
-                scripts = len(coverage.get("result", []))
+                scripts = 0
             return format_json_response({"coverage": coverage, "scripts": scripts})
         except Exception as e:
             return format_error("wavexis_perf_coverage", e)
@@ -856,9 +858,12 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """
         try:
             session = session_manager.get(input.session_id)
-            sub_id = await session.backend.subscribe_events(
-                input.event_types,
-                callback=None,
+            sub_id = await asyncio.wait_for(
+                session.backend.subscribe_events(
+                    input.event_types,
+                    callback=None,
+                ),
+                timeout=30.0,
             )
             return format_json_response(
                 {
