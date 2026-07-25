@@ -18,6 +18,9 @@ from wavexis_mcp.session import SessionManager
 logger = logging.getLogger(__name__)
 
 _POLL_INTERVAL_S = 0.5
+_MAX_POLL_INTERVAL_S = 30.0
+_BACKOFF_MULTIPLIER = 1.5
+_MAX_POLL_ERRORS = 3
 
 
 class StreamingHandler:
@@ -66,7 +69,12 @@ class StreamingHandler:
         subscribe = getattr(session.backend, "subscribe_events", None)
         if subscribe is not None:
             try:
-                await subscribe(event_types)
+                await subscribe(
+                    event_types,
+                    lambda event: logger.info(
+                        "stream event: %s", json.dumps(event, default=str)
+                    ),
+                )
                 return stream_id
             except Exception as exc:
                 logger.warning("subscribe_events failed, falling back to polling: %s", exc)
@@ -108,13 +116,15 @@ class StreamingHandler:
         session_id: str,
         event_types: list[str],
     ) -> None:
-        """Poll the backend for events at a fixed interval.
+        """Poll the backend for events with exponential backoff.
 
         Args:
             session_id: The session to poll.
             event_types: Event types to collect.
         """
         last_console_count = 0
+        interval = _POLL_INTERVAL_S
+        consecutive_errors = 0
         while True:
             try:
                 session = self._session_manager.get(session_id)
@@ -127,9 +137,18 @@ class StreamingHandler:
                             "stream event: %s",
                             json.dumps({"type": "console", "data": msg}),
                         )
-            except Exception:
-                break
-            await asyncio.sleep(_POLL_INTERVAL_S)
+                # Reset backoff after a successful poll.
+                interval = _POLL_INTERVAL_S
+                consecutive_errors = 0
+            except Exception as exc:
+                consecutive_errors += 1
+                logger.warning("Streaming poll error for %s: %s", session_id, exc)
+                if consecutive_errors >= _MAX_POLL_ERRORS:
+                    break
+                interval = min(interval * _BACKOFF_MULTIPLIER, _MAX_POLL_INTERVAL_S)
+                await asyncio.sleep(interval)
+                continue
+            await asyncio.sleep(interval)
 
     async def stop_all(self) -> None:
         """Stop all active streaming tasks."""

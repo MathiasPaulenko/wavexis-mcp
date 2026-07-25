@@ -114,7 +114,7 @@ async def test_poll_loop_breaks_on_error(
     session.backend.capture_console = AsyncMock(side_effect=RuntimeError("disconnected"))
 
     task = asyncio.create_task(handler._poll_loop(mock_session_id, ["console"]))
-    await asyncio.sleep(0.2)
+    await asyncio.sleep(2.0)
     assert task.done() or task.cancelled()
     if not task.done():
         task.cancel()
