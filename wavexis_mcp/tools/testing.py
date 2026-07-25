@@ -62,12 +62,15 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             )
             deadline = time.monotonic() + input.timeout / 1000
             visible = False
+            interval = 0.05
+            max_interval = 1.0
             while time.monotonic() < deadline:
                 result = await session.backend.eval(js)
                 if result is True or result == "true":
                     visible = True
                     break
-                await asyncio.sleep(0.1)
+                await asyncio.sleep(interval)
+                interval = min(interval * 1.5, max_interval)
 
             if visible:
                 return format_json_response(
@@ -116,12 +119,15 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             js = f"(function(){{return document.body.innerText.indexOf({escaped})!==-1;}})()"
             deadline = time.monotonic() + input.timeout / 1000
             visible = False
+            interval = 0.05
+            max_interval = 1.0
             while time.monotonic() < deadline:
                 result = await session.backend.eval(js)
                 if result is True or result == "true":
                     visible = True
                     break
-                await asyncio.sleep(0.1)
+                await asyncio.sleep(interval)
+                interval = min(interval * 1.5, max_interval)
 
             if visible:
                 return format_json_response(
@@ -177,12 +183,16 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             )
             deadline = time.monotonic() + input.timeout / 1000
             passed = False
+            interval = 0.05
+            max_interval = 1.0
+            result: list[bool] | None = None
             while time.monotonic() < deadline:
                 result = await session.backend.eval(js)
                 if result is True or result == "true":
                     passed = True
                     break
-                await asyncio.sleep(0.1)
+                await asyncio.sleep(interval)
+                interval = min(interval * 1.5, max_interval)
 
             if passed:
                 return format_json_response(
@@ -243,12 +253,16 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             )
             deadline = time.monotonic() + input.timeout / 1000
             passed = False
+            interval = 0.05
+            max_interval = 1.0
+            result: list[bool] | None = None
             while time.monotonic() < deadline:
                 result = await session.backend.eval(js)
                 if result and all(result):
                     passed = True
                     break
-                await asyncio.sleep(0.1)
+                await asyncio.sleep(interval)
+                interval = min(interval * 1.5, max_interval)
 
             if passed:
                 return format_json_response(
