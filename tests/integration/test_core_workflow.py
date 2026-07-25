@@ -39,7 +39,7 @@ async def test_session_navigate_screenshot_close() -> None:
     result = await open_tool.fn(SessionOpenInput(backend="cdp", headless=True))
     data = json.loads(result)
     assert data["status"] == "ok"
-    session_id = data["session_id"]
+    session_id: str | None = data["session_id"]
 
     try:
         nav_tool = mcp._tool_manager.get_tool("wavexis_navigate")
@@ -58,10 +58,9 @@ async def test_session_navigate_screenshot_close() -> None:
         assert data["status"] == "ok"
         assert "base64" in data
     finally:
-        close_tool = mcp._tool_manager.get_tool("wavexis_session_close")
-        result = await close_tool.fn(SessionCloseInput(session_id=session_id))
-        data = json.loads(result)
-        assert data["status"] == "ok"
+        if session_id is not None:
+            close_tool = mcp._tool_manager.get_tool("wavexis_session_close")
+            await close_tool.fn(SessionCloseInput(session_id=session_id))
 
 
 @pytest.mark.integration

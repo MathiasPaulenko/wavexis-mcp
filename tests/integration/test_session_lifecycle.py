@@ -34,19 +34,25 @@ async def test_session_lifecycle(mock_backend: object) -> None:
         result = await open_tool.fn(SessionOpenInput(backend="cdp", headless=True))
         data = json.loads(result)
         assert data["status"] == "ok"
-        session_id = data["session_id"]
+        session_id: str | None = data["session_id"]
 
-        nav_tool = mcp._tool_manager.get_tool("wavexis_navigate")
-        result = await nav_tool.fn(NavigateInput(url="https://example.com", session_id=session_id))
-        nav_data = json.loads(result)
-        assert nav_data["status"] == "ok"
+        try:
+            nav_tool = mcp._tool_manager.get_tool("wavexis_navigate")
+            result = await nav_tool.fn(
+                NavigateInput(url="https://example.com", session_id=session_id)
+            )
+            nav_data = json.loads(result)
+            assert nav_data["status"] == "ok"
 
-        close_tool = mcp._tool_manager.get_tool("wavexis_session_close")
-        result = await close_tool.fn(SessionCloseInput(session_id=session_id))
-        close_data = json.loads(result)
-        assert close_data["status"] == "ok"
+            close_tool = mcp._tool_manager.get_tool("wavexis_session_close")
+            result = await close_tool.fn(SessionCloseInput(session_id=session_id))
+            close_data = json.loads(result)
+            assert close_data["status"] == "ok"
 
-        assert session_id not in sm._sessions
+            assert session_id not in sm._sessions
+        finally:
+            if session_id is not None and session_id in sm._sessions:
+                await sm.close(session_id)
 
 
 @pytest.mark.integration
@@ -61,15 +67,18 @@ async def test_session_info(mock_backend: object) -> None:
         open_tool = mcp._tool_manager.get_tool("wavexis_session_open")
         result = await open_tool.fn(SessionOpenInput(backend="cdp", headless=True))
         data = json.loads(result)
-        session_id = data["session_id"]
+        session_id: str | None = data.get("session_id")
 
-        info_tool = mcp._tool_manager.get_tool("wavexis_session_info")
-        result = await info_tool.fn(SessionInfoInput(session_id=session_id))
-        info_data = json.loads(result)
-        assert info_data["session_id"] == session_id
-
-        close_tool = mcp._tool_manager.get_tool("wavexis_session_close")
-        await close_tool.fn(SessionCloseInput(session_id=session_id))
+        try:
+            assert session_id is not None
+            info_tool = mcp._tool_manager.get_tool("wavexis_session_info")
+            result = await info_tool.fn(SessionInfoInput(session_id=session_id))
+            info_data = json.loads(result)
+            assert info_data["session_id"] == session_id
+        finally:
+            if session_id is not None:
+                close_tool = mcp._tool_manager.get_tool("wavexis_session_close")
+                await close_tool.fn(SessionCloseInput(session_id=session_id))
 
 
 @pytest.mark.integration

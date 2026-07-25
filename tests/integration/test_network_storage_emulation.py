@@ -46,7 +46,7 @@ async def test_network_storage_emulation_workflow() -> None:
     result = await open_tool.fn(SessionOpenInput(backend="cdp", headless=True))
     data = json.loads(result)
     assert data["status"] == "ok"
-    session_id = data["session_id"]
+    session_id: str | None = data["session_id"]
 
     try:
         from wavexis_mcp.models import EmulateDeviceInput
@@ -90,7 +90,6 @@ async def test_network_storage_emulation_workflow() -> None:
         data = json.loads(result)
         assert data["status"] == "ok"
     finally:
-        close_tool = mcp._tool_manager.get_tool("wavexis_session_close")
-        result = await close_tool.fn(SessionCloseInput(session_id=session_id))
-        data = json.loads(result)
-        assert data["status"] == "ok"
+        if session_id is not None:
+            close_tool = mcp._tool_manager.get_tool("wavexis_session_close")
+            await close_tool.fn(SessionCloseInput(session_id=session_id))

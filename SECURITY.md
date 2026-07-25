@@ -20,7 +20,9 @@ You will receive a response within 48 hours. If the vulnerability is confirmed, 
 WaveXisMCP exposes browser automation capabilities to LLMs. Security considerations:
 
 - **Browser execution**: Tools can launch browsers, navigate to URLs, execute JavaScript, and interact with web pages. Only connect to trusted MCP clients.
-- **File system access**: `output_path` and `output_dir` parameters write files under the directory configured by the `WAVEXIS_MCP_OUTPUT_DIR` environment variable, or the current working directory if unset. Paths that escape this directory are rejected.
+- **File system access**: `output_path` and `output_dir` parameters write files under the directory configured by the `WAVEXIS_MCP_OUTPUT_DIR` environment variable, or the current working directory if unset. Paths that escape this directory, including via symlinks, are rejected.
+- **URL validation**: URLs are validated before navigation to block non-HTTP schemes, private IP ranges, localhost, and cloud metadata endpoints. Hostname-based DNS rebinding is an inherent TOCTOU risk; set `WAVEXIS_MCP_ALLOW_INTERNAL_URLS=0` in untrusted environments.
+- **Raw CDP/BiDi commands**: `wavexis_raw_cdp` and `wavexis_raw_bidi` are powerful escape hatches that bypass normal controls. Disable or restrict these tools if the client is not fully trusted.
 - **Session management**: Session IDs are UUIDs. Keep them private — anyone with a session ID can control that browser instance.
 
 ## Supported Versions
