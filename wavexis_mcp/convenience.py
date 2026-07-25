@@ -8,9 +8,13 @@ used by the tool modules to implement composite tools such as
 
 from __future__ import annotations
 
+import logging
+
 from wavexis.backend.base import AbstractBackend
 
 from wavexis_mcp.models import FormField
+
+_logger = logging.getLogger(__name__)
 
 
 async def fill_form_composite(backend: AbstractBackend, fields: list[FormField]) -> int:
@@ -24,10 +28,6 @@ async def fill_form_composite(backend: AbstractBackend, fields: list[FormField])
         The number of fields successfully filled.  Failures for individual
         fields do not stop the whole operation.
     """
-    import logging
-
-    _logger = logging.getLogger(__name__)
-
     count = 0
     for field in fields:
         try:

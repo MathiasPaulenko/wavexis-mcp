@@ -39,6 +39,7 @@ class StreamingHandler:
         """
         self._session_manager = session_manager
         self._active: dict[str, asyncio.Task[None]] = {}
+        self._streams: set[str] = set()
         self._lock = asyncio.Lock()
 
     async def start_stream(
@@ -65,6 +66,11 @@ class StreamingHandler:
 
         stream_id = f"stream-{session_id}"
 
+        async with self._lock:
+            if stream_id in self._streams:
+                return stream_id
+            self._streams.add(stream_id)
+
         # Try W11 subscribe_events first
         subscribe = getattr(session.backend, "subscribe_events", None)
         if subscribe is not None:
@@ -80,8 +86,9 @@ class StreamingHandler:
         # Fallback: polling-based streaming
         async with self._lock:
             if stream_id not in self._active:
-                task = asyncio.create_task(self._poll_loop(session_id, event_types))
-                self._active[stream_id] = task
+                self._active[stream_id] = asyncio.create_task(
+                    self._poll_loop(session_id, event_types)
+                )
 
         return stream_id
 
@@ -93,6 +100,7 @@ class StreamingHandler:
         """
         stream_id = f"stream-{session_id}"
         async with self._lock:
+            self._streams.discard(stream_id)
             task = self._active.pop(stream_id, None)
         if task is not None:
             task.cancel()
@@ -153,6 +161,7 @@ class StreamingHandler:
         async with self._lock:
             tasks = list(self._active.values())
             self._active.clear()
+            self._streams.clear()
         for task in tasks:
             task.cancel()
             with contextlib.suppress(asyncio.CancelledError):

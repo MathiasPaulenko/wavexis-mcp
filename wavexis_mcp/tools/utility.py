@@ -7,8 +7,10 @@ arbitrary backend methods.
 
 from __future__ import annotations
 
+import asyncio
 import base64
 import inspect
+import logging
 import os
 import typing
 from typing import Any
@@ -41,6 +43,8 @@ _INVOKE_DENYLIST = frozenset(
         "extension_uninstall",
     }
 )
+
+_logger = logging.getLogger(__name__)
 
 # Safe builtins that may appear as string annotations for methods defined
 # outside of the wavexis package (e.g. test doubles).  Arbitrary expressions
@@ -181,7 +185,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                 output_path.endswith(("/", "\\")) or os.path.splitext(output_path)[1] == ""
             ):
                 validated_dir = secure_output_path(output_path)
-                os.makedirs(validated_dir, exist_ok=True)
+                await asyncio.to_thread(os.makedirs, validated_dir, exist_ok=True)
                 frames = []
                 for i, frame in enumerate(result):
                     frame_path = os.path.join(str(validated_dir), f"frame_{i:04d}.bin")
@@ -298,4 +302,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             return format_error("wavexis_invoke", e)
         finally:
             if input.session_id is None and backend is not None:
-                await session_manager.release_backend(backend, ephemeral_sid)
+                try:
+                    await session_manager.release_backend(backend, ephemeral_sid)
+                except Exception:
+                    _logger.exception("Failed to release ephemeral backend after invoke")

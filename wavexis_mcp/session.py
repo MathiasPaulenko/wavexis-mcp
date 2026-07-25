@@ -223,7 +223,10 @@ class SessionManager:
                 with contextlib.suppress(Exception):
                     await popped.backend.unsubscribe_events(sub_id)
                 popped.backend._network_log_sub_id = None
-            await popped.backend.close()
+            try:
+                await popped.backend.close()
+            except Exception:
+                _logger.exception("Failed to close backend for session %s", session_id)
         if self.rate_limiter is not None:
             await self.rate_limiter.cleanup(session_id)
 
@@ -403,7 +406,10 @@ class SessionManager:
             session_id: The session ID, or ``None`` if ephemeral.
         """
         if session_id is None:
-            await backend.close()
+            try:
+                await backend.close()
+            except Exception:
+                _logger.exception("Failed to close ephemeral backend during release")
             return
 
         async with self._cond:

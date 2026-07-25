@@ -291,7 +291,7 @@ def _build_route_handler(
                         "Fetch.fulfillRequest",
                         {
                             "requestId": request_id,
-                            "responseCode": route.status or 200,
+                            "responseCode": route.status if route.status is not None else 200,
                             "responseHeaders": response_headers,
                             "body": body_b64,
                         },

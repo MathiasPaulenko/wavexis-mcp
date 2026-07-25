@@ -16,6 +16,7 @@ from collections import deque
 from typing import Any
 from urllib.parse import urlparse
 
+import regex as _regex
 import yaml
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
@@ -42,7 +43,25 @@ from wavexis_mcp.session import SessionManager
 
 _MAX_CRAWL_QUEUE_SIZE = 1_000
 _MAX_CRAWL_DURATION_S = 300.0
+_MAX_CRAWL_PATTERN_LENGTH = 1000
 _logger = logging.getLogger(__name__)
+
+
+def _url_matches(url: str, pattern: str) -> bool:
+    """Return True if *url* matches a regex *pattern* (safe, bounded).
+
+    Empty patterns match every URL.  Invalid or overly long patterns are
+    treated as non-matching to avoid ReDoS and noisy errors.
+    """
+    if not pattern:
+        return True
+    if len(pattern) > _MAX_CRAWL_PATTERN_LENGTH:
+        return False
+    try:
+        compiled = _regex.compile(pattern, _regex.IGNORECASE)
+    except _regex.error:
+        return False
+    return compiled.search(url, timeout=1.0) is not None
 
 
 async def _try_navigate(backend: AbstractBackend, url: str, wait: WaitStrategy) -> bool:
@@ -388,17 +407,20 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
 
                     if depth < input.max_depth:
                         for link in links:
-                            if link not in visited:
-                                try:
-                                    validate_url(link)
-                                except ValueError:
+                            if link in visited:
+                                continue
+                            if input.url_pattern and not _url_matches(link, input.url_pattern):
+                                continue
+                            try:
+                                validate_url(link)
+                            except ValueError:
+                                continue
+                            if input.same_origin:
+                                base = urlparse(input.start_url)
+                                target = urlparse(link)
+                                if base.netloc != target.netloc:
                                     continue
-                                if input.same_origin:
-                                    base = urlparse(input.start_url)
-                                    target = urlparse(link)
-                                    if base.netloc != target.netloc:
-                                        continue
-                                queue.append((link, depth + 1))
+                            queue.append((link, depth + 1))
 
                 return format_json_response(
                     {

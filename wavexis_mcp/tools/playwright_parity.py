@@ -42,7 +42,7 @@ def _modifiers(alt: bool, ctrl: bool, meta: bool, shift: bool) -> int:
 class KeyDownInput(BaseModel):
     """Input for dispatching a keyDown event."""
 
-    key: str = Field(..., description="Key to press (e.g. 'Enter', 'a', 'ArrowLeft')")
+    key: str = Field(..., min_length=1, description="Key to press (e.g. 'Enter', 'a', 'ArrowLeft')")
     code: str = Field(default="", description="Optional physical key code")
     alt: bool = Field(default=False)
     ctrl: bool = Field(default=False)
@@ -54,7 +54,7 @@ class KeyDownInput(BaseModel):
 class KeyUpInput(BaseModel):
     """Input for dispatching a keyUp event."""
 
-    key: str = Field(..., description="Key to release (e.g. 'Enter', 'a')")
+    key: str = Field(..., min_length=1, description="Key to release (e.g. 'Enter', 'a')")
     code: str = Field(default="", description="Optional physical key code")
     alt: bool = Field(default=False)
     ctrl: bool = Field(default=False)
@@ -66,7 +66,12 @@ class KeyUpInput(BaseModel):
 class PressKeysInput(BaseModel):
     """Input for typing a sequence of keys at the page level."""
 
-    text: str = Field(..., description="Text/keys to type character by character")
+    text: str = Field(
+        ...,
+        min_length=1,
+        max_length=1000,
+        description="Text/keys to type character by character",
+    )
     delay: int = Field(default=0, ge=0, description="Delay between keystrokes in milliseconds")
     session_id: str = Field(...)
 
@@ -92,7 +97,7 @@ class ConsoleClearInput(BaseModel):
 class CookieGetInput(BaseModel):
     """Input for getting a specific cookie by name (and optional domain/path)."""
 
-    name: str = Field(...)
+    name: str = Field(..., min_length=1)
     domain: str | None = Field(default=None)
     path: str | None = Field(default=None)
     session_id: str = Field(...)
@@ -122,8 +127,9 @@ class FindInput(BaseModel):
 
     text: str = Field(
         ...,
-        description="Text or regex to search in the a11y snapshot",
+        min_length=1,
         max_length=500,
+        description="Text or regex to search in the a11y snapshot",
     )
     limit: int = Field(default=20, ge=1, le=100)
     session_id: str = Field(...)
@@ -368,7 +374,12 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
     async def wavexis_find(input: FindInput) -> str:
         """Find nodes in the accessibility snapshot matching the given text/regex."""
         try:
-            from wavexis_mcp.tools.a11y import _build_a11y_tree, _extract_name, _extract_role
+            from wavexis_mcp.tools.a11y import (
+                _build_a11y_tree,
+                _extract_name,
+                _extract_role,
+                _format_a11y_tree,
+            )
 
             if len(input.text) > _MAX_FIND_PATTERN_LENGTH:
                 raise ValueError(f"Pattern exceeds {_MAX_FIND_PATTERN_LENGTH} characters")
@@ -377,15 +388,20 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
 
             session = session_manager.get(input.session_id)
             raw = await session.backend.a11y_tree()
-            tree = _build_a11y_tree(raw)
+            tree = _format_a11y_tree(_build_a11y_tree(raw))
 
             pattern = _regex.compile(input.text, _regex.IGNORECASE)
             results: list[dict[str, Any]] = []
+            seen: set[int] = set()
 
             def search(nodes: list[dict[str, Any]]) -> None:
                 for node in nodes:
                     if len(results) >= input.limit:
                         return
+                    node_id = id(node)
+                    if node_id in seen:
+                        continue
+                    seen.add(node_id)
                     name = _extract_name(node)
                     role = _extract_role(node)
                     if pattern.search(name, timeout=1.0):

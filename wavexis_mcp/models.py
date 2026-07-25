@@ -785,7 +785,9 @@ class RouteInput(BaseInput):
 
     session_id: str = Field(...)
     pattern: str = Field(..., description="URL glob to match (e.g. '**/api/users')")
-    status: int | None = Field(default=None, description="HTTP status code to return")
+    status: int | None = Field(
+        default=None, ge=100, le=599, description="HTTP status code to return"
+    )
     body: str | None = Field(default=None, description="Response body for mocked requests")
     content_type: str | None = Field(
         default=None, description="Content-Type header for mocked response"
