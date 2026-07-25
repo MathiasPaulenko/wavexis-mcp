@@ -10,18 +10,24 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import logging
 import time
 import uuid
+from collections.abc import Awaitable
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, TypeVar
 
 from wavexis.backend.base import AbstractBackend
 from wavexis.backend.manager import BackendManager
 from wavexis.config import BrowserOptions, WaitStrategy
 
 from wavexis_mcp.errors import SessionNotFoundError
+from wavexis_mcp.rate_limiter import RateLimiter
+
+_T = TypeVar("_T")
 
 DEFAULT_BACKEND_TIMEOUT = 30.0
+_logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -55,6 +61,7 @@ class SessionManager:
     def __init__(self) -> None:
         self._sessions: dict[str, BrowserSession] = {}
         self._backend_manager = BackendManager()
+        self.rate_limiter: RateLimiter | None = None
 
     async def open(
         self,
@@ -107,7 +114,12 @@ class SessionManager:
             remote_url=remote_url,
             stealth=stealth,
         )
-        await backend_instance.launch(opts)
+        try:
+            await backend_instance.launch(opts)
+        except Exception:
+            with contextlib.suppress(Exception):
+                await backend_instance.close()
+            raise
 
         session_id = str(uuid.uuid4())
         now = time.time()
@@ -133,6 +145,8 @@ class SessionManager:
         if session is None:
             raise SessionNotFoundError(session_id)
         await session.backend.close()
+        if self.rate_limiter is not None:
+            self.rate_limiter.cleanup(session_id)
 
     def get(self, session_id: str) -> BrowserSession:
         """Return the session for the given ID and update ``last_used``.
@@ -154,9 +168,9 @@ class SessionManager:
 
     @staticmethod
     async def call_backend(
-        coro: Any,
+        coro: Awaitable[_T],
         timeout: float = DEFAULT_BACKEND_TIMEOUT,
-    ) -> Any:
+    ) -> _T:
         """Await a backend coroutine with a timeout to prevent hangs.
 
         If the backend call does not complete within *timeout* seconds,
@@ -205,6 +219,7 @@ class SessionManager:
             url = await asyncio.wait_for(session.backend.eval("window.location.href"), timeout=10.0)
             return str(url) if url else ""
         except Exception:
+            _logger.exception("Failed to get current URL for session %s", session_id)
             return ""
 
     async def acquire_backend(
@@ -269,7 +284,12 @@ class SessionManager:
             remote_url=remote_url,
             stealth=stealth,
         )
-        await backend_instance.launch(opts)
+        try:
+            await backend_instance.launch(opts)
+        except Exception:
+            with contextlib.suppress(Exception):
+                await backend_instance.close()
+            raise
         return backend_instance, None
 
     @staticmethod

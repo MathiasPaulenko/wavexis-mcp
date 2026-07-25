@@ -8,6 +8,7 @@ require an active session and return structured pass/fail results.
 from __future__ import annotations
 
 import asyncio
+import json
 import time
 
 from mcp.server.fastmcp import FastMCP
@@ -52,9 +53,9 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """
         try:
             session = session_manager.get(input.session_id)
-            escaped = input.selector.replace("'", "\\'")
+            escaped = json.dumps(input.selector)
             js = (
-                f"(function(){{var el=document.querySelector('{escaped}');"
+                f"(function(){{var el=document.querySelector({escaped});"
                 f"if(!el)return false;"
                 f"var rect=el.getBoundingClientRect();"
                 f"return rect.width>0&&rect.height>0;}})()"
@@ -111,8 +112,8 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """
         try:
             session = session_manager.get(input.session_id)
-            escaped = input.text.replace("'", "\\'").replace("\\", "\\\\")
-            js = f"(function(){{return document.body.innerText.indexOf('{escaped}')!==-1;}})()"
+            escaped = json.dumps(input.text)
+            js = f"(function(){{return document.body.innerText.indexOf({escaped})!==-1;}})()"
             deadline = time.monotonic() + input.timeout / 1000
             visible = False
             while time.monotonic() < deadline:
@@ -165,13 +166,13 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """
         try:
             session = session_manager.get(input.session_id)
-            escaped = input.selector.replace("'", "\\'")
-            escaped_val = input.value.replace("'", "\\'").replace("\\", "\\\\")
+            escaped = json.dumps(input.selector)
+            escaped_val = json.dumps(input.value)
             js = (
                 f"(function(){{"
-                f"var el=document.querySelector('{escaped}');"
+                f"var el=document.querySelector({escaped});"
                 f"if(!el) return false;"
-                f"return String(el.value)==='{escaped_val}';"
+                f"return String(el.value)==={escaped_val};"
                 f"}})()"
             )
             deadline = time.monotonic() + input.timeout / 1000
@@ -229,11 +230,11 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """
         try:
             session = session_manager.get(input.session_id)
-            escaped = input.selector.replace("'", "\\'")
-            items_js = ",".join(repr(item) for item in input.items)
+            escaped = json.dumps(input.selector)
+            items_js = ",".join(json.dumps(item) for item in input.items)
             js = (
                 f"(function(){{"
-                f"var list=document.querySelector('{escaped}');"
+                f"var list=document.querySelector({escaped});"
                 f"if(!list) return null;"
                 f"var text=list.innerText;"
                 f"var items=[{items_js}];"

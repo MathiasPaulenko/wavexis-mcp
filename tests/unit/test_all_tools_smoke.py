@@ -355,6 +355,9 @@ class _FailingBackend:
 
         return _failing
 
+    def _require_session(self) -> Any:
+        raise RuntimeError("mock backend failure")
+
 
 @pytest.mark.unit
 async def test_all_tools_error_smoke(
@@ -422,7 +425,7 @@ async def test_all_tools_output_path_smoke(
             tool = mcp._tool_manager.get_tool(name)
             try:
                 inp = _build_input(tool, mock_session_id)
-                if inp is not None and "output_path" in inp.model_fields:
+                if inp is not None and "output_path" in type(inp).model_fields:
                     inp = inp.model_copy(update={"output_path": output_path})
             except Exception as exc:
                 failures.append((name, f"input build: {exc}"))

@@ -121,7 +121,10 @@ async def test_wavexis_invoke_errors_and_dataclass(
 
 @pytest.mark.unit
 async def test_wavexis_invoke_ephemeral_with_url(
-    coverage_mcp: Any, session_manager_with_mock: SessionManager, monkeypatch
+    coverage_mcp: Any,
+    session_manager_with_mock: SessionManager,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Any,
 ) -> None:
     from wavexis_mcp.models import InvokeInput
 
@@ -138,7 +141,11 @@ async def test_wavexis_invoke_ephemeral_with_url(
 
     tool = coverage_mcp._tool_manager.get_tool("wavexis_invoke")
     result = await tool.fn(
-        InvokeInput(method="screenshot", url="https://example.com", output_path="/tmp/shot.png")
+        InvokeInput(
+            method="screenshot",
+            url="https://example.com",
+            output_path=str(tmp_path / "shot.png"),
+        )
     )
     data = json.loads(result)
     assert data["status"] == "ok"
@@ -417,7 +424,7 @@ async def test_crawl_same_origin(
 
 @pytest.mark.unit
 async def test_visual_diff_import_missing(
-    coverage_mcp: Any, mock_session_id: str, monkeypatch
+    coverage_mcp: Any, mock_session_id: str, monkeypatch: pytest.MonkeyPatch, tmp_path: Any
 ) -> None:
     from wavexis_mcp.models import VisualDiffInput
 
@@ -437,7 +444,7 @@ async def test_visual_diff_import_missing(
         VisualDiffInput(
             session_id=mock_session_id,
             url="https://example.com",
-            baseline_path="/tmp/base.png",
+            baseline_path=str(tmp_path / "base.png"),
         )
     )
     data = json.loads(result)

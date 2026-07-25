@@ -164,6 +164,7 @@ def mock_backend() -> AsyncMock:
     backend.animation_pause = AsyncMock()
     backend.animation_play = AsyncMock()
     backend.animation_seek = AsyncMock()
+    backend.animation_set_playback_rate = AsyncMock()
 
     backend.webauthn_add_virtual_authenticator = AsyncMock(return_value="auth-1")
     backend.webauthn_remove_authenticator = AsyncMock()
@@ -213,6 +214,12 @@ def session_manager_with_mock(mock_backend: AsyncMock) -> SessionManager:
         last_used=time.time(),
     )
     return mgr
+
+
+@pytest.fixture(autouse=True)
+def _wavexis_output_dir(tmp_path: pytest.Any, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Sandbox all file operations to the per-test temporary directory."""
+    monkeypatch.setenv("WAVEXIS_MCP_OUTPUT_DIR", str(tmp_path))
 
 
 @pytest.fixture

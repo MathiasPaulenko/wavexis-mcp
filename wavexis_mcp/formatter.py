@@ -8,8 +8,43 @@ from __future__ import annotations
 
 import base64
 import json
+import os
 from pathlib import Path
 from typing import Any
+
+
+def secure_output_path(path: str, base_dir: str | os.PathLike[str] | None = None) -> Path:
+    """Resolve *path* and verify it lies inside the allowed output directory.
+
+    The allowed base directory is taken from *base_dir* if supplied, then
+    from the ``WAVEXIS_MCP_OUTPUT_DIR`` environment variable, and finally
+    falls back to the current working directory.  Relative paths are resolved
+    against the base directory.  If the resolved path escapes the base
+    directory, a ``ValueError`` is raised.
+
+    Args:
+        path: Destination file or directory path supplied by a caller.
+        base_dir: Optional explicit base directory to validate against.
+
+    Returns:
+        A resolved ``Path`` that is guaranteed to be inside the allowed base.
+
+    Raises:
+        ValueError: If the resolved path escapes the allowed base directory.
+    """
+    if base_dir is not None:
+        base = Path(base_dir).resolve()
+    else:
+        base = Path(os.environ.get("WAVEXIS_MCP_OUTPUT_DIR", os.getcwd())).resolve()
+    target = Path(path)
+    resolved = target.resolve() if target.is_absolute() else (base / target).resolve()
+    try:
+        resolved.relative_to(base)
+    except ValueError as exc:
+        raise ValueError(
+            f"Output path {path!r} is outside the allowed output directory {base}"
+        ) from exc
+    return resolved
 
 
 def encode_base64(data: bytes) -> str:
@@ -36,17 +71,17 @@ def save_to_file(data: bytes, path: str) -> dict[str, Any]:
     Returns:
         A dict with ``"path"`` and ``"size_bytes"`` keys.
     """
-    p = Path(path)
+    p = secure_output_path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_bytes(data)
     return {"path": str(p), "size_bytes": len(data)}
 
 
-def format_json_response(data: Any) -> str:
+def format_json_response(data: object) -> str:
     """Serialize arbitrary data as a JSON string.
 
     Args:
-        data: Any JSON-serializable Python object.
+        data: JSON-serializable Python object.
 
     Returns:
         A JSON string with ``ensure_ascii=False``.

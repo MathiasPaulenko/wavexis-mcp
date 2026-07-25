@@ -56,7 +56,7 @@ class CapsError(WaveXisMCPError):
     """Raised when an invalid capability tier is requested."""
 
 
-class TimeoutError(WaveXisMCPError):
+class OperationTimeoutError(WaveXisMCPError):
     """Raised when an operation exceeds its timeout.
 
     Attributes:
@@ -72,6 +72,11 @@ class TimeoutError(WaveXisMCPError):
         super().__init__(f"Operation timed out after {timeout_ms}ms.")
 
 
+# Backwards-compatible alias; avoids shadowing the built-in ``TimeoutError``
+# as the primary class name while preserving existing imports.
+TimeoutError = OperationTimeoutError
+
+
 # ── Error suggestion mapping ─────────────────────────────────────
 
 _SUGGESTIONS: dict[str, str] = {
@@ -83,7 +88,9 @@ _SUGGESTIONS: dict[str, str] = {
         "Try wavexis_backends to see available backends. "
         "Install with: pip install wavexis[cdp] or wavexis[bidi]."
     ),
-    "TimeoutError": ("Increase wait_timeout or check that the page has loaded before acting."),
+    "OperationTimeoutError": (
+        "Increase wait_timeout or check that the page has loaded before acting."
+    ),
     "CapsError": ("Restart the server with the required --caps flag (e.g. --caps=core,devtools)."),
     "ToolError": ("Check the error message for details. Verify selectors and page state."),
 }
@@ -98,5 +105,8 @@ def get_suggestion(error: Exception) -> str:
     Returns:
         A human-readable suggestion string.
     """
-    error_type = type(error).__name__
-    return _SUGGESTIONS.get(error_type, "Check the error message and verify inputs.")
+    for klass in type(error).__mro__:
+        name = klass.__name__
+        if name in _SUGGESTIONS:
+            return _SUGGESTIONS[name]
+    return "Check the error message and verify inputs."

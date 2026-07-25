@@ -255,12 +255,11 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """
         try:
             session = session_manager.get(input.session_id)
-            await session.backend.animation_seek(
-                input.animation_id, int(input.playback_rate * 1000)
-            )
+            await session.backend.animation_set_playback_rate(input.playback_rate)
             return format_json_response(
                 {
                     "status": "ok",
+                    "animation_id": input.animation_id,
                     "playback_rate": input.playback_rate,
                 }
             )

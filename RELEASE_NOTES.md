@@ -1,5 +1,7 @@
 # Release v1.6.6
 
+> **Note**: For the latest changes, including unreleased work, see [CHANGELOG.md](CHANGELOG.md). This file is a frozen snapshot of the v1.6.6 release.
+
 ## Summary
 
 - Reached **100% test coverage** across all `wavexis_mcp` modules.

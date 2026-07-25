@@ -39,19 +39,28 @@ jobs:
           pip install -e ".[dev]"
 
       - name: Ruff check
-        run: ruff check .
+        run: ruff check wavexis_mcp tests
 
       - name: Ruff format check
-        run: ruff format --check .
+        run: ruff format --check
 
       - name: Mypy
-        run: mypy wavexis_mcp/
+        run: mypy wavexis_mcp
+
+      - name: Bandit security check
+        run: python -m bandit -r wavexis_mcp
+
+      - name: Build package
+        run: python -m build
+
+      - name: Check package with twine
+        run: twine check dist/*
 
       - name: Unit tests
-        run: pytest tests/unit/ -v --cov=wavexis_mcp --cov-report=xml
+        run: pytest tests/unit -v --cov=wavexis_mcp --cov-report=xml
 
       - name: Integration tests
-        run: pytest tests/integration/ -v -m integration
+        run: pytest tests/integration -v -m integration
         continue-on-error: true
 
       - name: Upload coverage

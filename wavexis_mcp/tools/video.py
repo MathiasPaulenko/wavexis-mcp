@@ -7,6 +7,7 @@ an active session.
 
 from __future__ import annotations
 
+import json
 import time
 from typing import Any
 
@@ -209,9 +210,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """
         try:
             session = session_manager.get(input.session_id)
-            await session.backend.eval(
-                f"window.__wavexisOverlay = {'true' if input.show else 'false'};"
-            )
+            await session.backend.eval(f"window.__wavexisOverlay = {json.dumps(input.show)};")
             return format_json_response(
                 {
                     "status": "ok",

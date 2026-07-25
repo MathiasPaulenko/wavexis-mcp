@@ -9,12 +9,20 @@ from __future__ import annotations
 
 import asyncio
 import base64
+import json
 from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
+from wavexis.backend.base import AbstractBackend
+from wavexis.config import WaitStrategy
 
-from wavexis_mcp.formatter import format_error, format_json_response, save_to_file
+from wavexis_mcp.formatter import (
+    format_error,
+    format_json_response,
+    save_to_file,
+    secure_output_path,
+)
 from wavexis_mcp.models import (
     CoreWebVitalsInput,
     CrawlInput,
@@ -25,6 +33,19 @@ from wavexis_mcp.models import (
     WebsocketInterceptInput,
 )
 from wavexis_mcp.session import SessionManager
+
+
+async def _try_navigate(backend: AbstractBackend, url: str, wait: WaitStrategy) -> bool:
+    """Attempt to navigate to *url*, returning True on success.
+
+    Any backend navigation error is suppressed and reported as a failure
+    so the crawler can continue with the next URL.
+    """
+    try:
+        await backend.navigate(url, wait)
+    except Exception:
+        return False
+    return True
 
 
 def register(mcp: FastMCP, session_manager: SessionManager) -> None:
@@ -201,20 +222,20 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                 data: list[dict[str, Any]] = []
 
                 if input.selector:
-                    escaped_scope = input.selector.replace("'", "\\'")
-                    count_js = f"document.querySelectorAll('{escaped_scope}').length"
+                    escaped_scope = json.dumps(input.selector)
+                    count_js = f"document.querySelectorAll({escaped_scope}).length"
                     count = await backend.eval(count_js, await_promise=True)
                     count = int(count) if count else 0
 
                     for i in range(count):
                         row: dict[str, Any] = {}
-                        for field, sel in input.schema.items():
-                            escaped_sel = sel.replace("'", "\\'")
+                        for field, sel in input.json_schema.items():
+                            escaped_sel = json.dumps(sel)
                             js = (
                                 f"(function(){{var els=document.querySelectorAll"
-                                f"('{escaped_scope}');var el=els[{i}];"
+                                f"({escaped_scope});var el=els[{i}];"
                                 f"if(!el)return '';var t=el.querySelector"
-                                f"('{escaped_sel}');return t?t.innerText.trim()"
+                                f"({escaped_sel});return t?t.innerText.trim()"
                                 f":'';}})()"
                             )
                             val = await backend.eval(js, await_promise=True)
@@ -222,11 +243,11 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                         data.append(row)
                 else:
                     row = {}
-                    for field, sel in input.schema.items():
-                        escaped_sel = sel.replace("'", "\\'")
+                    for field, sel in input.json_schema.items():
+                        escaped_sel = json.dumps(sel)
                         js = (
                             f"(function(){{var el=document.querySelector"
-                            f"('{escaped_sel}');return el?el.innerText.trim()"
+                            f"({escaped_sel});return el?el.innerText.trim()"
                             f":'';}})()"
                         )
                         val = await backend.eval(js, await_promise=True)
@@ -315,8 +336,6 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                 headless=input.headless,
             )
             try:
-                from wavexis.config import WaitStrategy
-
                 visited: set[str] = set()
                 pages: list[dict[str, Any]] = []
                 queue: list[tuple[str, int]] = [(input.start_url, 0)]
@@ -328,9 +347,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                     visited.add(url)
 
                     wait = WaitStrategy(strategy="load", timeout=input.wait_timeout)
-                    try:
-                        await backend.navigate(url, wait)
-                    except Exception:
+                    if not await _try_navigate(backend, url, wait):
                         continue
 
                     title = await backend.eval("document.title")
@@ -414,9 +431,10 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                 from wavexis.config import WaitStrategy
 
                 threshold = max(0, min(255, round(input.threshold * 255)))
+                baseline_path = str(secure_output_path(input.baseline_path))
                 params = VisualDiffParams(
                     url="",
-                    baseline_path=input.baseline_path,
+                    baseline_path=baseline_path,
                     selector=input.selector,
                     threshold=threshold,
                     wait=WaitStrategy(strategy="load", timeout=input.wait_timeout),

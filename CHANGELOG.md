@@ -5,7 +5,38 @@ All notable changes to WaveXisMCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.6.6] - 2026-07-24
+## [Unreleased]
+
+### Changed
+
+- Renamed `TimeoutError` to `OperationTimeoutError` in `wavexis_mcp/errors.py` to avoid shadowing the built-in `TimeoutError`; kept `TimeoutError` as a backwards-compatible alias.
+- Replaced `print(..., file=sys.stderr)` warnings in `wavexis_mcp/caps.py` with `warnings.warn(..., stacklevel=2)`.
+- Hardened `wavexis_mcp/tools/data.py` crawler against navigation failures with a dedicated `_try_navigate` helper.
+- Switched `pyproject.toml` to dynamic versioning from `wavexis_mcp/__init__.py` and updated the release workflow to validate against `__init__.py` instead of `pyproject.toml`.
+- Added missing `mkdocstrings[python]`, `twine`, and `bandit` to `[project.optional-dependencies] dev`.
+- Improved type coverage in `wavexis_mcp/session.py` (`RateLimiter | None`, generic `call_backend[Awaitable[T]] -> T`).
+- Reduced top-level `typing.Any` annotations in `act.py`, `network.py`, `server.py`, `utility.py`, and `formatter.py`; added `ANN401` clean run.
+- Added `__all__` to `wavexis_mcp/__init__.py`.
+- Updated `AGENTS.md` and `CONTRIBUTING.md` with the full verification command set (ruff, format, mypy, bandit, build, twine).
+- Polished README with Requirements, Contributing, Acknowledgements, and expanded Documentation links.
+- Fixed documentation duplicates (`docs/tools/core.md`, `docs/tools/devtools.md`) and WebAuthn tool-name mismatch in `docs/tools/experimental.md`.
+- Added `.github/dependabot.yml`, `.github/CODEOWNERS`, and `.pre-commit-config.yaml`.
+- Hardened Dockerfile with non-root user, output directory, and `CI` env for containerized Chrome sandbox.
+- Added `restart: unless-stopped` to `docker-compose.yml`.
+- Added `twine check` to release workflow and `bandit`, `build`, `twine check` to CI workflow.
+- Expanded `pyproject.toml` classifiers, URLs, and maintainers metadata.
+- Regenerated `docs/tools/*.md` from the actual registered MCP tools (220 tools) and added `scripts/generate_tool_docs.py` for future doc maintenance.
+- Updated all tool count references from 195 to 220 across README, docs, `pyproject.toml`, and `mkdocs.yml`.
+- Expanded `wavexis_mcp/__init__.py` public API exports to include `SessionManager`, `BrowserSession`, error classes, and `get_suggestion`.
+- Replaced module-level `_REF_COUNTER` global in `wavexis_mcp/tools/a11y.py` with a per-call mutable counter.
+- Added logging for URL-fetch failures in `wavexis_mcp/session.py`.
+
+### Fixed
+
+- Resolved all `bandit` security findings (B104, B110, B112) in `server.py`, `tools/data.py`, and `tools/network.py`.
+- Restored `ruff format` compliance for the codebase.
+
+## [1.6.6] - 2025-07-24
 
 ### Added
 

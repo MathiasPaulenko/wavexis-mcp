@@ -47,6 +47,8 @@ class _TokenBucket:
             Tuple of ``(acquired, retry_after_ms)``.  If ``acquired`` is
             ``False``, ``retry_after_ms`` indicates how long to wait.
         """
+        if self.rate <= 0.0:
+            return True, 0.0
         self.refill(now)
         if self.tokens >= 1.0:
             self.tokens -= 1.0

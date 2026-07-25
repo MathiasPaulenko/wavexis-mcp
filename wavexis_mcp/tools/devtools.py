@@ -14,7 +14,7 @@ import json
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
 
-from wavexis_mcp.formatter import format_error, format_json_response
+from wavexis_mcp.formatter import format_error, format_json_response, secure_output_path
 from wavexis_mcp.models import (
     BrowserLogsInput,
     ConsoleMessagesInput,
@@ -57,7 +57,8 @@ def _write_json(path: str, data: object) -> None:
         path: Destination file path.
         data: JSON-serializable object to write.
     """
-    with open(path, "w", encoding="utf-8") as f:
+    p = secure_output_path(path)
+    with p.open("w", encoding="utf-8") as f:
         json.dump(data, f)
 
 

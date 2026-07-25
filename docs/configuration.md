@@ -1,35 +1,35 @@
 # Configuration
 
-WaveXisMCP organizes 195 tools into 13 capability tiers. Core is always enabled. Additional tiers are opt-in via `--caps`.
+WaveXisMCP organizes 220 tools into 13 capability tiers. Core is always enabled. Additional tiers are opt-in via `--caps`.
 
 ## Capability tiers
 
-Capability tiers are the primary way to control which tools are exposed to the LLM. Each tier groups related tools by domain. This matters because LLMs have context windows — exposing 195 tool definitions consumes tokens. For simple tasks, 56 core tools is plenty. For complex automation, enable everything with `--caps all`.
+Capability tiers are the primary way to control which tools are exposed to the LLM. Each tier groups related tools by domain. This matters because LLMs have context windows — exposing 220 tool definitions consumes tokens. For simple tasks, 72 core tools is plenty. For complex automation, enable everything with `--caps all`.
 
 | Tier | Flag | Tools | Key features |
 | --- | --- | --- | --- |
-| **Core** | always on | 56 | Session, navigation, screenshot, PDF, scrape, eval, DOM, input, cookies, tabs, NL interaction, iframe, shadow DOM, events |
-| **Network** | `--caps=network` | 14 | Headers, UA, block, throttle, cache, HAR, intercept, mock, modify req/resp, request body, replay HAR, request list |
+| **Core** | always on | 72 | Session, navigation, screenshot, PDF, scrape, eval, DOM, input, cookies, tabs, NL interaction, iframe, shadow DOM, events |
+| **Network** | `--caps=network` | 20 | Headers, UA, block, throttle, cache, HAR, intercept, mock, modify req/resp, request body, replay HAR, request list |
 | **Storage** | `--caps=storage` | 18 | localStorage, sessionStorage, cache storage, IndexedDB, state save/restore |
 | **Emulation** | `--caps=emulation` | 9 | Device, viewport, geolocation, timezone, dark mode, locale, CPU, touch, sensors |
 | **A11y** | `--caps=a11y` | 4 | Accessibility tree snapshot, node traversal, axe-core audit |
 | **Interactions** | `--caps=interactions` | 5 | Dialogs, downloads, permissions |
 | **DevTools** | `--caps=devtools` | 31 | Performance, CSS, debugging, overlay, console, security, window mgmt, combined trace, annotated screenshot |
-| **Vision** | `--caps=vision` | 6 | Coordinate-based mouse (pixel-precise) |
+| **Vision** | `--caps=vision` | 7 | Coordinate-based mouse (pixel-precise) |
 | **Video** | `--caps=video` | 4 | Video recording, chapters, action overlay |
-| **Testing** | `--caps=testing` | 4 | Assertions, locator generation |
+| **Testing** | `--caps=testing` | 6 | Assertions, locator generation |
 | **Workflows** | `--caps=workflows` | 6 | Multi-action YAML, raw CDP/BiDi, browser context CRUD |
 | **Data** | `--caps=data` | 7 | Codegen, Lighthouse audit, extract, websocket intercept, crawl, visual diff, core web vitals |
 | **Experimental** | `--caps=experimental` | 31 | Service workers, animations, WebAuthn, WebAudio, media, cast, bluetooth, extensions, prefs |
-| **Total** | `--caps=all` | **195** | |
+| **Total** | `--caps=all` | **220** | |
 
 ### Tier details
 
-#### Core (56 tools, always on)
+#### Core (72 tools, always on)
 
 The foundation. Covers session management, navigation, screenshots, PDF generation, page scraping, JavaScript evaluation, DOM manipulation, user input (click, type, fill, hover, drag, key press), cookies, tab management, iframe interactions, shadow DOM piercing, event subscription, and natural language interaction (find-by-text, NL click/fill). These tools are always available regardless of `--caps` settings.
 
-#### Network (14 tools)
+#### Network (20 tools)
 
 Control over HTTP traffic. Set custom headers, override User-Agent, block requests by URL pattern, throttle network speed, disable cache, capture HAR files, intercept and modify requests in-flight, mock responses, modify responses in-flight, get request/response bodies, replay HAR files, and list all network requests made by the page. Essential for testing API interactions, simulating slow connections, and debugging network issues.
 
@@ -53,7 +53,7 @@ Handle browser-level interactions that aren't DOM clicks. Accept/dismiss JavaScr
 
 Chrome DevTools protocol exposed as tools. Performance metrics (LCP, FCP, CLS, TTFB), CPU profiling, heap snapshots, JS/CSS coverage, combined trace+perf, CSS style inspection, JavaScript debugging (breakpoints, step over/into/out, pause/resume), event listener inspection, element highlighting, console capture, browser logs, security state, window bounds control, and annotated screenshots with element labels. The most powerful tier for debugging and optimization.
 
-#### Vision (6 tools)
+#### Vision (7 tools)
 
 Pixel-precise mouse control. Move, press, release, click, and double-click at specific x,y coordinates. Unlike DOM-based clicks (which use CSS selectors), vision tools operate on raw screen coordinates. Useful when elements don't have stable selectors or when interacting with canvas/WebGL.
 
@@ -61,7 +61,7 @@ Pixel-precise mouse control. Move, press, release, click, and double-click at sp
 
 Browser video recording. Start/stop recording, add chapter markers at specific timestamps, and overlay action labels on the video. Recordings capture the full page including animations and interactions. Useful for bug reports, demos, and regression testing.
 
-#### Testing (4 tools)
+#### Testing (6 tools)
 
 Assertion-based testing. Assert element visibility, text presence, and URL matching. Generate robust CSS selectors for elements (tries ID, data-testid, class, nth-child). These tools return pass/fail results as JSON, making them ideal for automated test pipelines.
 
@@ -80,10 +80,10 @@ Niche and experimental features. Service worker management (list, unregister, up
 ## --caps flag
 
 ```bash
-# Core only (default, 56 tools)
+# Core only (default, 72 tools)
 wavexis-mcp
 
-# All tiers (195 tools)
+# All tiers (220 tools)
 wavexis-mcp --caps all
 
 # Specific tiers
@@ -97,7 +97,7 @@ wavexis-mcp --caps=devtools,a11y
 ```
 
 !!! tip "Choosing tiers"
-    Start with `--caps core` and add tiers as needed. Each tier adds tool definitions to the LLM's context, which consumes tokens. For most tasks, `core,network,storage` (88 tools) is a good balance. Use `all` only when you need maximum capability.
+    Start with `--caps core` and add tiers as needed. Each tier adds tool definitions to the LLM's context, which consumes tokens. For most tasks, `core,network,storage` (110 tools) is a good balance. Use `all` only when you need maximum capability.
 
 ## CLI flags
 

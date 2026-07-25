@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -191,7 +192,7 @@ async def test_tap(mock_backend: AsyncMock) -> None:
 
 
 @pytest.mark.unit
-async def test_set_files(mock_backend: AsyncMock) -> None:
+async def test_set_files(mock_backend: AsyncMock, tmp_path: Any) -> None:
     from mcp.server.fastmcp import FastMCP
 
     from wavexis_mcp.tools.input import register
@@ -203,7 +204,11 @@ async def test_set_files(mock_backend: AsyncMock) -> None:
 
     tool = mcp._tool_manager.get_tool("wavexis_set_files")
     result = await tool.fn(
-        SetFilesInput(selector="input[type=file]", files=["/tmp/a.txt"], url="https://example.com")
+        SetFilesInput(
+            selector="input[type=file]",
+            files=[str(tmp_path / "a.txt")],
+            url="https://example.com",
+        )
     )
     data = json.loads(result)
     assert data["status"] == "ok"
@@ -348,7 +353,7 @@ async def test_right_click(mock_backend: AsyncMock) -> None:
 
 
 @pytest.mark.unit
-async def test_drop(mock_backend: AsyncMock) -> None:
+async def test_drop(mock_backend: AsyncMock, tmp_path: Any) -> None:
     from mcp.server.fastmcp import FastMCP
 
     from wavexis_mcp.tools.input import register
@@ -366,7 +371,7 @@ async def test_drop(mock_backend: AsyncMock) -> None:
         DropInput(
             selector="#dropzone",
             data={"text/plain": "hello"},
-            paths=["d:\\\\file.txt"],
+            paths=[str(tmp_path / "file.txt")],
             url="https://example.com",
         )
     )

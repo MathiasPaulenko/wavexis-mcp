@@ -21,8 +21,6 @@ from wavexis_mcp.models import (
 )
 from wavexis_mcp.session import SessionManager
 
-_REF_COUNTER = 0
-
 
 def _extract_role(node: dict[str, Any]) -> str:
     """Extract a human-readable role string from a CDP a11y node.
@@ -133,22 +131,28 @@ def _build_a11y_tree(raw: dict[str, Any] | list[dict[str, Any]]) -> list[dict[st
     return [by_id[rid] for rid in root_ids if rid in by_id]
 
 
-def _format_a11y_tree(nodes: list[dict[str, Any]], level: int = 0) -> list[dict[str, Any]]:
+def _format_a11y_tree(
+    nodes: list[dict[str, Any]],
+    level: int = 0,
+    ref_counter: list[int] | None = None,
+) -> list[dict[str, Any]]:
     """Convert raw a11y tree nodes into LLM-friendly structure with refs.
 
     Args:
         nodes: Raw accessibility tree nodes from the backend.
         level: Current nesting depth (0 for root).
+        ref_counter: Mutable counter shared across recursive calls.
 
     Returns:
         List of formatted node dicts with ``ref``, ``role``, ``name``,
         ``level``, and optional ``children``.
     """
-    global _REF_COUNTER
+    if ref_counter is None:
+        ref_counter = [0]
     result: list[dict[str, Any]] = []
     for node in nodes:
-        _REF_COUNTER += 1
-        ref = f"el-{_REF_COUNTER}"
+        ref_counter[0] += 1
+        ref = f"el-{ref_counter[0]}"
         entry: dict[str, Any] = {
             "ref": ref,
             "role": node.get("role", "unknown"),
@@ -157,7 +161,7 @@ def _format_a11y_tree(nodes: list[dict[str, Any]], level: int = 0) -> list[dict[
         }
         children = node.get("children", [])
         if children:
-            entry["children"] = _format_a11y_tree(children, level + 1)
+            entry["children"] = _format_a11y_tree(children, level + 1, ref_counter)
         result.append(entry)
     return result
 
@@ -229,7 +233,6 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         Returns:
             JSON string with ``snapshot``, ``text``, and ``element_count``.
         """
-        global _REF_COUNTER
         try:
             backend, sid = await session_manager.acquire_backend(
                 input.session_id,
@@ -240,7 +243,6 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                 if input.url and not input.session_id:
                     await session_manager.call_backend(backend.navigate(input.url))
                 raw = await session_manager.call_backend(backend.a11y_tree())
-                _REF_COUNTER = 0
                 nodes = _build_a11y_tree(raw)
                 tree = _format_a11y_tree(nodes)
                 text = _tree_to_text(tree)

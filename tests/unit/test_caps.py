@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from wavexis_mcp.caps import ALL_TIERS, CapsManager
 
 
@@ -25,7 +27,8 @@ def test_specific_tiers() -> None:
 
 
 def test_invalid_tier_ignored() -> None:
-    caps = CapsManager("core,invalid,network")
+    with pytest.warns(UserWarning, match="unknown capability tier 'invalid'"):
+        caps = CapsManager("core,invalid,network")
     assert caps.is_enabled("core")
     assert caps.is_enabled("network")
     assert not caps.is_enabled("invalid")

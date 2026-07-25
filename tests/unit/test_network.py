@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -393,7 +394,9 @@ async def test_modify_request_error(
 
 
 @pytest.mark.unit
-async def test_replay_har(session_manager_with_mock: SessionManager, mock_session_id: str) -> None:
+async def test_replay_har(
+    session_manager_with_mock: SessionManager, mock_session_id: str, tmp_path: Any
+) -> None:
     from mcp.server.fastmcp import FastMCP
 
     from wavexis_mcp.models import ReplayHARInput
@@ -404,21 +407,22 @@ async def test_replay_har(session_manager_with_mock: SessionManager, mock_sessio
 
     session_manager_with_mock.get(mock_session_id).backend.replay_har = AsyncMock()
 
+    har_path = str(tmp_path / "test.har")
     tool = mcp._tool_manager.get_tool("wavexis_replay_har")
     result = await tool.fn(
         ReplayHARInput(
-            har_path="/tmp/test.har",
+            har_path=har_path,
             session_id=mock_session_id,
         )
     )
     data = json.loads(result)
     assert data["status"] == "ok"
-    assert data["har_path"] == "/tmp/test.har"
+    assert data["har_path"] == har_path
 
 
 @pytest.mark.unit
 async def test_replay_har_with_url(
-    session_manager_with_mock: SessionManager, mock_session_id: str
+    session_manager_with_mock: SessionManager, mock_session_id: str, tmp_path: Any
 ) -> None:
     from mcp.server.fastmcp import FastMCP
 
@@ -433,7 +437,7 @@ async def test_replay_har_with_url(
     tool = mcp._tool_manager.get_tool("wavexis_replay_har")
     result = await tool.fn(
         ReplayHARInput(
-            har_path="/tmp/test.har",
+            har_path=str(tmp_path / "test.har"),
             url="https://example.com",
             session_id=mock_session_id,
         )
@@ -445,7 +449,7 @@ async def test_replay_har_with_url(
 
 @pytest.mark.unit
 async def test_replay_har_error(
-    session_manager_with_mock: SessionManager, mock_session_id: str
+    session_manager_with_mock: SessionManager, mock_session_id: str, tmp_path: Any
 ) -> None:
     from mcp.server.fastmcp import FastMCP
 
@@ -462,7 +466,7 @@ async def test_replay_har_error(
     tool = mcp._tool_manager.get_tool("wavexis_replay_har")
     result = await tool.fn(
         ReplayHARInput(
-            har_path="/nonexistent.har",
+            har_path=str(tmp_path / "nonexistent.har"),
             session_id=mock_session_id,
         )
     )

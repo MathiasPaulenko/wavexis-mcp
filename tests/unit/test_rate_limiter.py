@@ -7,6 +7,7 @@ import time
 
 import pytest
 
+from wavexis_mcp.models import SessionCloseInput
 from wavexis_mcp.rate_limiter import RateLimiter, _TokenBucket
 
 
@@ -104,3 +105,34 @@ class TestRateLimiter:
         # Wait for refill
         await asyncio.sleep(0.02)  # 20ms = 2 tokens at rate=100
         assert await limiter.acquire("session-1") is True
+
+
+@pytest.mark.unit
+async def test_apply_rate_limiting_to_tools() -> None:
+    """Rate limiter wraps tool handlers and rejects calls over burst."""
+    import json
+
+    from mcp.server.fastmcp import FastMCP
+
+    from wavexis_mcp.server import _apply_rate_limiting
+
+    mcp = FastMCP("rate-test")
+
+    @mcp.tool()
+    async def dummy_tool(input: SessionCloseInput) -> str:
+        return '{"status": "ok"}'
+
+    limiter = RateLimiter(rate=1, burst=1)
+    _apply_rate_limiting(mcp, limiter)
+
+    tool = mcp._tool_manager.get_tool("dummy_tool")
+    assert tool is not None
+
+    result1 = await tool.fn(SessionCloseInput(session_id="s1"))
+    data1 = json.loads(result1)
+    assert data1["status"] == "ok"
+
+    result2 = await tool.fn(SessionCloseInput(session_id="s1"))
+    data2 = json.loads(result2)
+    assert "error" in data2
+    assert "Rate limit" in data2["error"]

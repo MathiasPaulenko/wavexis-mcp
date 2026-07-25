@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from typing import Any
 from unittest.mock import AsyncMock
 
 import pytest
@@ -126,7 +127,7 @@ async def test_crawl(session_manager_with_mock: SessionManager, mock_session_id:
 
 @pytest.mark.unit
 async def test_visual_diff_not_implemented(
-    session_manager_with_mock: SessionManager, mock_session_id: str
+    session_manager_with_mock: SessionManager, mock_session_id: str, tmp_path: Any
 ) -> None:
     from mcp.server.fastmcp import FastMCP
 
@@ -137,7 +138,7 @@ async def test_visual_diff_not_implemented(
     result = await tool.fn(
         VisualDiffInput(
             url="https://example.com",
-            baseline_path="/tmp/baseline.png",
+            baseline_path=str(tmp_path / "baseline.png"),
             session_id=mock_session_id,
         )
     )

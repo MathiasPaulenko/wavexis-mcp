@@ -14,6 +14,7 @@ from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
+from wavexis.backend.base import AbstractBackend
 
 from wavexis_mcp.formatter import encode_base64, format_error, format_json_response, save_to_file
 from wavexis_mcp.models import BrowserVersionInput, InvokeInput
@@ -82,7 +83,19 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_backends", e)
 
-    def _build_result(result: Any, output_path: str | None) -> dict[str, Any] | str:
+    def _build_result(result: object, output_path: str | None) -> dict[str, Any] | str:
+        """Format a raw backend result into a JSON-ready payload or file path.
+
+        Bytes are returned as base64 or written to disk; lists of bytes are
+        handled as frame sequences; any other value is wrapped with its type.
+
+        Args:
+            result: Raw return value from a backend method.
+            output_path: Optional destination for binary outputs.
+
+        Returns:
+            A metadata dict, a file path string, or a list of frame metadata.
+        """
         if isinstance(result, bytes):
             if output_path:
                 meta = save_to_file(result, output_path)
@@ -118,7 +131,23 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             }
         return {"status": "ok", "type": type(result).__name__, "result": result}
 
-    async def _call_backend_method(backend: Any, method_name: str, params: dict[str, Any]) -> Any:
+    async def _call_backend_method(
+        backend: AbstractBackend, method_name: str, params: dict[str, Any]
+    ) -> object:
+        """Invoke a backend method, automatically wrapping dataclass parameters.
+
+        Args:
+            backend: The wavexis backend instance.
+            method_name: Name of the backend method to call.
+            params: JSON-compatible dict of arguments.
+
+        Returns:
+            The backend method's return value.
+
+        Raises:
+            AttributeError: If the backend does not expose the requested method.
+            ValueError: If the method name refers to a private method.
+        """
         method = getattr(backend, method_name, None)
         if method is None or not callable(method):
             raise AttributeError(f"Backend has no method '{method_name}'")

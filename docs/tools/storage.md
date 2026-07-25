@@ -2,76 +2,27 @@
 
 Enable with `--caps=storage`.
 
-Storage tools provide full CRUD access to browser storage mechanisms: localStorage, sessionStorage, and Cache Storage. Additionally, the storage state save/restore tools export the entire browser state (cookies + all storage) as JSON for later restoration.
+These 18 tools are added when the `storage` capability tier is enabled.
 
-Useful for preserving authentication state between sessions, testing storage-dependent features, and debugging storage issues.
-
-## localStorage
-
-Persistent key-value storage scoped per origin. Survives browser restarts.
+## Storage
 
 | Tool | Parameters | Description |
 | --- | --- | --- |
-| `wavexis_localstorage_get` | `session_id`, `key` | Get a localStorage item by key. Returns `null` if key doesn't exist. |
-| `wavexis_localstorage_set` | `session_id`, `key`, `value` | Set a localStorage item. Creates or overwrites. |
-| `wavexis_localstorage_delete` | `session_id`, `key` | Delete a localStorage item by key. |
-| `wavexis_localstorage_clear` | `session_id` | Clear all localStorage for the current origin. |
-| `wavexis_localstorage_list` | `session_id` | List all localStorage keys and values for the current origin. |
-
-## sessionStorage
-
-Key-value storage scoped per origin AND per tab. Cleared when the tab is closed.
-
-| Tool | Parameters | Description |
-| --- | --- | --- |
-| `wavexis_sessionstorage_get` | `session_id`, `key` | Get a sessionStorage item by key. |
-| `wavexis_sessionstorage_set` | `session_id`, `key`, `value` | Set a sessionStorage item. |
-| `wavexis_sessionstorage_delete` | `session_id`, `key` | Delete a sessionStorage item. |
-| `wavexis_sessionstorage_clear` | `session_id` | Clear all sessionStorage for the current origin. |
-| `wavexis_sessionstorage_list` | `session_id` | List all sessionStorage keys and values. |
-
-## Cache Storage
-
-Stores `Request`/`Response` pairs for use by Service Workers. Used by PWAs for offline access.
-
-| Tool | Parameters | Description |
-| --- | --- | --- |
-| `wavexis_cache_storage_list` | `session_id` | List all Cache Storage entries (cache names and their contents). |
-| `wavexis_cache_storage_entries` | `session_id`, `cache_name` | List all entries (request/response pairs) in a specific cache. Returns URLs, statuses, and content types. |
-| `wavexis_cache_storage_delete` | `session_id`, `cache_name` | Delete a specific cache by name. |
-
-## IndexedDB
-
-Client-side object database for structured data. Used by PWAs and complex web apps.
-
-| Tool | Parameters | Description |
-| --- | --- | --- |
-| `wavexis_indexeddb_list` | `session_id` | List all IndexedDB databases and their object stores. Returns database name, version, and store names. |
-| `wavexis_indexeddb_get_data` | `session_id`, `database`, `store` | Get all records from an IndexedDB object store. Returns key-value pairs. |
-| `wavexis_indexeddb_clear` | `session_id`, `database`, `store` | Clear all records in an IndexedDB object store. |
-
-## State save/restore
-
-Export and import the full browser state — cookies, localStorage, sessionStorage — as a single JSON blob. Useful for session persistence across restarts.
-
-| Tool | Parameters | Description |
-| --- | --- | --- |
-| `wavexis_storage_state_save` | `session_id`, `output_path` | Save the full storage state (cookies + localStorage + sessionStorage) to a JSON file. |
-| `wavexis_storage_state_restore` | `session_id`, `state` | Restore a previously saved storage state. `state`: JSON string or file path. |
-
-!!! example "Save and restore auth state"
-    ```text
-    # Session 1: Log in and save state
-    wavexis_session_open(backend="cdp")
-    wavexis_navigate(session_id="s1", url="https://app.example.com/login")
-    wavexis_fill(session_id="s1", selector="#email", value="user@example.com")
-    wavexis_click(session_id="s1", selector="#submit")
-    wavexis_storage_state_save(session_id="s1", output_path="./auth-state.json")
-    wavexis_session_close(session_id="s1")
-
-    # Session 2: Restore state — already logged in
-    wavexis_session_open(backend="cdp")
-    wavexis_storage_state_restore(session_id="s2", state="./auth-state.json")
-    wavexis_navigate(session_id="s2", url="https://app.example.com/dashboard")
-    wavexis_session_close(session_id="s2")
-    ```
+| `wavexis_cache_storage_delete` | `cache_name, session_id` | Delete a Cache Storage cache. |
+| `wavexis_cache_storage_entries` | `cache_name, session_id` | List entries in a Cache Storage cache. |
+| `wavexis_cache_storage_list` | `session_id` | List all Cache Storage cache names. |
+| `wavexis_indexeddb_clear` | `database, store, session_id` | Clear an IndexedDB object store. |
+| `wavexis_indexeddb_get_data` | `database, store, key?, session_id` | Get data from an IndexedDB object store. |
+| `wavexis_indexeddb_list` | `session_id` | List all IndexedDB databases and their object stores. |
+| `wavexis_localstorage_clear` | `session_id` | Clear all localStorage entries. |
+| `wavexis_localstorage_delete` | `key, session_id` | Delete a localStorage key. |
+| `wavexis_localstorage_get` | `key, session_id` | Get a localStorage value by key. |
+| `wavexis_localstorage_list` | `session_id` | List all localStorage entries. |
+| `wavexis_localstorage_set` | `key, value, session_id` | Set a localStorage key/value pair. |
+| `wavexis_sessionstorage_clear` | `session_id` | Clear all sessionStorage entries. |
+| `wavexis_sessionstorage_delete` | `key, session_id` | Delete a sessionStorage key. |
+| `wavexis_sessionstorage_get` | `key, session_id` | Get a sessionStorage value by key. |
+| `wavexis_sessionstorage_list` | `session_id` | List all sessionStorage entries. |
+| `wavexis_sessionstorage_set` | `key, value, session_id` | Set a sessionStorage key/value pair. |
+| `wavexis_storage_state_restore` | `session_id, input_path` | Restore cookies + localStorage + sessionStorage from a JSON file. |
+| `wavexis_storage_state_save` | `session_id, output_path` | Save cookies + localStorage + sessionStorage to a JSON file. |

@@ -12,6 +12,8 @@ import re
 from dataclasses import dataclass, field
 from typing import Any
 
+from wavexis.backend.base import AbstractBackend
+
 _ACTION_VERBS: dict[str, str] = {
     "click": "click",
     "tap": "click",
@@ -224,6 +226,45 @@ def _score_element(
     return min(score, 100.0)
 
 
+def _escape_css_attr(value: str) -> str:
+    """Escape a string for safe use inside a CSS attribute selector.
+
+    Double quotes and backslashes are escaped so the value cannot break
+    out of ``[aria-label="..."]``.
+    """
+    return value.replace("\\", "\\\\").replace('"', '\\"')
+
+
+def _extract_value(instruction: str, action: str) -> str | None:
+    """Extract the text value to type or fill from an instruction.
+
+    Quoted strings (``type "hello"``) take precedence.  Otherwise the first
+    keyword that is not the action verb or a matched role synonym is used.
+
+    Args:
+        instruction: Raw user instruction.
+        action: Detected action verb (``"type"`` or ``"fill"``).
+
+    Returns:
+        The extracted value, or ``None`` if no value is present.
+    """
+    quoted = re.search(r'["\']([^"\']+)["\']', instruction)
+    if quoted:
+        return quoted.group(1)
+
+    keywords = _extract_keywords(instruction)
+    role_keywords = _detect_role_keywords(keywords)
+    role_synonyms: set[str] = set()
+    for rk in role_keywords:
+        role_synonyms.update(_ROLE_KEYWORDS.get(rk, set()))
+
+    for kw in keywords:
+        if kw == action or kw in _ACTION_VERBS or kw in role_synonyms:
+            continue
+        return kw
+    return None
+
+
 def match_instruction(
     instruction: str,
     tree: list[dict[str, Any]],
@@ -264,10 +305,11 @@ def match_instruction(
 
 
 async def execute_act(
-    backend: Any,
+    backend: AbstractBackend,
     instruction: str,
     tree: list[dict[str, Any]],
     max_retries: int = 3,
+    value: str | None = None,
 ) -> dict[str, Any]:
     """Execute a natural language instruction against the browser.
 
@@ -279,9 +321,12 @@ async def execute_act(
         instruction: Natural language instruction.
         tree: Formatted a11y tree.
         max_retries: Maximum retry attempts if action fails.
+        value: Optional explicit value for ``type`` or ``fill`` actions.
+            When omitted, the value is extracted from the instruction.
 
     Returns:
-        Dict with ``action``, ``element``, ``score``, and ``status``.
+        Dict with ``action``, ``element``, ``score``, ``status`` and
+        ``value`` when applicable.
     """
     match = match_instruction(instruction, tree)
     if match is None:
@@ -295,7 +340,8 @@ async def execute_act(
     selector: str | None = None
     if match.name:
         # Try to use aria-label or text-based selector
-        selector = f'[aria-label="{match.name}"]'
+        escaped_name = _escape_css_attr(match.name)
+        selector = f'[aria-label="{escaped_name}"]'
 
     result: dict[str, Any] = {
         "action": match.action,
@@ -308,14 +354,18 @@ async def execute_act(
         "selector": selector,
     }
 
+    text_value = value if value is not None else _extract_value(instruction, match.action)
+    if text_value is not None:
+        result["value"] = text_value
+
     for attempt in range(max_retries):
         try:
             if match.action == "click":
                 await backend.click(selector or f"#{match.ref}")
             elif match.action == "type":
-                await backend.type_text(selector or f"#{match.ref}", "")
+                await backend.type_text(selector or f"#{match.ref}", text_value or "")
             elif match.action == "fill":
-                await backend.fill(selector or f"#{match.ref}", "")
+                await backend.fill(selector or f"#{match.ref}", text_value or "")
             elif match.action == "hover":
                 await backend.hover(selector or f"#{match.ref}")
 

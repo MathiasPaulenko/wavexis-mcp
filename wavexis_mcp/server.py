@@ -11,11 +11,14 @@ from __future__ import annotations
 import argparse
 import atexit
 import sys
-from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
+from collections.abc import AsyncIterator, Awaitable, Callable
+from contextlib import asynccontextmanager, suppress
+from typing import cast
 
 from mcp.server.fastmcp import FastMCP
+from mcp.server.fastmcp.tools import Tool
 from mcp.types import ToolAnnotations
+from pydantic import BaseModel
 
 from wavexis_mcp.caps import ALL_TIERS, CapsManager
 from wavexis_mcp.formatter import format_error, format_json_response
@@ -105,9 +108,10 @@ def create_server(
     Returns:
         A configured ``FastMCP`` instance with all enabled tools registered.
     """
-    global _caps_manager, _rate_limiter
+    global _caps_manager, _rate_limiter, _session_manager
     _caps_manager = CapsManager(caps)
     _rate_limiter = RateLimiter(rate=rate_limit, burst=rate_burst)
+    _session_manager.rate_limiter = _rate_limiter
 
     mcp = FastMCP(
         "wavexis-mcp",
@@ -248,6 +252,7 @@ def _register_act_tool(mcp: FastMCP, session_manager: SessionManager) -> None:
                 input.instruction,
                 tree,
                 max_retries=input.max_retries,
+                value=input.value,
             )
             return format_json_response(result)
         except Exception as e:
@@ -258,15 +263,10 @@ def _atexit_cleanup() -> None:
     """Kill any orphaned browser processes on exit."""
     import asyncio
 
-    try:
+    with suppress(Exception):
         loop = asyncio.new_event_loop()
         loop.run_until_complete(_session_manager.cleanup_all())
         loop.close()
-    except Exception:
-        pass
-
-
-atexit.register(_atexit_cleanup)
 
 
 def _print_help(caps: str = "core") -> None:
@@ -310,7 +310,39 @@ def _print_help(caps: str = "core") -> None:
     print("License: MIT")
 
 
-mcp = create_server(parse_caps())
+def _apply_rate_limiting(mcp: FastMCP, rate_limiter: RateLimiter | None) -> None:
+    """Wrap every registered tool with per-session rate limiting.
+
+    The wrapper is applied in ``main()`` so that programmatic callers of
+    ``create_server()`` (e.g. the test suite) are not rate limited by
+    default.  When a tool input has a ``session_id`` the rate limiter is
+    consulted before the original handler runs.
+    """
+    if rate_limiter is None or not isinstance(mcp, FastMCP):
+        return
+    for registered_tool in mcp._tool_manager._tools.values():
+        original_fn = registered_tool.fn
+        typed_fn: Callable[[BaseModel], Awaitable[str]] = cast(
+            Callable[[BaseModel], Awaitable[str]], original_fn
+        )
+
+        async def _rate_limited_fn(
+            input: BaseModel,
+            *,
+            _orig: Callable[[BaseModel], Awaitable[str]] = typed_fn,
+            _tool: Tool = registered_tool,
+        ) -> str:
+            session_id = getattr(input, "session_id", None)
+            if session_id:
+                allowed, retry_after_ms = await rate_limiter.check(session_id)
+                if not allowed:
+                    return format_error(
+                        _tool.name,
+                        RuntimeError(f"Rate limit exceeded. Retry after {retry_after_ms}ms."),
+                    )
+            return await _orig(input)
+
+        registered_tool.fn = _rate_limited_fn
 
 
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -381,15 +413,17 @@ def main() -> None:
         _print_help(args.caps)
         return
 
-    global mcp
     mcp = create_server(
         caps=args.caps,
         rate_limit=args.rate_limit,
         rate_burst=args.rate_burst,
     )
+    _apply_rate_limiting(mcp, _rate_limiter)
+    atexit.register(_atexit_cleanup)
 
     if args.transport == "http":
-        host = "0.0.0.0" if args.allow_remote else args.host
+        # --allow-remote intentionally binds to all interfaces.
+        host = "0.0.0.0" if args.allow_remote else args.host  # nosec B104
         if args.allow_remote:
             print(
                 "WARNING: --allow-remote enabled. HTTP server will bind to 0.0.0.0. "

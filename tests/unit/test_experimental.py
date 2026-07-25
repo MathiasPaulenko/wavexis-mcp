@@ -148,6 +148,9 @@ async def test_animation_set_rate(
     data = json.loads(result)
     assert data["status"] == "ok"
     assert data["playback_rate"] == 2.0
+    session_manager_with_mock.get(
+        mock_session_id
+    ).backend.animation_set_playback_rate.assert_awaited_once_with(2.0)
 
 
 # ── WebAuthn (3) ──

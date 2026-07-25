@@ -6,13 +6,14 @@ key_press, drag, tap, set_files, check, and uncheck tools.
 
 from __future__ import annotations
 
+import json
 from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
 
 from wavexis_mcp.convenience import fill_form_composite
-from wavexis_mcp.formatter import format_error, format_json_response
+from wavexis_mcp.formatter import format_error, format_json_response, secure_output_path
 from wavexis_mcp.models import (
     CheckInput,
     ClickInput,
@@ -438,7 +439,8 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                 if input.url:
                     wait = session_manager.make_wait(timeout=input.wait_timeout)
                     await backend.navigate(input.url, wait)
-                await backend.set_files(input.selector, input.files)
+                validated_files = [str(secure_output_path(p)) for p in input.files]
+                await backend.set_files(input.selector, validated_files)
                 return format_json_response({"status": "ok"})
             finally:
                 await session_manager.release_backend(backend, sid)
@@ -473,10 +475,10 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                     wait = session_manager.make_wait(timeout=input.wait_timeout)
                     await backend.navigate(input.url, wait)
 
-                escaped = input.selector.replace("'", "\\'")
+                escaped = json.dumps(input.selector)
                 js = (
                     f"(function(){{"
-                    f"var el=document.querySelector('{escaped}');"
+                    f"var el=document.querySelector({escaped});"
                     f"if(!el) return null;"
                     f"var r=el.getBoundingClientRect();"
                     f"return {{x:r.left+r.width/2,y:r.top+r.height/2}};"
@@ -489,10 +491,11 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                 x, y = float(coords["x"]), float(coords["y"])
 
                 items = [{"mimeType": mime, "data": data} for mime, data in input.data.items()]
+                validated_paths = [str(secure_output_path(p)) for p in input.paths]
                 drag_data: dict[str, Any] = {
                     "dragOperationsMask": 7,
                     "items": items,
-                    "files": input.paths,
+                    "files": validated_paths,
                 }
 
                 for event in ("dragEnter", "dragOver", "drop"):
@@ -505,7 +508,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                         "x": x,
                         "y": y,
                         "data_types": list(input.data.keys()),
-                        "files": input.paths,
+                        "files": validated_paths,
                     }
                 )
             finally:
@@ -534,7 +537,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             session = session_manager.get(input.session_id)
             await session.backend.click(input.selector)
             checked = await session.backend.eval(
-                f"document.querySelector({input.selector!r})?.checked"
+                f"document.querySelector({json.dumps(input.selector)})?.checked"
             )
             return format_json_response({"status": "ok", "checked": bool(checked)})
         except Exception as e:

@@ -19,10 +19,13 @@ Brief description of the changes.
 
 ## Verification
 
-- [ ] `ruff check .` passes
-- [ ] `mypy src/wavexis_mcp/` passes
-- [ ] `pytest tests/unit/ -v` passes
-- [ ] Integration test passes (if applicable)
+- [ ] `ruff check wavexis_mcp tests` passes
+- [ ] `ruff format --check` passes
+- [ ] `mypy wavexis_mcp` passes
+- [ ] `python -m bandit -r wavexis_mcp` passes
+- [ ] `pytest tests/unit -v` passes
+- [ ] `python -m build` and `twine check dist/*` pass
+- [ ] Integration tests pass (if applicable)
 
 ## Related issues
 

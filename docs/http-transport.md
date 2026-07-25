@@ -47,9 +47,9 @@ wavexis-mcp --transport http --allow-remote --port 8765
 
 **Warning**: This allows connections from any IP address. Use behind a reverse proxy with authentication.
 
-### No Authentication (v0.2.0)
+### No Authentication
 
-WaveXisMCP does not include built-in authentication for HTTP transport in v0.2.0. This is planned for v0.3.0. For remote deployments, use a reverse proxy (nginx, Caddy) with auth.
+WaveXisMCP does not include built-in authentication for HTTP transport. For remote deployments, use a reverse proxy (nginx, Caddy) with auth.
 
 ## Use Cases
 

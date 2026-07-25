@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 # ── Session management ──────────────────────────────────────────
 
@@ -1492,9 +1492,13 @@ class LighthouseInput(BaseModel):
 class ExtractInput(BaseModel):
     """Input for structured data extraction via CSS selector schema."""
 
+    model_config = ConfigDict(populate_by_name=True)
+
     url: str = Field(..., description="URL to navigate to")
-    schema: dict[str, str] = Field(  # type: ignore[assignment]
-        ..., description='Mapping of field names to CSS selectors, e.g. {"title": "h1"}'
+    json_schema: dict[str, str] = Field(
+        ...,
+        alias="schema",
+        description='Mapping of field names to CSS selectors, e.g. {"title": "h1"}',
     )
     selector: str | None = Field(
         default=None, description="Optional scoping selector for repeating elements"
@@ -1842,6 +1846,10 @@ class ActInput(BaseModel):
     )
     session_id: str = Field(...)
     max_retries: int = Field(default=3, ge=1, le=10)
+    value: str | None = Field(
+        default=None,
+        description="Explicit text value for type/fill actions (overrides auto-extraction)",
+    )
 
 
 # ── Annotated screenshot ────────────────────────────────────────

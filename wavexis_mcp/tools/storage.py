@@ -13,7 +13,7 @@ import json
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
 
-from wavexis_mcp.formatter import format_error, format_json_response
+from wavexis_mcp.formatter import format_error, format_json_response, secure_output_path
 from wavexis_mcp.models import (
     CacheStorageDeleteInput,
     CacheStorageEntriesInput,
@@ -37,15 +37,20 @@ from wavexis_mcp.models import (
 from wavexis_mcp.session import SessionManager
 
 
-def _write_json(path: str, data: object) -> None:
+def _write_json(path: str, data: object) -> str:
     """Write JSON data to a file (used via ``asyncio.to_thread``).
 
     Args:
         path: Destination file path.
         data: JSON-serializable object to write.
+
+    Returns:
+        The resolved file path that was written.
     """
-    with open(path, "w", encoding="utf-8") as f:
+    p = secure_output_path(path)
+    with p.open("w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
+    return str(p)
 
 
 def _read_json(path: str) -> object:
@@ -57,8 +62,8 @@ def _read_json(path: str) -> object:
     Returns:
         The deserialized JSON object.
     """
-    with open(path, encoding="utf-8") as f:
-        return json.load(f)
+    p = secure_output_path(path)
+    return json.loads(p.read_text(encoding="utf-8"))
 
 
 def register(mcp: FastMCP, session_manager: SessionManager) -> None:
@@ -545,10 +550,10 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                 "localStorage": local_storage,
                 "sessionStorage": session_storage,
             }
-            await asyncio.to_thread(_write_json, input.output_path, state)
+            written = await asyncio.to_thread(_write_json, input.output_path, state)
             return format_json_response(
                 {
-                    "path": input.output_path,
+                    "path": written,
                     "cookies": len(cookies),
                     "localStorage_entries": len(local_storage),
                     "sessionStorage_entries": len(session_storage),

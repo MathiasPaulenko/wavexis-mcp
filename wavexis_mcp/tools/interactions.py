@@ -12,7 +12,12 @@ import os
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
 
-from wavexis_mcp.formatter import encode_base64, format_error, format_json_response
+from wavexis_mcp.formatter import (
+    encode_base64,
+    format_error,
+    format_json_response,
+    secure_output_path,
+)
 from wavexis_mcp.models import (
     DialogAcceptInput,
     DialogDismissInput,
@@ -23,15 +28,20 @@ from wavexis_mcp.models import (
 from wavexis_mcp.session import SessionManager
 
 
-def _write_bytes(path: str, data: bytes) -> None:
+def _write_bytes(path: str, data: bytes) -> str:
     """Write bytes to a file (used via ``asyncio.to_thread``).
 
     Args:
         path: Destination file path.
         data: Raw bytes to write.
+
+    Returns:
+        The resolved file path that was written.
     """
-    with open(path, "wb") as f:
+    p = secure_output_path(path)
+    with p.open("wb") as f:
         f.write(data)
+    return str(p)
 
 
 def register(mcp: FastMCP, session_manager: SessionManager) -> None:
@@ -111,10 +121,10 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             session = session_manager.get(input.session_id)
             data = await session.backend.intercept_download(input.pattern)
             if input.output_path:
-                await asyncio.to_thread(_write_bytes, input.output_path, data)
+                written = await asyncio.to_thread(_write_bytes, input.output_path, data)
                 return format_json_response(
                     {
-                        "path": input.output_path,
+                        "path": written,
                         "size_bytes": len(data),
                     }
                 )

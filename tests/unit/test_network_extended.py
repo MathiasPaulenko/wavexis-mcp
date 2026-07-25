@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import re
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -610,7 +611,7 @@ async def test_network_request_body_exceptions(
 
 @pytest.mark.unit
 async def test_network_tools_exception_branches(
-    session_manager_with_mock: SessionManager, mock_session_id: str
+    session_manager_with_mock: SessionManager, mock_session_id: str, tmp_path: Any
 ) -> None:
     from mcp.server.fastmcp import FastMCP
 
@@ -647,7 +648,9 @@ async def test_network_tools_exception_branches(
     assert "error" in json.loads(result)
 
     tool = mcp._tool_manager.get_tool("wavexis_replay_har")
-    result = await tool.fn(ReplayHARInput(session_id="not-a-session", har_path="/tmp/test.har"))
+    result = await tool.fn(
+        ReplayHARInput(session_id="not-a-session", har_path=str(tmp_path / "test.har"))
+    )
     assert "error" in json.loads(result)
 
     tool = mcp._tool_manager.get_tool("wavexis_get_request_body")

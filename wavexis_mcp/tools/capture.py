@@ -7,6 +7,7 @@ disk via ``output_path`` / ``output_dir``.
 
 from __future__ import annotations
 
+import asyncio
 import base64
 
 from mcp.server.fastmcp import FastMCP
@@ -18,6 +19,7 @@ from wavexis_mcp.formatter import (
     format_error,
     format_json_response,
     save_to_file,
+    secure_output_path,
 )
 from wavexis_mcp.models import (
     AnnotatedScreenshotInput,
@@ -38,7 +40,8 @@ def _write_frame(path: str, data: bytes) -> None:
         path: Destination file path.
         data: Raw frame bytes.
     """
-    with open(path, "wb") as f:
+    p = secure_output_path(path)
+    with p.open("wb") as f:
         f.write(data)
 
 
@@ -268,16 +271,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                 frames = await backend.screencast(params)
 
                 if input.output_dir:
-                    import asyncio
-                    import os
-
-                    os.makedirs(input.output_dir, exist_ok=True)
+                    output_dir = secure_output_path(input.output_dir)
+                    output_dir.mkdir(parents=True, exist_ok=True)
                     for i, frame in enumerate(frames):
-                        frame_path = os.path.join(input.output_dir, f"frame_{i:04d}.{input.format}")
+                        frame_path = str(output_dir / f"frame_{i:04d}.{input.format}")
                         await asyncio.to_thread(_write_frame, frame_path, frame)
                     return format_json_response(
                         {
-                            "dir": input.output_dir,
+                            "dir": str(output_dir),
                             "count": len(frames),
                         }
                     )

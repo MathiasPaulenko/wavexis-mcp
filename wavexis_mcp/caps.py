@@ -8,6 +8,8 @@ regardless of the user's selection.
 
 from __future__ import annotations
 
+import warnings
+
 ALL_TIERS: frozenset[str] = frozenset(
     {
         "core",
@@ -25,22 +27,6 @@ ALL_TIERS: frozenset[str] = frozenset(
         "experimental",
     }
 )
-
-TIER_MAP: dict[str, set[str]] = {
-    "core": {"core"},
-    "network": {"network"},
-    "storage": {"storage"},
-    "emulation": {"emulation"},
-    "a11y": {"a11y"},
-    "interactions": {"interactions"},
-    "devtools": {"devtools"},
-    "vision": {"vision"},
-    "video": {"video"},
-    "testing": {"testing"},
-    "workflows": {"workflows"},
-    "data": {"data"},
-    "experimental": {"experimental"},
-}
 
 
 class CapsManager:
@@ -63,7 +49,7 @@ class CapsManager:
     def _parse(caps: str) -> set[str]:
         """Parse a caps string into a set of valid tier names.
 
-        Invalid tier names are warned about on stderr and skipped.
+        Invalid tier names are warned about and skipped.
 
         Args:
             caps: Raw caps string from the CLI.
@@ -80,12 +66,9 @@ class CapsManager:
             if p in ALL_TIERS:
                 valid.add(p)
             else:
-                import sys
-
-                print(
-                    f"Warning: unknown capability tier '{p}'. "
-                    f"Valid tiers: {', '.join(sorted(ALL_TIERS))}.",
-                    file=sys.stderr,
+                warnings.warn(
+                    f"unknown capability tier '{p}'. Valid tiers: {', '.join(sorted(ALL_TIERS))}.",
+                    stacklevel=2,
                 )
         valid.add("core")
         return valid

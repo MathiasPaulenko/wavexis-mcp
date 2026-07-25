@@ -264,6 +264,15 @@ class TestExecuteAct:
         assert result["selector"] == '[aria-label="Submit"]'
 
     @pytest.mark.unit
+    async def test_execute_selector_escapes_quotes(self, mock_backend: pytest.fixture) -> None:
+        tree = [
+            {"ref": "el-1", "role": "button", "name": 'Submit "now"', "children": []},
+        ]
+        result = await execute_act(mock_backend, 'click the submit "now" button', tree)
+        assert result["status"] == "ok"
+        assert result["selector"] == '[aria-label="Submit \\"now\\""]'
+
+    @pytest.mark.unit
     async def test_execute_no_name_uses_ref(self, mock_backend: pytest.fixture) -> None:
         tree = [
             {"ref": "el-1", "role": "button", "name": "", "children": []},
@@ -274,3 +283,37 @@ class TestExecuteAct:
         # button role matches "button" keyword
         if result["status"] == "ok":
             mock_backend.click.assert_called_once_with("#el-1")
+
+    @pytest.mark.unit
+    async def test_execute_type_extracts_unquoted_value(self, mock_backend: pytest.fixture) -> None:
+        tree = [
+            {"ref": "el-1", "role": "textbox", "name": "Search", "children": []},
+        ]
+        result = await execute_act(mock_backend, "type hello into the search field", tree)
+        assert result["status"] == "ok"
+        assert result["action"] == "type"
+        assert result["value"] == "hello"
+        mock_backend.type_text.assert_called_once_with('[aria-label="Search"]', "hello")
+
+    @pytest.mark.unit
+    async def test_execute_fill_extracts_quoted_value(self, mock_backend: pytest.fixture) -> None:
+        tree = [
+            {"ref": "el-1", "role": "textbox", "name": "Email", "children": []},
+        ]
+        result = await execute_act(
+            mock_backend, 'fill "user@example.com" into the email field', tree
+        )
+        assert result["status"] == "ok"
+        assert result["action"] == "fill"
+        assert result["value"] == "user@example.com"
+        mock_backend.fill.assert_called_once_with('[aria-label="Email"]', "user@example.com")
+
+    @pytest.mark.unit
+    async def test_execute_type_uses_explicit_value(self, mock_backend: pytest.fixture) -> None:
+        tree = [
+            {"ref": "el-1", "role": "textbox", "name": "Search", "children": []},
+        ]
+        result = await execute_act(mock_backend, "type into search", tree, value="explicit value")
+        assert result["status"] == "ok"
+        assert result["value"] == "explicit value"
+        mock_backend.type_text.assert_called_once_with('[aria-label="Search"]', "explicit value")

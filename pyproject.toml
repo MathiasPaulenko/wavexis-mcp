@@ -4,27 +4,35 @@ build-backend = "hatchling.build"
 
 [project]
 name = "wavexis-mcp"
-version = "1.6.6"
-description = "MCP server exposing the wavexis browser automation library to LLMs — 195 tools, 13 capability tiers, zero Node.js"
+description = "MCP server exposing the wavexis browser automation library to LLMs — 220 tools, 13 capability tiers, zero Node.js"
+dynamic = ["version"]
 readme = "README.md"
-license = { text = "MIT" }
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.11"
 authors = [{ name = "Mathias Paulenko", email = "mathias.paulenko@outlook.com" }]
+maintainers = [{ name = "Mathias Paulenko", email = "mathias.paulenko@outlook.com" }]
 keywords = ["mcp", "browser", "automation", "cdp", "bidi", "screenshot", "scraping", "chromium", "llm"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Environment :: Web Environment",
     "Framework :: AsyncIO",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
-    "Programming Language :: Python :: 3.14",
     "Topic :: Internet :: WWW/HTTP :: Browsers",
+    "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
+    "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: Software Development :: Testing",
+    "Typing :: Typed",
 ]
 dependencies = [
-    "mcp>=1.0",
+    "mcp>=1.0,<2",
     "wavexis>=2.16.16,<3.0",
     "pydantic>=2.0",
 ]
@@ -38,9 +46,12 @@ dev = [
     "pytest-cov>=4.0",
     "ruff>=0.4",
     "mypy>=1.10",
+    "bandit>=1.7",
     "build>=1.2",
+    "twine>=5.0",
     "mkdocs>=1.6",
     "mkdocs-material>=9.5",
+    "mkdocstrings[python]>=0.25",
     "wavexis[cdp]",
 ]
 
@@ -52,6 +63,10 @@ Homepage = "https://github.com/MathiasPaulenko/wavexis-mcp"
 Repository = "https://github.com/MathiasPaulenko/wavexis-mcp"
 Issues = "https://github.com/MathiasPaulenko/wavexis-mcp/issues"
 Documentation = "https://mathiaspaulenko.github.io/wavexis-mcp"
+Changelog = "https://github.com/MathiasPaulenko/wavexis-mcp/blob/main/CHANGELOG.md"
+
+[tool.hatch.version]
+path = "wavexis_mcp/__init__.py"
 
 [tool.ruff]
 line-length = 100
@@ -69,8 +84,13 @@ python_version = "3.11"
 module = ["wavexis.*", "yaml.*"]
 ignore_missing_imports = true
 
+[[tool.mypy.overrides]]
+module = ["numpy.*"]
+follow_imports = "skip"
+
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+asyncio_default_test_loop_scope = "function"
 testpaths = ["tests"]
 markers = [
     "unit: fast isolated tests with mocks",

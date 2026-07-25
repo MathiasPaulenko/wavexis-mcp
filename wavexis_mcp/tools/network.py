@@ -13,13 +13,15 @@ import contextlib
 import fnmatch
 import json
 import re
+from collections.abc import Awaitable, Callable
 from typing import Any, cast
 
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
+from wavexis.backend.base import AbstractBackend
 from wavexis.config import HarParams, ThrottleParams
 
-from wavexis_mcp.formatter import format_error, format_json_response
+from wavexis_mcp.formatter import format_error, format_json_response, secure_output_path
 from wavexis_mcp.models import (
     BlockRequestsInput,
     CaptureHARInput,
@@ -42,12 +44,12 @@ from wavexis_mcp.models import (
     ThrottleNetworkInput,
     UnrouteInput,
 )
-from wavexis_mcp.session import SessionManager
+from wavexis_mcp.session import BrowserSession, SessionManager
 
 
-def _backend(session: Any) -> Any:
-    """Return the session backend as ``Any`` to allow dynamic per-session state."""
-    return cast(Any, session.backend)
+def _backend(session: BrowserSession) -> AbstractBackend:
+    """Return the session backend."""
+    return session.backend
 
 
 _THROTTLE_PRESETS: dict[str, dict[str, int | bool]] = {
@@ -88,18 +90,18 @@ def _matches_pattern(pattern: str, url: str) -> bool:
 # ── Network event log helpers ─────────────────────────────────────
 
 
-def _init_network_log(session: Any) -> None:
+def _init_network_log(session: BrowserSession) -> None:
     """Attach a per-session network event log to the backend if missing."""
-    backend = _backend(session)
+    backend = cast(Any, _backend(session))
     if not isinstance(getattr(backend, "_network_log", None), list):
         backend._network_log = []
         backend._network_log_map = {}
         backend._network_log_sub_id = None
 
 
-def _on_network_event(session: Any, event: dict[str, Any]) -> None:
+def _on_network_event(session: BrowserSession, event: dict[str, Any]) -> None:
     """Callback for network_request / network_response events."""
-    backend = _backend(session)
+    backend = cast(Any, _backend(session))
     _init_network_log(session)
     event_type = event.get("type")
     data = event.get("data", {})
@@ -132,10 +134,10 @@ def _on_network_event(session: Any, event: dict[str, Any]) -> None:
             entry["response_headers"] = response.get("headers", {})
 
 
-async def _ensure_network_log(session: Any) -> list[dict[str, Any]]:
+async def _ensure_network_log(session: BrowserSession) -> list[dict[str, Any]]:
     """Ensure the backend is subscribed to network events; return the log."""
     _init_network_log(session)
-    backend = _backend(session)
+    backend = cast(Any, _backend(session))
     if backend._network_log_sub_id is None:
         backend._network_log_sub_id = await backend.subscribe_events(
             ["network_request", "network_response"],
@@ -157,10 +159,12 @@ def _render_network_line(entry: dict[str, Any]) -> str:
 
 
 def _is_fetch(entry: dict[str, Any]) -> bool:
+    """Return True if the network entry is a fetch or XHR request."""
     return entry.get("type") in ("fetch", "xhr")
 
 
 def _is_success(entry: dict[str, Any]) -> bool:
+    """Return True if the network entry has an HTTP success status (< 400)."""
     status = entry.get("status")
     return status is not None and status < 400
 
@@ -201,17 +205,19 @@ def _parse_header_list(headers: list[str] | None) -> dict[str, str]:
     return result
 
 
-def _init_routes(session: Any) -> None:
+def _init_routes(session: BrowserSession) -> None:
     """Attach per-session route state to the backend."""
-    backend = _backend(session)
+    backend = cast(Any, _backend(session))
     if not isinstance(getattr(backend, "_route_entries", None), list):
         backend._route_entries = []
         backend._route_handler = None
 
 
-def _build_route_handler(session: Any) -> Any:
+def _build_route_handler(
+    session: BrowserSession,
+) -> Callable[[dict[str, Any]], Awaitable[None]]:
     """Build an async handler for Fetch.requestPaused events."""
-    backend = _backend(session)
+    backend = cast(Any, _backend(session))
 
     async def handler(event_params: dict[str, Any]) -> None:
         request_id = event_params.get("requestId", "")
@@ -264,17 +270,15 @@ def _build_route_handler(session: Any) -> Any:
     return handler
 
 
-async def _refresh_routes(session: Any) -> None:
+async def _refresh_routes(session: BrowserSession) -> None:
     """Re-enable Fetch interception with the current route patterns."""
-    backend = _backend(session)
+    backend = cast(Any, _backend(session))
     _init_routes(session)
     # Detach previous handler if present.
     if backend._route_handler:
-        try:
+        with contextlib.suppress(Exception):
             cdp_session = backend._require_session()
             cdp_session.off("Fetch.requestPaused", backend._route_handler)
-        except Exception:
-            pass
 
     if not backend._route_entries:
         with contextlib.suppress(Exception):
@@ -287,12 +291,10 @@ async def _refresh_routes(session: Any) -> None:
     ]
     handler = _build_route_handler(session)
     backend._route_handler = handler
-    try:
+    with contextlib.suppress(Exception):
         cdp_session = backend._require_session()
         cdp_session.on("Fetch.requestPaused", handler)
         await backend.raw("Fetch.enable", {"patterns": patterns})
-    except Exception:
-        pass
 
 
 def register(mcp: FastMCP, session_manager: SessionManager) -> None:
@@ -756,7 +758,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         try:
             session = session_manager.get(input.session_id)
             _init_network_log(session)
-            backend = _backend(session)
+            backend = cast(Any, _backend(session))
             backend._network_log.clear()
             backend._network_log_map.clear()
             return format_json_response({"status": "ok"})
@@ -837,8 +839,9 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             try:
                 if input.url:
                     await backend.navigate(input.url)
-                await backend.replay_har(input.har_path, input.url_filter)
-                return format_json_response({"status": "ok", "har_path": input.har_path})
+                har_path = str(secure_output_path(input.har_path))
+                await backend.replay_har(har_path, input.url_filter)
+                return format_json_response({"status": "ok", "har_path": har_path})
             finally:
                 await session_manager.release_backend(backend, sid)
         except Exception as e:
@@ -862,7 +865,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         try:
             session = session_manager.get(input.session_id)
             _init_routes(session)
-            backend = _backend(session)
+            backend = cast(Any, _backend(session))
             add_headers = _parse_header_list(input.headers)
             remove_headers = (
                 [h.strip() for h in input.remove_headers.split(",")] if input.remove_headers else []
@@ -894,7 +897,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         try:
             session = session_manager.get(input.session_id)
             _init_routes(session)
-            backend = _backend(session)
+            backend = cast(Any, _backend(session))
             routes = [
                 {
                     "pattern": r.pattern,
@@ -923,7 +926,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         try:
             session = session_manager.get(input.session_id)
             _init_routes(session)
-            backend = _backend(session)
+            backend = cast(Any, _backend(session))
             before = len(backend._route_entries)
             if input.pattern:
                 backend._route_entries = [
