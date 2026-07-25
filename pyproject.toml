@@ -53,7 +53,7 @@ dev = [
     "twine>=5.0",
     "mkdocs>=1.6",
     "mkdocs-material>=9.5",
-    "mkdocstrings[python]>=0.25",
+    "mkdocstrings[python]>=1.0.6",
     "pymdown-extensions>=10.0",
     "wavexis[cdp]",
 ]
