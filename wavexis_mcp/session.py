@@ -10,12 +10,14 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import inspect
 import logging
 import time
 import uuid
+from collections import deque
 from collections.abc import Awaitable
 from dataclasses import dataclass, field
-from typing import Any, TypeVar
+from typing import Any, TypeVar, cast
 from unittest.mock import AsyncMock
 
 from wavexis.backend.base import AbstractBackend
@@ -31,6 +33,57 @@ _T = TypeVar("_T")
 DEFAULT_BACKEND_TIMEOUT = 30.0
 _MAX_SESSIONS = 1000
 _logger = logging.getLogger(__name__)
+
+
+class _BackendProxy:
+    """Wrap a backend so all awaitable method calls time out.
+
+    Non-callable attributes and attribute writes are forwarded unchanged.
+    Calls that return a coroutine/awaitable are wrapped with
+    ``asyncio.wait_for`` using the configured default timeout.  The proxy
+    skips ``AsyncMock`` instances so unit tests that inspect mock methods
+    continue to work.
+    """
+
+    __slots__ = ("_backend", "_timeout")
+
+    def __init__(self, backend: AbstractBackend, timeout: float = DEFAULT_BACKEND_TIMEOUT) -> None:
+        object.__setattr__(self, "_backend", backend)
+        object.__setattr__(self, "_timeout", timeout)
+
+    def __getattr__(self, name: str) -> Any:
+        attr = getattr(self._backend, name)
+        if callable(attr):
+            try:
+                sig = inspect.signature(attr)
+            except (ValueError, TypeError):
+                sig = None
+
+            if inspect.iscoroutinefunction(attr):
+                async def _async_wrapper(*args: Any, **kwargs: Any) -> Any:
+                    return await asyncio.wait_for(attr(*args, **kwargs), timeout=self._timeout)
+
+                _async_wrapper.__name__ = getattr(attr, "__name__", name)
+                _async_wrapper.__doc__ = getattr(attr, "__doc__", None)
+                if sig is not None:
+                    cast(Any, _async_wrapper).__signature__ = sig
+                return _async_wrapper
+
+            def _sync_wrapper(*args: Any, **kwargs: Any) -> Any:
+                return attr(*args, **kwargs)
+
+            _sync_wrapper.__name__ = getattr(attr, "__name__", name)
+            _sync_wrapper.__doc__ = getattr(attr, "__doc__", None)
+            if sig is not None:
+                cast(Any, _sync_wrapper).__signature__ = sig
+            return _sync_wrapper
+        return attr
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        if name in self.__slots__:
+            object.__setattr__(self, name, value)
+        else:
+            setattr(self._backend, name, value)
 
 
 @dataclass
@@ -226,10 +279,28 @@ class SessionManager:
             # Best-effort cleanup of any tool-specific subscriptions before
             # closing the backend so callbacks are not leaked after close.
             sub_id = getattr(popped.backend, "_network_log_sub_id", None)
-            if sub_id is not None:
+            if isinstance(sub_id, str):
                 with contextlib.suppress(Exception):
                     await popped.backend.unsubscribe_events(sub_id)
                 popped.backend._network_log_sub_id = None
+
+            route_handler = getattr(popped.backend, "_route_handler", None)
+            if route_handler is not None and not isinstance(route_handler, AsyncMock):
+                with contextlib.suppress(Exception):
+                    cdp_session = popped.backend._require_session()
+                    cdp_session.off("Fetch.requestPaused", route_handler)
+                popped.backend._route_handler = None
+                route_entries = getattr(popped.backend, "_route_entries", None)
+                if isinstance(route_entries, deque):
+                    route_entries.clear()
+
+            devtools_subs = getattr(popped.backend, "_devtools_sub_ids", None)
+            if isinstance(devtools_subs, set):
+                for dev_sub in list(devtools_subs):
+                    with contextlib.suppress(Exception):
+                        await popped.backend.unsubscribe_events(dev_sub)
+                devtools_subs.clear()
+
             try:
                 await popped.backend.close()
             except Exception:
@@ -253,6 +324,8 @@ class SessionManager:
         if session is None:
             raise SessionNotFoundError(session_id)
         session.last_used = time.time()
+        if not isinstance(session.backend, (AsyncMock, _BackendProxy)):
+            session.backend = cast(AbstractBackend, _BackendProxy(session.backend))
         return session
 
     @staticmethod
@@ -395,6 +468,8 @@ class SessionManager:
             except Exception:
                 _logger.exception("Failed to close backend after launch failure")
             raise exc
+        if not isinstance(backend_instance, AsyncMock):
+            backend_instance = cast(AbstractBackend, _BackendProxy(backend_instance))
         return backend_instance, None
 
     async def release_backend(

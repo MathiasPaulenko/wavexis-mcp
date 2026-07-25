@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+from typing import Any, cast
 
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
@@ -859,13 +860,18 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """
         try:
             session = session_manager.get(input.session_id)
+            backend = cast(Any, session.backend)
             sub_id = await asyncio.wait_for(
-                session.backend.subscribe_events(
+                backend.subscribe_events(
                     input.event_types,
                     callback=None,
                 ),
                 timeout=30.0,
             )
+            devtools_subs = getattr(backend, "_devtools_sub_ids", None)
+            if not isinstance(devtools_subs, set):
+                backend._devtools_sub_ids = set()
+            backend._devtools_sub_ids.add(sub_id)
             return format_json_response(
                 {
                     "subscription_id": sub_id,
@@ -895,7 +901,11 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """
         try:
             session = session_manager.get(input.session_id)
-            await session.backend.unsubscribe_events(input.subscription_id)
+            backend = cast(Any, session.backend)
+            await backend.unsubscribe_events(input.subscription_id)
+            devtools_subs = getattr(backend, "_devtools_sub_ids", None)
+            if isinstance(devtools_subs, set):
+                devtools_subs.discard(input.subscription_id)
             return format_json_response({"status": "ok"})
         except Exception as e:
             return format_error("wavexis_unsubscribe_events", e)
