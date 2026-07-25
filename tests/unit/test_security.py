@@ -52,7 +52,12 @@ async def test_tools_reject_internal_url_with_session(
 
     # Build input model from the tool's annotations.
     input_name = tool.fn.__annotations__["input"]
-    input_cls = eval(input_name, tool.fn.__globals__)
+    if isinstance(input_name, str):
+        input_cls = tool.fn.__globals__.get(input_name)
+        if input_cls is None:
+            raise ValueError(f"Input class {input_name!r} not found in tool module")
+    else:
+        input_cls = input_name
     result = await tool.fn(input_cls(**kwargs))
     data = json.loads(result)
     assert "error" in data, f"{tool_name} should reject cloud metadata URL"

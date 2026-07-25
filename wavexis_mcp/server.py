@@ -9,9 +9,10 @@ stdio and HTTP transports.
 from __future__ import annotations
 
 import argparse
+import logging
 import sys
 from collections.abc import AsyncIterator, Awaitable, Callable
-from contextlib import AbstractAsyncContextManager, asynccontextmanager, suppress
+from contextlib import AbstractAsyncContextManager, asynccontextmanager
 from typing import cast
 
 from mcp.server.fastmcp import FastMCP
@@ -24,6 +25,8 @@ from wavexis_mcp.formatter import format_error, format_json_response
 from wavexis_mcp.models import ActInput
 from wavexis_mcp.rate_limiter import RateLimiter
 from wavexis_mcp.session import SessionManager
+
+_logger = logging.getLogger(__name__)
 
 
 def _make_lifespan(
@@ -44,8 +47,10 @@ def _make_lifespan(
         try:
             yield
         finally:
-            with suppress(Exception):
+            try:
                 await session_manager.cleanup_all()
+            except Exception:
+                _logger.exception("Failed to clean up sessions during shutdown")
 
     return _lifespan
 
@@ -413,15 +418,16 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> None:
     """Entry point for the ``wavexis-mcp`` CLI.
 
     Parses CLI arguments, creates the server with the specified caps
     and rate limiting, and starts the appropriate transport (stdio or HTTP).
     """
-    args = _parse_args()
+    args_list = argv if argv is not None else sys.argv[1:]
 
-    if _is_help_request():
+    args = _parse_args(args_list)
+    if _is_help_request(args_list):
         _print_help(args.caps)
         return
 

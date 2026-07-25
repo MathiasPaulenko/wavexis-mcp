@@ -32,6 +32,14 @@ async def test_save_to_file(tmp_path: Path) -> None:
     assert path.read_bytes() == data
 
 
+async def test_save_to_file_creates_parent_dirs(tmp_path: Path) -> None:
+    data = b"payload"
+    path = tmp_path / "deep" / "dir" / "file.bin"
+    result = await save_to_file(data, str(path))
+    assert result["size_bytes"] == len(data)
+    assert path.read_bytes() == data
+
+
 def test_format_error() -> None:
     result = format_error("wavexis_test", ValueError("bad input"))
     data = json.loads(result)

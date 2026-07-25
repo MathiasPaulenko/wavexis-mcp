@@ -55,6 +55,7 @@ def _write_json(path: str, data: object) -> str:
         The resolved file path that was written.
     """
     p = secure_output_path(path)
+    p.parent.mkdir(parents=True, exist_ok=True)
     with p.open("w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
     return str(p)

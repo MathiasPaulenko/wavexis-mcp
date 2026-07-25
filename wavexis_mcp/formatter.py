@@ -154,12 +154,28 @@ def encode_base64(data: bytes) -> str:
     return base64.b64encode(data).decode("ascii")
 
 
+def _write_bytes_sync(path: str, data: bytes) -> tuple[str, int]:
+    """Resolve, validate, and write bytes to disk (run in a thread).
+
+    Args:
+        path: Destination file path.
+        data: Raw binary data to write.
+
+    Returns:
+        Tuple of ``(resolved_path, size_bytes)``.
+    """
+    p = secure_output_path(path)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_bytes(data)
+    return str(p), len(data)
+
+
 async def save_to_file(data: bytes, path: str) -> dict[str, Any]:
     """Save bytes to a file and return a metadata dictionary.
 
     Parent directories are created automatically if they do not exist.
-    The actual disk write is offloaded to a thread so the event loop
-    is not blocked.
+    The whole operation is offloaded to a thread so the event loop is
+    not blocked.
 
     Args:
         data: Raw binary data to write.
@@ -168,10 +184,8 @@ async def save_to_file(data: bytes, path: str) -> dict[str, Any]:
     Returns:
         A dict with ``"path"`` and ``"size_bytes"`` keys.
     """
-    p = secure_output_path(path)
-    p.parent.mkdir(parents=True, exist_ok=True)
-    await asyncio.to_thread(p.write_bytes, data)
-    return {"path": str(p), "size_bytes": len(data)}
+    resolved, size = await asyncio.to_thread(_write_bytes_sync, path, data)
+    return {"path": resolved, "size_bytes": size}
 
 
 def format_json_response(data: object) -> str:

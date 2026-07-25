@@ -9,6 +9,7 @@ import pytest
 
 from wavexis_mcp.models import A11yAncestorsInput, A11yNodeInput, A11ySnapshotInput
 from wavexis_mcp.session import SessionManager
+from wavexis_mcp.tools.a11y import _build_a11y_tree, _count_nodes, _format_a11y_tree
 
 
 @pytest.mark.unit
@@ -83,3 +84,18 @@ async def test_a11y_ancestors(
     data = json.loads(result)
     assert data["count"] == 1
     assert data["ancestors"][0]["role"] == "WebArea"
+
+
+@pytest.mark.unit
+def test_a11y_tree_cycle_detection() -> None:
+    """Circular parent/child references must not cause infinite recursion."""
+    raw = {
+        "nodes": [
+            {"nodeId": 1, "childIds": [2], "role": {"value": "WebArea"}, "name": {"value": "root"}},
+            {"nodeId": 2, "childIds": [1], "role": {"value": "button"}, "name": {"value": "back"}},
+        ]
+    }
+    nodes = _build_a11y_tree(raw)
+    formatted = _format_a11y_tree(nodes)
+    count = _count_nodes(formatted)
+    assert count >= 1

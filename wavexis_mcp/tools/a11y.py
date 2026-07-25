@@ -115,6 +115,9 @@ def _build_a11y_tree(raw: dict[str, Any] | list[dict[str, Any]]) -> list[dict[st
         if child_ids:
             for cid in child_ids:
                 cid_str = str(cid)
+                if cid_str == node_id:
+                    # Never attach a node to itself.
+                    continue
                 if cid_str in by_id:
                     by_id[node_id]["children"].append(by_id[cid_str])
                     by_id[cid_str]["_visited"] = True
@@ -137,6 +140,7 @@ def _format_a11y_tree(
     nodes: list[dict[str, Any]],
     level: int = 0,
     ref_counter: list[int] | None = None,
+    seen: set[int] | None = None,
 ) -> list[dict[str, Any]]:
     """Convert raw a11y tree nodes into LLM-friendly structure with refs.
 
@@ -144,6 +148,7 @@ def _format_a11y_tree(
         nodes: Raw accessibility tree nodes from the backend.
         level: Current nesting depth (0 for root).
         ref_counter: Mutable counter shared across recursive calls.
+        seen: Identity set used to avoid cycles and duplicate subtrees.
 
     Returns:
         List of formatted node dicts with ``ref``, ``role``, ``name``,
@@ -151,8 +156,14 @@ def _format_a11y_tree(
     """
     if ref_counter is None:
         ref_counter = [0]
+    if seen is None:
+        seen = set()
     result: list[dict[str, Any]] = []
     for node in nodes:
+        node_id = id(node)
+        if node_id in seen:
+            continue
+        seen.add(node_id)
         ref_counter[0] += 1
         ref = f"el-{ref_counter[0]}"
         entry: dict[str, Any] = {
@@ -163,7 +174,7 @@ def _format_a11y_tree(
         }
         children = node.get("children", [])
         if children and level < _MAX_A11Y_DEPTH:
-            entry["children"] = _format_a11y_tree(children, level + 1, ref_counter)
+            entry["children"] = _format_a11y_tree(children, level + 1, ref_counter, seen)
         result.append(entry)
     return result
 
@@ -194,19 +205,26 @@ def _tree_to_text(nodes: list[dict[str, Any]], indent: int = 0) -> str:
     return "\n".join(lines)
 
 
-def _count_nodes(nodes: list[dict[str, Any]]) -> int:
-    """Recursively count total nodes in a tree.
+def _count_nodes(nodes: list[dict[str, Any]], seen: set[int] | None = None) -> int:
+    """Recursively count total nodes in a tree, protecting against cycles.
 
     Args:
         nodes: Tree nodes to count.
+        seen: Identity set used to avoid recounting shared or cyclic nodes.
 
     Returns:
         Total number of nodes including all children.
     """
+    if seen is None:
+        seen = set()
     count = 0
     for node in nodes:
+        node_id = id(node)
+        if node_id in seen:
+            continue
+        seen.add(node_id)
         count += 1
-        count += _count_nodes(node.get("children", []))
+        count += _count_nodes(node.get("children", []), seen)
     return count
 
 

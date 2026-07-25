@@ -58,6 +58,7 @@ def _write_json(path: str, data: object) -> None:
         data: JSON-serializable object to write.
     """
     p = secure_output_path(path)
+    p.parent.mkdir(parents=True, exist_ok=True)
     with p.open("w", encoding="utf-8") as f:
         json.dump(data, f)
 

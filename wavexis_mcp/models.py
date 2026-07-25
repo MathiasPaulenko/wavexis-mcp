@@ -23,17 +23,36 @@ _MAX_CONTAINER_SIZE = 1_000
 
 
 def _limit_input_size(data: Any) -> Any:
-    """Reject oversized strings, lists, and dicts before field validation."""
+    """Reject oversized strings, lists, and dicts before field validation.
+
+    Uses an explicit traversal stack so deeply nested payloads cannot
+    overflow the Python call stack before validation begins.
+    """
+    stack: list[Any]
     if isinstance(data, dict):
         if len(data) > _MAX_CONTAINER_SIZE:
             raise ValueError(f"input exceeds {_MAX_CONTAINER_SIZE} fields")
-        return {k: _limit_input_size(v) for k, v in data.items()}
-    if isinstance(data, list):
+        stack = list(data.values())
+    elif isinstance(data, list):
         if len(data) > _MAX_CONTAINER_SIZE:
             raise ValueError(f"input list exceeds {_MAX_CONTAINER_SIZE} items")
-        return [_limit_input_size(v) for v in data]
-    if isinstance(data, str) and len(data) > _MAX_STRING_LENGTH:
-        raise ValueError(f"input string exceeds {_MAX_STRING_LENGTH} characters")
+        stack = list(data)
+    else:
+        return data
+
+    while stack:
+        item = stack.pop()
+        if isinstance(item, dict):
+            if len(item) > _MAX_CONTAINER_SIZE:
+                raise ValueError(f"input exceeds {_MAX_CONTAINER_SIZE} fields")
+            stack.extend(item.values())
+        elif isinstance(item, list):
+            if len(item) > _MAX_CONTAINER_SIZE:
+                raise ValueError(f"input list exceeds {_MAX_CONTAINER_SIZE} items")
+            stack.extend(item)
+        elif isinstance(item, str) and len(item) > _MAX_STRING_LENGTH:
+            raise ValueError(f"input string exceeds {_MAX_STRING_LENGTH} characters")
+
     return data
 
 
@@ -305,7 +324,7 @@ class DOMSetAttrInput(BaseInput):
     """Input for setting an attribute on an element."""
 
     selector: SelectorStr = Field(...)
-    name: str = Field(..., description="Attribute name")
+    name: str = Field(..., min_length=1, description="Attribute name")
     value: str = Field(..., description="Attribute value")
     session_id: str = Field(...)
 
@@ -314,7 +333,7 @@ class DOMGetAttrInput(BaseInput):
     """Input for getting an attribute value from an element."""
 
     selector: SelectorStr = Field(...)
-    name: str = Field(...)
+    name: str = Field(..., min_length=1)
     session_id: str = Field(...)
 
 
@@ -322,7 +341,7 @@ class DOMRemoveAttrInput(BaseInput):
     """Input for removing an attribute from an element."""
 
     selector: SelectorStr = Field(...)
-    name: str = Field(...)
+    name: str = Field(..., min_length=1)
     session_id: str = Field(...)
 
 
@@ -401,7 +420,7 @@ class TypeInput(BaseInput):
     """Input for typing text into an element."""
 
     selector: SelectorStr = Field(...)
-    text: str = Field(..., description="Text to type character by character")
+    text: str = Field(..., min_length=1, description="Text to type character by character")
     session_id: str | None = Field(default=None)
     url: str | None = Field(default=None)
     delay: int = Field(default=0, ge=0, le=1000, description="Delay between keystrokes in ms")
@@ -425,7 +444,7 @@ class FillInput(BaseInput):
 class FindByTextInput(BaseInput):
     """Input for finding elements by visible text content."""
 
-    query: str = Field(..., description="Text to search for in visible page content")
+    query: str = Field(..., min_length=1, description="Text to search for in visible page content")
     all: bool = Field(default=False, description="Return all matches (True) or first match (False)")
     session_id: str = Field(...)
 
@@ -433,7 +452,9 @@ class FindByTextInput(BaseInput):
 class NLClickInput(BaseInput):
     """Input for clicking an element by natural language query."""
 
-    query: str = Field(..., description="Natural language description of the element to click")
+    query: str = Field(
+        ..., min_length=1, description="Natural language description of the element to click"
+    )
     auto_wait: bool = Field(
         default=True, description="Wait for element to be ready before clicking"
     )
@@ -443,8 +464,10 @@ class NLClickInput(BaseInput):
 class NLFillInput(BaseInput):
     """Input for filling an element by natural language query."""
 
-    query: str = Field(..., description="Natural language description of the element to fill")
-    value: str = Field(..., description="Value to fill")
+    query: str = Field(
+        ..., min_length=1, description="Natural language description of the element to fill"
+    )
+    value: str = Field(..., min_length=1, description="Value to fill")
     auto_wait: bool = Field(default=True, description="Wait for element to be ready before filling")
     session_id: str = Field(...)
 
@@ -473,7 +496,7 @@ class SelectOptionInput(BaseInput):
     """Input for selecting an option in a ``<select>`` element."""
 
     selector: SelectorStr = Field(..., description="CSS selector for <select> element")
-    value: str = Field(..., description="Option value to select")
+    value: str = Field(..., min_length=1, description="Option value to select")
     session_id: str | None = Field(default=None)
     url: str | None = Field(default=None)
     wait_timeout: int = Field(default=30000, ge=1000, le=300000)
@@ -572,10 +595,10 @@ class CookiesGetInput(BaseInput):
 class CookiesSetInput(BaseInput):
     """Input for setting a cookie."""
 
-    name: str = Field(...)
-    value: str = Field(...)
-    domain: str = Field(...)
-    path: str = Field(default="/")
+    name: str = Field(..., min_length=1)
+    value: str = Field(..., min_length=1)
+    domain: str = Field(..., min_length=1)
+    path: str = Field(default="/", min_length=1)
     secure: bool = Field(default=True)
     http_only: bool = Field(default=False)
     same_site: Literal["Strict", "Lax", "None"] = Field(default="Lax")
@@ -589,8 +612,8 @@ class CookiesSetInput(BaseInput):
 class CookiesDeleteInput(BaseInput):
     """Input for deleting cookies."""
 
-    name: str = Field(...)
-    domain: str = Field(...)
+    name: str = Field(..., min_length=1)
+    domain: str = Field(..., min_length=1)
     session_id: str | None = Field(default=None)
     url: str | None = Field(default=None)
     wait_timeout: int = Field(default=30000, ge=1000, le=300000)
@@ -792,14 +815,14 @@ class RouteListInput(BaseInput):
 class LocalStorageGetInput(BaseInput):
     """Input for getting a localStorage value."""
 
-    key: str = Field(...)
+    key: str = Field(..., min_length=1)
     session_id: str = Field(...)
 
 
 class LocalStorageSetInput(BaseInput):
     """Input for setting a localStorage key/value pair."""
 
-    key: str = Field(...)
+    key: str = Field(..., min_length=1)
     value: str = Field(...)
     session_id: str = Field(...)
 
@@ -807,7 +830,7 @@ class LocalStorageSetInput(BaseInput):
 class LocalStorageDeleteInput(BaseInput):
     """Input for deleting a localStorage key."""
 
-    key: str = Field(...)
+    key: str = Field(..., min_length=1)
     session_id: str = Field(...)
 
 
@@ -826,14 +849,14 @@ class LocalStorageListInput(BaseInput):
 class SessionStorageGetInput(BaseInput):
     """Input for getting a sessionStorage value."""
 
-    key: str = Field(...)
+    key: str = Field(..., min_length=1)
     session_id: str = Field(...)
 
 
 class SessionStorageSetInput(BaseInput):
     """Input for setting a sessionStorage key/value pair."""
 
-    key: str = Field(...)
+    key: str = Field(..., min_length=1)
     value: str = Field(...)
     session_id: str = Field(...)
 
@@ -841,7 +864,7 @@ class SessionStorageSetInput(BaseInput):
 class SessionStorageDeleteInput(BaseInput):
     """Input for deleting a sessionStorage key."""
 
-    key: str = Field(...)
+    key: str = Field(..., min_length=1)
     session_id: str = Field(...)
 
 
@@ -866,14 +889,14 @@ class CacheStorageListInput(BaseInput):
 class CacheStorageEntriesInput(BaseInput):
     """Input for listing entries in a Cache Storage cache."""
 
-    cache_name: str = Field(...)
+    cache_name: str = Field(..., min_length=1)
     session_id: str = Field(...)
 
 
 class CacheStorageDeleteInput(BaseInput):
     """Input for deleting a Cache Storage cache."""
 
-    cache_name: str = Field(...)
+    cache_name: str = Field(..., min_length=1)
     session_id: str = Field(...)
 
 
@@ -904,14 +927,14 @@ class StorageStateSaveInput(BaseInput):
     """Input for saving browser state to a JSON file."""
 
     session_id: str = Field(...)
-    output_path: str = Field(..., description="File path to save state JSON")
+    output_path: str = Field(..., min_length=1, description="File path to save state JSON")
 
 
 class StorageStateRestoreInput(BaseInput):
     """Input for restoring browser state from a JSON file."""
 
     session_id: str = Field(...)
-    input_path: str = Field(..., description="Path to saved state JSON file")
+    input_path: str = Field(..., min_length=1, description="Path to saved state JSON file")
 
 
 # ── Emulation ───────────────────────────────────────────────────
@@ -1374,7 +1397,7 @@ class AssertTextVisibleInput(BaseInput):
     """Input for asserting text visibility on the page."""
 
     session_id: str = Field(...)
-    text: str = Field(..., description="Text to search for")
+    text: str = Field(..., min_length=1, description="Text to search for")
     timeout: int = Field(default=5000, ge=100, le=30000)
 
 
@@ -1400,7 +1423,7 @@ class AssertURLInput(BaseInput):
     """Input for asserting the current URL matches a pattern."""
 
     session_id: str = Field(...)
-    url_pattern: str = Field(..., description="URL substring or pattern to match")
+    url_pattern: str = Field(..., min_length=1, description="URL substring or pattern to match")
 
 
 class GenerateLocatorInput(BaseInput):
@@ -1470,6 +1493,7 @@ class InvokeInput(BaseInput):
 
     method: str = Field(
         ...,
+        min_length=1,
         description=(
             "Backend method name (snake_case), e.g. 'page_print_to_pdf' or 'runtime_evaluate'."
         ),
@@ -1603,7 +1627,7 @@ class VisualDiffInput(BaseInput):
     """Input for visual regression comparison."""
 
     url: str = Field(..., description="URL to navigate to")
-    baseline_path: str = Field(..., description="Path to baseline screenshot file")
+    baseline_path: str = Field(..., min_length=1, description="Path to baseline screenshot file")
     selector: str | None = Field(
         default=None,
         description="CSS selector — compare only this element",
@@ -1768,7 +1792,7 @@ class CastStartInput(BaseInput):
     """Input for starting tab casting."""
 
     session_id: str = Field(...)
-    sink_name: str = Field(..., description="Cast sink name")
+    sink_name: str = Field(..., min_length=1, description="Cast sink name")
 
 
 class CastStopInput(BaseInput):
@@ -1788,7 +1812,7 @@ class BluetoothDeviceConnectInput(BaseInput):
     """Input for connecting a Bluetooth device."""
 
     session_id: str = Field(...)
-    name: str = Field(..., description="Device name")
+    name: str = Field(..., min_length=1, description="Device name")
     address: str = Field(default="00:00:00:00:00:01", description="Device MAC address")
 
 
@@ -1847,7 +1871,7 @@ class ModifyResponseInput(BaseInput):
 class ReplayHARInput(BaseInput):
     """Input for replaying HAR entries (W7)."""
 
-    har_path: str = Field(..., description="Path to HAR file")
+    har_path: str = Field(..., min_length=1, description="Path to HAR file")
     url_filter: str = Field(default="", description="Optional URL filter pattern")
     session_id: str | None = Field(default=None)
     url: str = Field(default="", description="URL to navigate to before replay")
@@ -1900,7 +1924,9 @@ class ActInput(BaseInput):
     """Input for natural language interaction (M1)."""
 
     instruction: str = Field(
-        ..., description="Natural language instruction (e.g. 'click the login button')"
+        ...,
+        min_length=1,
+        description="Natural language instruction (e.g. 'click the login button')",
     )
     session_id: str = Field(...)
     max_retries: int = Field(default=3, ge=1, le=10)
@@ -2022,7 +2048,9 @@ class ExtensionInstallInput(BaseInput):
     """Input for installing a browser extension."""
 
     session_id: str = Field(...)
-    path: str = Field(..., description="Path to .crx file or unpacked extension directory")
+    path: str = Field(
+        ..., min_length=1, description="Path to .crx file or unpacked extension directory"
+    )
 
 
 class ExtensionUninstallInput(BaseInput):
@@ -2045,12 +2073,14 @@ class GetPrefInput(BaseInput):
     """Input for getting a browser preference value."""
 
     session_id: str = Field(...)
-    key: str = Field(..., description="Preference key (e.g. 'download.default_directory')")
+    key: str = Field(
+        ..., min_length=1, description="Preference key (e.g. 'download.default_directory')"
+    )
 
 
 class SetPrefInput(BaseInput):
     """Input for setting a browser preference value."""
 
     session_id: str = Field(...)
-    key: str = Field(..., description="Preference key")
+    key: str = Field(..., min_length=1, description="Preference key")
     value: str = Field(..., description="Preference value to set")

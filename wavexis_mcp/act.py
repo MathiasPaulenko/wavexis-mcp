@@ -102,7 +102,7 @@ def _extract_keywords(instruction: str) -> list[str]:
         "is",
         "are",
     }
-    words = re.findall(r"[a-zA-Z]+", instruction.lower())
+    words = re.findall(r"[^\W\d_]+", instruction.lower())
     return [w for w in words if w not in stop_words and len(w) > 1]
 
 

@@ -39,6 +39,7 @@ def _write_bytes(path: str, data: bytes) -> str:
         The resolved file path that was written.
     """
     p = secure_output_path(path)
+    p.parent.mkdir(parents=True, exist_ok=True)
     with p.open("wb") as f:
         f.write(data)
     return str(p)

@@ -792,11 +792,13 @@ def test_server_main_help_branch(monkeypatch) -> None:
     from types import SimpleNamespace
 
     captured: dict[str, Any] = {}
-    monkeypatch.setattr(server_module, "_is_help_request", lambda: True)
+    monkeypatch.setattr(server_module, "_is_help_request", lambda _=None: True)
     monkeypatch.setattr(
         server_module, "_print_help", lambda caps: captured.__setitem__("caps", caps)
     )
-    monkeypatch.setattr(server_module, "_parse_args", lambda: SimpleNamespace(caps="network"))
+    monkeypatch.setattr(
+        server_module, "_parse_args", lambda _=None: SimpleNamespace(caps="network")
+    )
     server_module.main()
     assert captured["caps"] == "network"
 

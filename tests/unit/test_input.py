@@ -217,6 +217,29 @@ async def test_set_files(mock_backend: AsyncMock, tmp_path: Any) -> None:
 
 
 @pytest.mark.unit
+async def test_set_files_rejects_missing_file(mock_backend: AsyncMock) -> None:
+    from mcp.server.fastmcp import FastMCP
+
+    from wavexis_mcp.tools.input import register
+
+    mcp = FastMCP("test")
+    mgr = SessionManager()
+    mgr._backend_manager.select = MagicMock(return_value=mock_backend)
+    register(mcp, mgr)
+
+    tool = mcp._tool_manager.get_tool("wavexis_set_files")
+    result = await tool.fn(
+        SetFilesInput(
+            selector="input[type=file]",
+            files=["/nonexistent/path/to/file.txt"],
+            url="https://example.com",
+        )
+    )
+    data = json.loads(result)
+    assert "error" in data
+
+
+@pytest.mark.unit
 async def test_check(session_manager_with_mock: SessionManager, mock_session_id: str) -> None:
     from mcp.server.fastmcp import FastMCP
 

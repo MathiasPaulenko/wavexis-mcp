@@ -10,6 +10,7 @@ from __future__ import annotations
 import asyncio
 import base64
 import json
+import logging
 import time
 from collections import deque
 from typing import Any
@@ -41,6 +42,7 @@ from wavexis_mcp.session import SessionManager
 
 _MAX_CRAWL_QUEUE_SIZE = 1_000
 _MAX_CRAWL_DURATION_S = 300.0
+_logger = logging.getLogger(__name__)
 
 
 async def _try_navigate(backend: AbstractBackend, url: str, wait: WaitStrategy) -> bool:
@@ -53,7 +55,8 @@ async def _try_navigate(backend: AbstractBackend, url: str, wait: WaitStrategy) 
     try:
         validate_url(url)
         await backend.navigate(url, wait)
-    except Exception:
+    except Exception as exc:
+        _logger.debug("Crawler navigation failed for %s: %s", url, exc)
         return False
     return True
 

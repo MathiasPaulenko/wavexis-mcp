@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Made `wavexis_mcp/models.py` `_limit_input_size()` iterative to avoid `RecursionError` on deeply nested payloads.
+- Added cycle detection and recursion guards to a11y tree formatting and counting in `wavexis_mcp/tools/a11y.py`.
+- Offloaded `secure_output_path()`, parent directory creation, and file writes to a thread in `wavexis_mcp/formatter.py`.
+- Ensured all blocking file-writing helpers create parent directories (`capture.py`, `devtools.py`, `interactions.py`, `storage.py`).
+- Hardened `wavexis_mcp/tools/network.py` `_matches_pattern()` so safety-limit and timeout failures do not fall back to an unbounded `fnmatch`.
+- Improved `wavexis_mcp/tools/input.py` file validation to report clear errors for missing or unreadable files.
+- Added `min_length=1` constraints across models for text, query, cookie, URL pattern, storage key, and path fields.
+- Fixed `wavexis_mcp/act.py` keyword extraction to support non-ASCII letters.
+- Fixed `wavexis_mcp/server.py` `main()` to accept an optional `argv` parameter while preserving existing CLI help behavior.
+- Added a 1000-session cap and improved error logging in `wavexis_mcp/session.py`.
+- Added logging for crawler navigation failures in `wavexis_mcp/tools/data.py`.
+- Reverted `pyproject.toml` mypy target from Python 3.12 back to 3.11 to match `requires-python`.
+- Replaced `eval()` usage in `tests/unit/test_security.py` with a safer annotation lookup.
+
+### Added
+
+- Regression tests for deep input nesting, a11y tree cycles, missing file uploads, oversized network patterns, and nested output directory creation.
+
 ## [1.6.7] - 2026-07-25
 
 ### Changed

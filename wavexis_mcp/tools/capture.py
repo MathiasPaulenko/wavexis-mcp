@@ -42,6 +42,7 @@ def _write_frame(path: str, data: bytes) -> None:
         data: Raw frame bytes.
     """
     p = secure_output_path(path)
+    p.parent.mkdir(parents=True, exist_ok=True)
     with p.open("wb") as f:
         f.write(data)
 
@@ -279,7 +280,6 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
 
                 if input.output_dir:
                     output_dir = secure_output_path(input.output_dir)
-                    output_dir.mkdir(parents=True, exist_ok=True)
                     for i, frame in enumerate(frames):
                         frame_path = str(output_dir / f"frame_{i:04d}.{input.format}")
                         await asyncio.to_thread(_write_frame, frame_path, frame)

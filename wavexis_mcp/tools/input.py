@@ -62,7 +62,12 @@ def _validate_files(paths: list[str]) -> list[Path]:
     total = 0
     for p in paths:
         path = secure_output_path(p)
-        size = path.stat().st_size
+        try:
+            size = path.stat().st_size
+        except FileNotFoundError as exc:
+            raise ValueError(f"File not found: {p!r}") from exc
+        except OSError as exc:
+            raise ValueError(f"Cannot read file {p!r}: {exc}") from exc
         if size > _MAX_FILE_SIZE:
             raise ValueError(f"File {p!r} exceeds {_MAX_FILE_SIZE} bytes")
         total += size

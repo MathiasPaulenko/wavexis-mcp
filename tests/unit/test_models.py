@@ -2,16 +2,21 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 import pytest
 from pydantic import ValidationError
 
 from wavexis_mcp.models import (
+    AssertTextVisibleInput,
     ClickInput,
+    CookiesSetInput,
     FillFormInput,
     FormField,
     NavigateInput,
     ScreenshotInput,
     SessionOpenInput,
+    _limit_input_size,
 )
 
 
@@ -63,3 +68,31 @@ def test_fill_form_requires_fields() -> None:
         FillFormInput()
     m = FillFormInput(fields=[FormField(selector="#a", value="1")])
     assert len(m.fields) == 1
+
+
+@pytest.mark.unit
+def test_limit_input_size_handles_deep_nesting() -> None:
+    """Deeply nested payloads must not blow the Python recursion limit."""
+    data: dict[str, Any] = {}
+    current: dict[str, Any] = data
+    for _ in range(1500):
+        current["child"] = {}
+        current = current["child"]
+    result = _limit_input_size(data)
+    assert result is data
+
+
+@pytest.mark.unit
+def test_assert_text_visible_rejects_empty_text() -> None:
+    with pytest.raises(ValidationError):
+        AssertTextVisibleInput(text="", session_id="sid")
+
+
+@pytest.mark.unit
+def test_cookie_set_rejects_empty_fields() -> None:
+    with pytest.raises(ValidationError):
+        CookiesSetInput(name="", value="v", domain="d.com", session_id="sid")
+    with pytest.raises(ValidationError):
+        CookiesSetInput(name="n", value="", domain="d.com", session_id="sid")
+    with pytest.raises(ValidationError):
+        CookiesSetInput(name="n", value="v", domain="", session_id="sid")

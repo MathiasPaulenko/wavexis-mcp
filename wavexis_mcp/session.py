@@ -29,6 +29,7 @@ from wavexis_mcp.rate_limiter import RateLimiter
 _T = TypeVar("_T")
 
 DEFAULT_BACKEND_TIMEOUT = 30.0
+_MAX_SESSIONS = 1000
 _logger = logging.getLogger(__name__)
 
 
@@ -132,6 +133,12 @@ class SessionManager:
         backend_instance = self._backend_manager.select(preferred)
         backend_name = backend_instance.__class__.__name__.replace("Backend", "").lower()
 
+        async with self._cond:
+            if self._shutting_down:
+                raise RuntimeError("SessionManager is shutting down")
+            if len(self._sessions) >= _MAX_SESSIONS:
+                raise RuntimeError(f"Maximum number of sessions ({_MAX_SESSIONS}) reached")
+
         opts = BrowserOptions(
             headless=headless,
             width=width,
@@ -149,15 +156,25 @@ class SessionManager:
             await backend_instance.launch(opts)
             self._wrap_backend(backend_instance)
         except Exception:
-            with contextlib.suppress(Exception):
+            try:
                 await backend_instance.close()
+            except Exception:
+                _logger.exception("Failed to close backend after launch failure")
             raise
 
         async with self._cond:
             if self._shutting_down:
-                with contextlib.suppress(Exception):
+                try:
                     await backend_instance.close()
+                except Exception:
+                    _logger.exception("Failed to close backend during shutdown")
                 raise RuntimeError("SessionManager is shutting down")
+            if len(self._sessions) >= _MAX_SESSIONS:
+                try:
+                    await backend_instance.close()
+                except Exception:
+                    _logger.exception("Failed to close backend after session limit reached")
+                raise RuntimeError(f"Maximum number of sessions ({_MAX_SESSIONS}) reached")
             session_id = str(uuid.uuid4())
             now = time.time()
             self._sessions[session_id] = BrowserSession(

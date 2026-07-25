@@ -13,6 +13,7 @@ import contextlib
 import fnmatch
 import functools
 import json
+import re
 from collections import deque
 from collections.abc import Awaitable, Callable
 from typing import Any, cast
@@ -118,12 +119,19 @@ def _matches_pattern(pattern: str, url: str) -> bool:
     """Check if a URL matches a glob/wildcard pattern.
 
     Uses the ``regex`` package with a one-second timeout to avoid ReDoS
-    attacks from malicious patterns.
+    attacks from malicious patterns.  Patterns that violate safety limits
+    or time out are treated as non-matching.  Regex compilation errors
+    fall back to standard ``fnmatch`` for simple glob support.
     """
     try:
         return _glob_to_regex(pattern).match(url, timeout=1.0) is not None
-    except Exception:
-        return fnmatch.fnmatch(url, pattern)
+    except (ValueError, TimeoutError):
+        return False
+    except (re.error, _regex.error):
+        try:
+            return fnmatch.fnmatch(url, pattern)
+        except Exception:
+            return False
 
 
 # ── Network event log helpers ─────────────────────────────────────

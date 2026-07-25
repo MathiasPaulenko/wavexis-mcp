@@ -81,7 +81,7 @@ ignore = ["ASYNC109"]
 
 [tool.mypy]
 strict = true
-python_version = "3.12"
+python_version = "3.11"
 
 [[tool.mypy.overrides]]
 module = ["wavexis.*", "yaml.*", "regex.*"]

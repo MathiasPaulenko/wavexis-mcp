@@ -23,6 +23,7 @@ from wavexis_mcp.models import (
     ThrottleNetworkInput,
 )
 from wavexis_mcp.session import SessionManager
+from wavexis_mcp.tools.network import _matches_pattern
 
 
 @pytest.mark.unit
@@ -664,3 +665,10 @@ async def test_route_rejects_crlf_headers(
     )
     data = json.loads(result)
     assert "error" in data
+
+
+@pytest.mark.unit
+def test_matches_pattern_rejects_oversized_patterns() -> None:
+    """Patterns exceeding safety limits must not fall back to an unbounded matcher."""
+    long_pattern = "*" * 2000
+    assert _matches_pattern(long_pattern, "https://example.com/") is False
