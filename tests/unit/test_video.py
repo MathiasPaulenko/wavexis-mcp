@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from typing import Any
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -59,6 +60,33 @@ async def test_video_stop(session_manager_with_mock: SessionManager, mock_sessio
     assert "duration_ms" in data
     assert data["size_bytes"] == 0
     assert recording_id not in recordings
+
+
+@pytest.mark.unit
+async def test_video_record_attaches_screencast_handler(
+    session_manager_with_mock: SessionManager, mock_session_id: str
+) -> None:
+    from mcp.server.fastmcp import FastMCP
+
+    recordings: dict[str, Any] = {}
+    mcp = FastMCP("test")
+    _register(mcp, session_manager_with_mock, recordings)
+
+    session = session_manager_with_mock.get(mock_session_id)
+    cdp_session = MagicMock()
+    session.backend._require_session = MagicMock(return_value=cdp_session)
+
+    record_tool = mcp._tool_manager.get_tool("wavexis_video_record")
+    result = await record_tool.fn(VideoRecordInput(session_id=mock_session_id))
+    data = json.loads(result)
+    recording_id = data["recording_id"]
+
+    assert "_screencast_target" in recordings[recording_id]
+    cdp_session.on.assert_called_once()
+
+    stop_tool = mcp._tool_manager.get_tool("wavexis_video_stop")
+    await stop_tool.fn(VideoStopInput(session_id=mock_session_id))
+    cdp_session.off.assert_called_once()
 
 
 @pytest.mark.unit

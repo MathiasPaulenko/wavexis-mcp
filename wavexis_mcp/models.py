@@ -1487,6 +1487,10 @@ class InvokeInput(BaseModel):
 class RecordInput(BaseModel):
     """Input for recording browser interactions."""
 
+    session_id: str | None = Field(
+        default=None,
+        description="Existing session ID to reuse; a new session is created if omitted",
+    )
     url: str = Field(..., description="URL to navigate to for recording")
     duration: int = Field(default=60, ge=5, le=300, description="Recording duration in seconds")
     headless: bool = Field(default=False, description="Must be False for user interaction")

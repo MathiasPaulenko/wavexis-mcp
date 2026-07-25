@@ -7,7 +7,12 @@ an active session.
 
 from __future__ import annotations
 
+import asyncio
+import base64
+import contextlib
+import inspect
 import json
+import logging
 import time
 from typing import Any
 
@@ -24,6 +29,92 @@ from wavexis_mcp.models import (
 from wavexis_mcp.session import SessionManager
 
 _MAX_VIDEO_RECORDINGS = 100
+_MAX_FRAMES_PER_RECORDING = 1000
+_MAX_TOTAL_FRAMES = 10000
+
+_logger = logging.getLogger(__name__)
+_recordings_lock = asyncio.Lock()
+
+
+def _total_frame_count(recordings: dict[str, dict[str, Any]]) -> int:
+    """Return the total number of captured frames across all recordings."""
+    return sum(len(rec.get("frames", [])) for rec in recordings.values())
+
+
+def _make_frame_handler(
+    recording: dict[str, Any],
+    recordings: dict[str, dict[str, Any]],
+) -> Any:
+    """Create a CDP ``Page.screencastFrame`` handler for *recording*."""
+
+    def handler(params: Any) -> None:
+        """Decode and store a screencast frame while respecting limits."""
+        if len(recording.get("frames", [])) >= _MAX_FRAMES_PER_RECORDING:
+            return
+        if _total_frame_count(recordings) >= _MAX_TOTAL_FRAMES:
+            return
+        data = params.get("data") if isinstance(params, dict) else None
+        if not data:
+            return
+        try:
+            recording["frames"].append(base64.b64decode(data))
+        except Exception:
+            _logger.exception("Failed to process screencast frame")
+
+    return handler
+
+
+def _attach_screencast_handler(
+    backend: Any,
+    recording: dict[str, Any],
+    recordings: dict[str, dict[str, Any]],
+) -> bool:
+    """Attach a ``Page.screencastFrame`` listener to the backend if possible.
+
+    CDP backends expose the event through the CDP session.  BiDi backends
+    expose it through the CDP bridge on the BiDi client.  If neither path
+    is available the tool still starts/stops the screencast, but no frames
+    will be captured.
+    """
+    target: Any | None = None
+
+    require_session = getattr(backend, "_require_session", None)
+    if require_session is not None and not inspect.iscoroutinefunction(require_session):
+        try:
+            target = require_session()
+        except Exception:
+            target = None
+
+    if target is None:
+        require_launched = getattr(backend, "_require_launched", None)
+        if require_launched is not None and not inspect.iscoroutinefunction(require_launched):
+            try:
+                client = require_launched()
+            except Exception:
+                client = None
+            if client is not None:
+                target = getattr(client, "cdp", None)
+
+    if target is None or not hasattr(target, "on") or not hasattr(target, "off"):
+        return False
+
+    handler = _make_frame_handler(recording, recordings)
+    try:
+        target.on("Page.screencastFrame", handler)
+        recording["_screencast_target"] = target
+        recording["_screencast_handler"] = handler
+        return True
+    except Exception:
+        return False
+
+
+def _detach_screencast_handler(recording: dict[str, Any]) -> None:
+    """Detach the screencast frame handler if one was attached."""
+    target = recording.pop("_screencast_target", None)
+    handler = recording.pop("_screencast_handler", None)
+    if target is not None and handler is not None:
+        with contextlib.suppress(Exception):
+            target.off("Page.screencastFrame", handler)
 
 
 def register(
@@ -61,26 +152,38 @@ def register(
         """
         try:
             session = session_manager.get(input.session_id)
-            await session.backend.raw(
-                "Page.startScreencast",
-                {
-                    "format": "jpeg",
-                    "quality": 80,
-                    "maxWidth": input.width,
-                    "maxHeight": input.height,
-                    "everyNthFrame": 1,
-                },
-            )
             recording_id = f"rec-{int(time.time() * 1000)}"
-            recordings[recording_id] = {
+            recording: dict[str, Any] = {
                 "session_id": input.session_id,
                 "start_time": time.time(),
                 "output_path": input.output_path,
                 "frames": [],
             }
-            while len(recordings) > _MAX_VIDEO_RECORDINGS:
-                oldest = min(recordings, key=lambda rid: recordings[rid]["start_time"])
-                recordings.pop(oldest)
+
+            # Attach the frame listener before starting the screencast so the
+            # first frame is not lost.
+            _attach_screencast_handler(session.backend, recording, recordings)
+
+            start = getattr(session.backend, "page_start_screencast", None)
+            if start is not None:
+                await start("jpeg", 80, input.width, input.height)
+            else:
+                await session.backend.raw(
+                    "Page.startScreencast",
+                    {
+                        "format": "jpeg",
+                        "quality": 80,
+                        "maxWidth": input.width,
+                        "maxHeight": input.height,
+                        "everyNthFrame": 1,
+                    },
+                )
+
+            async with _recordings_lock:
+                recordings[recording_id] = recording
+                while len(recordings) > _MAX_VIDEO_RECORDINGS:
+                    oldest = min(recordings, key=lambda rid: recordings[rid]["start_time"])
+                    recordings.pop(oldest)
             return format_json_response(
                 {
                     "recording_id": recording_id,
@@ -110,19 +213,26 @@ def register(
         """
         try:
             session = session_manager.get(input.session_id)
-            await session.backend.raw("Page.stopScreencast", {})
 
-            recording_id = next(
-                (rid for rid, rec in recordings.items() if rec["session_id"] == input.session_id),
-                None,
-            )
-            if recording_id is None:
-                return format_error(
-                    "wavexis_video_stop",
-                    RuntimeError("No active recording for this session"),
+            stop = getattr(session.backend, "page_stop_screencast", None)
+            if stop is not None:
+                await stop()
+            else:
+                await session.backend.raw("Page.stopScreencast", {})
+
+            async with _recordings_lock:
+                recording_id = next(
+                    (rid for rid, rec in recordings.items() if rec["session_id"] == input.session_id),
+                    None,
                 )
+                if recording_id is None:
+                    return format_error(
+                        "wavexis_video_stop",
+                        RuntimeError("No active recording for this session"),
+                    )
 
-            rec = recordings.pop(recording_id)
+                rec = recordings.pop(recording_id)
+            _detach_screencast_handler(rec)
             start_time = rec["start_time"]
             duration_ms = int((time.time() - start_time) * 1000)
 
