@@ -8,6 +8,7 @@ its own bucket with configurable rate (tokens per second) and burst
 from __future__ import annotations
 
 import asyncio
+import heapq
 import time
 from dataclasses import dataclass
 
@@ -128,8 +129,10 @@ class RateLimiter:
 
         overflow = len(self._buckets) - self._max_buckets
         if overflow > 0:
-            lru = sorted(self._buckets.items(), key=lambda item: item[1].last_refill)
-            for sid, _ in lru[:overflow]:
+            lru = heapq.nsmallest(
+                overflow, self._buckets.items(), key=lambda item: item[1].last_refill
+            )
+            for sid, _ in lru:
                 self._buckets.pop(sid, None)
 
     def _get_or_create_bucket(self, session_id: str, now: float) -> _TokenBucket:

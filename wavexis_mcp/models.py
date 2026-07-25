@@ -35,7 +35,6 @@ def _limit_input_size(data: Any) -> Any:
     Uses an explicit traversal stack so deeply nested payloads cannot
     overflow the Python call stack before validation begins.
     """
-    stack: list[Any]
     if isinstance(data, dict):
         if len(data) > _MAX_CONTAINER_SIZE:
             raise ValueError(f"input exceeds {_MAX_CONTAINER_SIZE} fields")
