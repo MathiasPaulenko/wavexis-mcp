@@ -76,9 +76,7 @@ def _validate_header_value(name: str, value: str) -> None:
         ValueError: If *value* contains a carriage return, line feed, or null byte.
     """
     if "\r" in value or "\n" in value or "\x00" in value:
-        raise ValueError(
-            f"Header value for {name!r} contains forbidden characters (CRLF or null)"
-        )
+        raise ValueError(f"Header value for {name!r} contains forbidden characters (CRLF or null)")
 
 
 # Hostnames/IPs that should never be reached via user-supplied URLs.

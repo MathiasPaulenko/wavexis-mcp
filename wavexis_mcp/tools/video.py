@@ -222,7 +222,11 @@ def register(
 
             async with _recordings_lock:
                 recording_id = next(
-                    (rid for rid, rec in recordings.items() if rec["session_id"] == input.session_id),
+                    (
+                        rid
+                        for rid, rec in recordings.items()
+                        if rec["session_id"] == input.session_id
+                    ),
                     None,
                 )
                 if recording_id is None:

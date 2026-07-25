@@ -91,9 +91,7 @@ async def test_a11y_snapshot_rejects_internal_url(
 
     tool = mcp._tool_manager.get_tool("wavexis_a11y_snapshot")
     assert tool is not None
-    result = await tool.fn(
-        A11ySnapshotInput(url="http://169.254.169.254/latest/meta-data/")
-    )
+    result = await tool.fn(A11ySnapshotInput(url="http://169.254.169.254/latest/meta-data/"))
     data = json.loads(result)
     assert "error" in data
 
@@ -111,9 +109,7 @@ async def test_websocket_intercept_rejects_internal_url(
 
     tool = mcp._tool_manager.get_tool("wavexis_websocket_intercept")
     assert tool is not None
-    result = await tool.fn(
-        WebsocketInterceptInput(url="http://169.254.169.254/latest/meta-data/")
-    )
+    result = await tool.fn(WebsocketInterceptInput(url="http://169.254.169.254/latest/meta-data/"))
     data = json.loads(result)
     assert "error" in data
 
@@ -131,9 +127,7 @@ async def test_raw_cdp_blocks_unsafe_method(
 
     tool = mcp._tool_manager.get_tool("wavexis_raw_cdp")
     assert tool is not None
-    result = await tool.fn(
-        RawCDPInput(session_id=mock_session_id, method="Runtime.evaluate")
-    )
+    result = await tool.fn(RawCDPInput(session_id=mock_session_id, method="Runtime.evaluate"))
     data = json.loads(result)
     assert "error" in data
 
@@ -151,9 +145,7 @@ async def test_raw_bidi_blocks_unsafe_method(
 
     tool = mcp._tool_manager.get_tool("wavexis_raw_bidi")
     assert tool is not None
-    result = await tool.fn(
-        RawBiDiInput(session_id=mock_session_id, method="script.evaluate")
-    )
+    result = await tool.fn(RawBiDiInput(session_id=mock_session_id, method="script.evaluate"))
     data = json.loads(result)
     assert "error" in data
 

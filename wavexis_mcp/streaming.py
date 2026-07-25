@@ -71,9 +71,7 @@ class StreamingHandler:
             try:
                 await subscribe(
                     event_types,
-                    lambda event: logger.info(
-                        "stream event: %s", json.dumps(event, default=str)
-                    ),
+                    lambda event: logger.info("stream event: %s", json.dumps(event, default=str)),
                 )
                 return stream_id
             except Exception as exc:

@@ -18,7 +18,6 @@ from collections.abc import Awaitable, Callable
 from typing import Any, cast
 
 import regex as _regex
-
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
 from wavexis.backend.base import AbstractBackend
@@ -157,10 +156,7 @@ def _on_network_event(session: BrowserSession, event: dict[str, Any]) -> None:
         }
         backend._network_log.append(entry)
         backend._network_log_map[request_id] = entry
-        while (
-            len(backend._network_log_map) > _NETWORK_LOG_MAX * 2
-            and backend._network_log_map
-        ):
+        while len(backend._network_log_map) > _NETWORK_LOG_MAX * 2 and backend._network_log_map:
             backend._network_log_map.pop(next(iter(backend._network_log_map)))
     elif event_type == "network_response":
         entry = backend._network_log_map.get(request_id)
@@ -368,11 +364,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             session = session_manager.get(input.session_id)
             for name, value in input.headers.items():
                 _validate_header_value(name, value)
-            filtered = {
-                k: v
-                for k, v in input.headers.items()
-                if k.lower() not in _BLOCKED_HEADERS
-            }
+            filtered = {k: v for k, v in input.headers.items() if k.lower() not in _BLOCKED_HEADERS}
             await session.backend.set_headers(filtered)
             return format_json_response({"status": "ok"})
         except Exception as e:
@@ -654,9 +646,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                     try:
                         rx = _regex.compile(input.filter, _regex.IGNORECASE)
                         all_requests = [
-                            r
-                            for r in all_requests
-                            if rx.search(r.get("url", ""), timeout=1.0)
+                            r for r in all_requests if rx.search(r.get("url", ""), timeout=1.0)
                         ]
                     except Exception:
                         all_requests = [r for r in all_requests if input.filter in r.get("url", "")]

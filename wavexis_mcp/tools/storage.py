@@ -136,7 +136,8 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """
         try:
             session = session_manager.get(input.session_id)
-            await _eval(session.backend, 
+            await _eval(
+                session.backend,
                 f"localStorage.setItem({json.dumps(input.key)}, {json.dumps(input.value)})",
                 await_promise=False,
             )
@@ -163,8 +164,10 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """
         try:
             session = session_manager.get(input.session_id)
-            await _eval(session.backend, 
-                f"localStorage.removeItem({json.dumps(input.key)})", await_promise=False
+            await _eval(
+                session.backend,
+                f"localStorage.removeItem({json.dumps(input.key)})",
+                await_promise=False,
             )
             return format_json_response({"status": "ok"})
         except Exception as e:
@@ -213,7 +216,8 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """
         try:
             session = session_manager.get(input.session_id)
-            raw = await _eval(session.backend, 
+            raw = await _eval(
+                session.backend,
                 "JSON.stringify(Object.fromEntries("
                 "Array.from({length: localStorage.length}, (_, i) => "
                 "[localStorage.key(i), localStorage.getItem(localStorage.key(i))])"
@@ -246,8 +250,10 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """
         try:
             session = session_manager.get(input.session_id)
-            value = await _eval(session.backend, 
-                f"sessionStorage.getItem({json.dumps(input.key)})", await_promise=False
+            value = await _eval(
+                session.backend,
+                f"sessionStorage.getItem({json.dumps(input.key)})",
+                await_promise=False,
             )
             return format_json_response({"key": input.key, "value": value})
         except Exception as e:
@@ -272,7 +278,8 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """
         try:
             session = session_manager.get(input.session_id)
-            await _eval(session.backend, 
+            await _eval(
+                session.backend,
                 f"sessionStorage.setItem({json.dumps(input.key)}, {json.dumps(input.value)})",
                 await_promise=False,
             )
@@ -299,7 +306,8 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """
         try:
             session = session_manager.get(input.session_id)
-            await _eval(session.backend, 
+            await _eval(
+                session.backend,
                 f"sessionStorage.removeItem({json.dumps(input.key)})",
                 await_promise=False,
             )
@@ -350,7 +358,8 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """
         try:
             session = session_manager.get(input.session_id)
-            raw = await _eval(session.backend, 
+            raw = await _eval(
+                session.backend,
                 "JSON.stringify(Object.fromEntries("
                 "Array.from({length: sessionStorage.length}, (_, i) => "
                 "[sessionStorage.key(i), sessionStorage.getItem(sessionStorage.key(i))])"
@@ -544,14 +553,16 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         try:
             session = session_manager.get(input.session_id)
             cookies = await session.backend.get_cookies()
-            ls_raw = await _eval(session.backend, 
+            ls_raw = await _eval(
+                session.backend,
                 "JSON.stringify(Object.fromEntries("
                 "Array.from({length: localStorage.length}, (_, i) => "
                 "[localStorage.key(i), localStorage.getItem(localStorage.key(i))])"
                 "))",
                 await_promise=False,
             )
-            ss_raw = await _eval(session.backend, 
+            ss_raw = await _eval(
+                session.backend,
                 "JSON.stringify(Object.fromEntries("
                 "Array.from({length: sessionStorage.length}, (_, i) => "
                 "[sessionStorage.key(i), sessionStorage.getItem(sessionStorage.key(i))])"

@@ -165,9 +165,7 @@ def test_max_buckets_eviction() -> None:
     limiter._max_buckets = 3
     now = time.monotonic()
     for i in range(5):
-        limiter._buckets[f"s-{i}"] = _TokenBucket(
-            rate=1, burst=1, tokens=1, last_refill=now - i
-        )
+        limiter._buckets[f"s-{i}"] = _TokenBucket(rate=1, burst=1, tokens=1, last_refill=now - i)
     limiter._cleanup_stale_buckets(now + 100.0)
     assert len(limiter._buckets) == 3
     assert "s-4" not in limiter._buckets
