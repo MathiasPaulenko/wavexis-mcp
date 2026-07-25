@@ -24,9 +24,13 @@ services:
   wavexis-mcp:
     build: .
     ports:
-      - "8765:8765"
+      - "127.0.0.1:8765:8765"
     environment:
       - WAVEXIS_BROWSER_PATH=/usr/bin/chromium
+      - WAVEXIS_MCP_OUTPUT_DIR=/home/wavexis/output
+      - CI=true
+    volumes:
+      - ./output:/home/wavexis/output
     restart: unless-stopped
 ```
 
@@ -39,7 +43,7 @@ docker-compose up
 - **Base**: `python:3.12-slim`
 - **Browser**: Chromium (via apt, ~100MB)
 - **Port**: 8765
-- **Entry point**: `wavexis-mcp --transport=http --host=0.0.0.0 --port=8765 --caps=all`
+- **Entry point**: `wavexis-mcp --transport=http --host=0.0.0.0 --port=8765 --caps=core` (use `--caps=all` only after reviewing security implications)
 - **Image size**: ~350MB (Python + Chromium + wavexis-mcp)
 
 The image bundles Chromium so it works out of the box in any environment — no browser installation needed on the host.

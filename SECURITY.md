@@ -23,8 +23,9 @@ WaveXisMCP exposes browser automation capabilities to LLMs. Security considerati
 - **File system access**: `output_path` and `output_dir` parameters write files under the directory configured by the `WAVEXIS_MCP_OUTPUT_DIR` environment variable, or the current working directory if unset. Paths that escape this directory, including via symlinks, are rejected.
 - **URL validation**: URLs are validated before navigation to block non-HTTP schemes, private IP ranges, localhost, and cloud metadata endpoints. Discovered links during crawls are also validated. Hostname-based DNS rebinding is an inherent TOCTOU risk; set `WAVEXIS_MCP_ALLOW_INTERNAL_URLS=0` in untrusted environments.
 - **Raw CDP/BiDi commands**: `wavexis_raw_cdp` and `wavexis_raw_bidi` are restricted to a read-only allowlist of safe methods by default. Set `WAVEXIS_MCP_ALLOW_RAW_COMMANDS=all` to allow arbitrary commands, or avoid enabling the `workflows` tier when the client is not fully trusted.
-- **HTTP headers**: `wavexis_set_headers` filters out headers that could be used to bypass security controls or perform request smuggling (`Host`, `Authorization`, `Cookie`, `Content-Length`, `Transfer-Encoding`, etc.).
-- **User-Agent**: `wavexis_set_user_agent` rejects values containing CR/LF characters to prevent header injection.
+- **HTTP headers**: `wavexis_set_headers` and `wavexis_route` filter out headers that could be used to bypass security controls or perform request smuggling (`Host`, `Authorization`, `Cookie`, `Content-Length`, `Transfer-Encoding`, etc.).  All user-supplied header values, including extra headers passed to `SessionManager.open()` and `acquire_backend()`, are checked for CR/LF/null injection.
+- **User-Agent**: `wavexis_set_user_agent` and browser launch options reject values containing CR/LF characters to prevent header injection.
+- **Service workers**: `wavexis_service_worker_emulate` validates the `script_url` with the same URL rules as navigation.
 - **User data directories**: `user_data_dir` values are resolved under `WAVEXIS_MCP_OUTPUT_DIR` and paths that escape it are rejected.
 - **Session management**: Session IDs are UUIDs. Keep them private — anyone with a session ID can control that browser instance.
 
