@@ -257,15 +257,18 @@ async def test_extension_install_rejects_invalid_path(
 
 
 @pytest.mark.unit
-def test_video_frame_handler_tracks_total_frames() -> None:
+async def test_video_frame_handler_tracks_total_frames() -> None:
     """_make_frame_handler must update a shared frame counter."""
+    import asyncio
+
     from wavexis_mcp.tools.video import _make_frame_handler
 
-    recording: dict[str, Any] = {"frames": []}
+    recording: dict[str, Any] = {"frames": [], "_stopped": False}
     total_ref: list[int] = [0]
     handler = _make_frame_handler(recording, total_ref)
     payload = base64.b64encode(b"frame-data").decode()
     handler({"data": payload})
+    await asyncio.sleep(0.1)
     assert len(recording["frames"]) == 1
     assert total_ref[0] == 1
 

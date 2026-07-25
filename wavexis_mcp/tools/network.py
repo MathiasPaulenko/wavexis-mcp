@@ -15,6 +15,7 @@ import functools
 import json
 import logging
 import re
+import threading
 from collections import deque
 from collections.abc import Awaitable, Callable
 from typing import Any, cast
@@ -150,6 +151,8 @@ def _init_network_log(session: BrowserSession) -> None:
         backend._network_log = deque(maxlen=_NETWORK_LOG_MAX)
         backend._network_log_map = {}
         backend._network_log_sub_id = None
+    if getattr(backend, "_network_log_lock", None) is None:
+        backend._network_log_lock = threading.Lock()
 
 
 def _on_network_event(session: BrowserSession, event: dict[str, Any]) -> None:
@@ -176,23 +179,25 @@ def _on_network_event(session: BrowserSession, event: dict[str, Any]) -> None:
             "status": None,
             "response_headers": {},
         }
-        backend._network_log.append(entry)
-        backend._network_log_map[request_id] = entry
-        if len(backend._network_log_map) > _NETWORK_LOG_MAX:
-            excess = len(backend._network_log_map) - _NETWORK_LOG_MAX
-            for key in list(backend._network_log_map.keys())[:excess]:
-                backend._network_log_map.pop(key, None)
+        with backend._network_log_lock:
+            backend._network_log.append(entry)
+            backend._network_log_map[request_id] = entry
+            if len(backend._network_log_map) > _NETWORK_LOG_MAX:
+                excess = len(backend._network_log_map) - _NETWORK_LOG_MAX
+                for key in list(backend._network_log_map.keys())[:excess]:
+                    backend._network_log_map.pop(key, None)
     elif event_type == "network_response":
-        entry = backend._network_log_map.get(request_id)
-        if entry:
-            response = data.get("response", {})
-            entry["response"] = response
-            entry["status"] = response.get("status")
-            entry["response_headers"] = response.get("headers", {})
+        with backend._network_log_lock:
+            entry = backend._network_log_map.get(request_id)
+            if entry:
+                response = data.get("response", {})
+                entry["response"] = response
+                entry["status"] = response.get("status")
+                entry["response_headers"] = response.get("headers", {})
 
 
 async def _ensure_network_log(session: BrowserSession) -> list[dict[str, Any]]:
-    """Ensure the backend is subscribed to network events; return the log."""
+    """Ensure the backend is subscribed to network events; return a snapshot of the log."""
     _init_network_log(session)
     backend = cast(Any, _backend(session))
     if backend._network_log_sub_id is None:
@@ -205,7 +210,8 @@ async def _ensure_network_log(session: BrowserSession) -> list[dict[str, Any]]:
         )
         # Allow a short tick for any already-buffered events to arrive.
         await asyncio.sleep(0.01)
-    return cast(list[dict[str, Any]], backend._network_log)
+    with backend._network_log_lock:
+        return list(backend._network_log)
 
 
 def _render_network_line(entry: dict[str, Any]) -> str:
@@ -834,8 +840,9 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             session = session_manager.get(input.session_id)
             _init_network_log(session)
             backend = cast(Any, _backend(session))
-            backend._network_log.clear()
-            backend._network_log_map.clear()
+            with backend._network_log_lock:
+                backend._network_log.clear()
+                backend._network_log_map.clear()
             return format_json_response({"status": "ok"})
         except Exception as e:
             return format_error("wavexis_network_clear", e)

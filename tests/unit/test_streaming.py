@@ -17,12 +17,15 @@ async def test_start_stream_with_subscribe(
 ) -> None:
     handler = StreamingHandler(session_manager_with_mock)
     session = session_manager_with_mock.get(mock_session_id)
-    session.backend.subscribe_events = AsyncMock()
+    session.backend.subscribe_events = AsyncMock(return_value="sub-123")
     session.backend.unsubscribe_events = AsyncMock()
 
     stream_id = await handler.start_stream(mock_session_id)
     assert stream_id == f"stream-{mock_session_id}"
     session.backend.subscribe_events.assert_awaited_once()
+
+    await handler.stop_stream(mock_session_id)
+    session.backend.unsubscribe_events.assert_awaited_once_with("sub-123")
 
 
 @pytest.mark.unit
@@ -78,7 +81,7 @@ async def test_stop_stream_no_active_task(
     session.backend.unsubscribe_events = AsyncMock()
 
     await handler.stop_stream(mock_session_id)
-    session.backend.unsubscribe_events.assert_awaited_once()
+    session.backend.unsubscribe_events.assert_not_awaited()
 
 
 @pytest.mark.unit

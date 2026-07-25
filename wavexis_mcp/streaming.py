@@ -12,7 +12,9 @@ import asyncio
 import contextlib
 import json
 import logging
+from typing import Any
 
+from wavexis_mcp.errors import SessionNotFoundError
 from wavexis_mcp.session import SessionManager
 
 logger = logging.getLogger(__name__)
@@ -40,6 +42,7 @@ class StreamingHandler:
         self._session_manager = session_manager
         self._active: dict[str, asyncio.Task[None]] = {}
         self._streams: set[str] = set()
+        self._subscriptions: dict[str, Any] = {}
         self._lock = asyncio.Lock()
 
     async def start_stream(
@@ -75,10 +78,12 @@ class StreamingHandler:
         subscribe = getattr(session.backend, "subscribe_events", None)
         if subscribe is not None:
             try:
-                await subscribe(
+                sub_id = await subscribe(
                     event_types,
                     lambda event: logger.info("stream event: %s", json.dumps(event, default=str)),
                 )
+                async with self._lock:
+                    self._subscriptions[stream_id] = sub_id
                 return stream_id
             except Exception as exc:
                 logger.warning("subscribe_events failed, falling back to polling: %s", exc)
@@ -102,6 +107,7 @@ class StreamingHandler:
         async with self._lock:
             self._streams.discard(stream_id)
             task = self._active.pop(stream_id, None)
+            sub_id = self._subscriptions.pop(stream_id, None)
         if task is not None:
             task.cancel()
             with contextlib.suppress(asyncio.CancelledError):
@@ -111,11 +117,11 @@ class StreamingHandler:
             session = self._session_manager.get(session_id)
         except Exception:
             session = None
-        if session is not None:
+        if session is not None and sub_id is not None:
             unsubscribe = getattr(session.backend, "unsubscribe_events", None)
             if unsubscribe is not None:
                 with contextlib.suppress(Exception):
-                    await unsubscribe()
+                    await unsubscribe(sub_id)
 
     async def _poll_loop(
         self,
@@ -160,9 +166,23 @@ class StreamingHandler:
         """Stop all active streaming tasks."""
         async with self._lock:
             tasks = list(self._active.values())
+            subscriptions = dict(self._subscriptions)
             self._active.clear()
             self._streams.clear()
+            self._subscriptions.clear()
         for task in tasks:
             task.cancel()
             with contextlib.suppress(asyncio.CancelledError):
                 await task
+        for stream_id, sub_id in subscriptions.items():
+            if sub_id is None:
+                continue
+            session_id = stream_id.removeprefix("stream-")
+            try:
+                session = self._session_manager.get(session_id)
+            except SessionNotFoundError:
+                continue
+            unsubscribe = getattr(session.backend, "unsubscribe_events", None)
+            if unsubscribe is not None:
+                with contextlib.suppress(Exception):
+                    await unsubscribe(sub_id)

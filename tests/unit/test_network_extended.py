@@ -145,13 +145,13 @@ async def test_ensure_network_log_subscribes(
     session.backend.subscribe_events = AsyncMock(return_value="sub-1")
 
     log = await _ensure_network_log(session)
-    assert log == session.backend._network_log
+    assert log == list(session.backend._network_log)
     assert session.backend._network_log_sub_id == "sub-1"
     session.backend.subscribe_events.assert_awaited_once()
 
     # Second call is idempotent.
     log2 = await _ensure_network_log(session)
-    assert log2 is log
+    assert log2 == log
     assert session.backend.subscribe_events.await_count == 1
 
 

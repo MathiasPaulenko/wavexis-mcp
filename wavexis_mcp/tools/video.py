@@ -37,6 +37,31 @@ _logger = logging.getLogger(__name__)
 _recordings_lock = asyncio.Lock()
 
 
+async def _append_frame(
+    recording: dict[str, Any],
+    total_ref: list[int],
+    data: str,
+) -> None:
+    """Decode and append a screencast frame to *recording* under the lock."""
+    if recording.get("_stopped"):
+        return
+    if total_ref[0] >= _MAX_TOTAL_FRAMES:
+        return
+    try:
+        decoded = base64.b64decode(data)
+    except Exception:
+        _logger.exception("Failed to decode screencast frame")
+        return
+    async with _recordings_lock:
+        if recording.get("_stopped"):
+            return
+        frames = recording.get("frames", [])
+        if len(frames) >= _MAX_FRAMES_PER_RECORDING:
+            return
+        frames.append(decoded)
+        total_ref[0] += 1
+
+
 def _make_frame_handler(
     recording: dict[str, Any],
     total_ref: list[int],
@@ -45,18 +70,15 @@ def _make_frame_handler(
 
     def handler(params: Any) -> None:
         """Decode and store a screencast frame while respecting limits."""
-        if len(recording.get("frames", [])) >= _MAX_FRAMES_PER_RECORDING:
-            return
-        if total_ref[0] >= _MAX_TOTAL_FRAMES:
-            return
         data = params.get("data") if isinstance(params, dict) else None
         if not data:
             return
         try:
-            recording["frames"].append(base64.b64decode(data))
-            total_ref[0] += 1
-        except Exception:
-            _logger.exception("Failed to process screencast frame")
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            _logger.warning("No running event loop; dropping screencast frame")
+            return
+        asyncio.run_coroutine_threadsafe(_append_frame(recording, total_ref, data), loop)
 
     return handler
 
@@ -156,6 +178,7 @@ def register(
                 "start_time": time.time(),
                 "output_path": input.output_path,
                 "frames": [],
+                "_stopped": False,
             }
 
             # Attach the frame listener before starting the screencast so the
@@ -182,6 +205,8 @@ def register(
                 while len(recordings) > _MAX_VIDEO_RECORDINGS:
                     oldest = min(recordings, key=lambda rid: recordings[rid]["start_time"])
                     oldest_rec = recordings.pop(oldest)
+                    oldest_rec["_stopped"] = True
+                    _detach_screencast_handler(oldest_rec)
                     total_frames[0] -= len(oldest_rec.get("frames", []))
             return format_json_response(
                 {
@@ -235,6 +260,7 @@ def register(
                     )
 
                 rec = recordings.pop(recording_id)
+                rec["_stopped"] = True
                 total_frames[0] -= len(rec.get("frames", []))
                 _detach_screencast_handler(rec)
             start_time = rec["start_time"]
