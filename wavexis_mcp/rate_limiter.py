@@ -11,6 +11,9 @@ import asyncio
 import time
 from dataclasses import dataclass
 
+_MAX_BUCKETS = 10000
+_CLEANUP_INTERVAL_S = 60.0
+
 
 @dataclass
 class _TokenBucket:
@@ -84,6 +87,7 @@ class RateLimiter:
         self._buckets: dict[str, _TokenBucket] = {}
         self._lock = asyncio.Lock()
         self._bucket_ttl: float = 3600.0
+        self._max_buckets: int = _MAX_BUCKETS
         self._last_cleanup: float = time.monotonic()
 
     async def configure(self, rate: int, burst: int) -> None:
@@ -105,12 +109,13 @@ class RateLimiter:
     def _cleanup_stale_buckets(self, now: float) -> None:
         """Remove buckets that have been inactive longer than ``_bucket_ttl``.
 
-        Must be called while holding ``self._lock``.
+        If the bucket registry exceeds ``_max_buckets``, the least recently
+        used buckets are evicted.  Must be called while holding ``self._lock``.
 
         Args:
             now: Current monotonic timestamp.
         """
-        if now - self._last_cleanup < 300:
+        if now - self._last_cleanup < _CLEANUP_INTERVAL_S:
             return
         self._last_cleanup = now
         stale = [
@@ -120,6 +125,12 @@ class RateLimiter:
         ]
         for sid in stale:
             self._buckets.pop(sid, None)
+
+        overflow = len(self._buckets) - self._max_buckets
+        if overflow > 0:
+            lru = sorted(self._buckets.items(), key=lambda item: item[1].last_refill)
+            for sid, _ in lru[:overflow]:
+                self._buckets.pop(sid, None)
 
     def _get_or_create_bucket(self, session_id: str, now: float) -> _TokenBucket:
         """Get the bucket for a session, creating one if needed.

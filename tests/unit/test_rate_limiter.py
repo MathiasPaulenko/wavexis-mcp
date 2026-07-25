@@ -157,3 +157,19 @@ async def test_apply_rate_limiting_to_tools() -> None:
     data2 = json.loads(result2)
     assert "error" in data2
     assert "Rate limit" in data2["error"]
+
+
+def test_max_buckets_eviction() -> None:
+    """Cleanup evicts the oldest buckets when the registry exceeds the cap."""
+    limiter = RateLimiter(rate=1, burst=1)
+    limiter._max_buckets = 3
+    now = time.monotonic()
+    for i in range(5):
+        limiter._buckets[f"s-{i}"] = _TokenBucket(
+            rate=1, burst=1, tokens=1, last_refill=now - i
+        )
+    limiter._cleanup_stale_buckets(now + 100.0)
+    assert len(limiter._buckets) == 3
+    assert "s-4" not in limiter._buckets
+    assert "s-3" not in limiter._buckets
+    assert "s-0" in limiter._buckets
