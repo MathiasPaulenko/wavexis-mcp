@@ -81,7 +81,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """
         try:
             backend, sid = await session_manager.acquire_backend(
-                input.session_id if hasattr(input, "session_id") else None,
+                input.session_id,
                 backend=input.backend,
                 headless=input.headless,
             )

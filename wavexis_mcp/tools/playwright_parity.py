@@ -8,8 +8,9 @@ MCP exposes but wavexis-mcp previously lacked.
 from __future__ import annotations
 
 import asyncio
-import re
 from typing import Any, Literal
+
+import regex as _regex
 
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
@@ -117,7 +118,11 @@ class ClosePageInput(BaseModel):
 class FindInput(BaseModel):
     """Input for finding text in the ARIA/accessibility snapshot."""
 
-    text: str = Field(..., description="Text or regex to search in the a11y snapshot")
+    text: str = Field(
+        ...,
+        description="Text or regex to search in the a11y snapshot",
+        max_length=500,
+    )
     limit: int = Field(default=20, ge=1, le=100)
     session_id: str = Field(...)
 
@@ -367,7 +372,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             raw = await session.backend.a11y_tree()
             tree = _build_a11y_tree(raw)
 
-            pattern = re.compile(input.text, re.IGNORECASE)
+            pattern = _regex.compile(input.text, _regex.IGNORECASE)
             results: list[dict[str, Any]] = []
 
             def search(nodes: list[dict[str, Any]]) -> None:
@@ -376,7 +381,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                         return
                     name = _extract_name(node)
                     role = _extract_role(node)
-                    if pattern.search(name):
+                    if pattern.search(name, timeout=1.0):
                         results.append({"role": role, "name": name, "node": node})
                     search(node.get("children", []))
 

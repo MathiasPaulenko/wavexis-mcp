@@ -234,9 +234,9 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             annotation: Any = _resolve_params_type(method)
             if inspect.isclass(annotation) and annotation is not inspect.Parameter.empty:
                 param_obj = annotation(**params)
-                return await method(param_obj)
+                return await typing.cast(typing.Awaitable[Any], method(param_obj))
 
-        return await method(**params)
+        return await typing.cast(typing.Awaitable[Any], method(**params))
 
     @mcp.tool(
         annotations=ToolAnnotations(
@@ -260,6 +260,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             JSON string with the method result (base64 for binary outputs).
         """
         ephemeral_sid: str | None = None
+        backend: AbstractBackend | None = None
         try:
             if input.session_id:
                 session = session_manager.get(input.session_id)
@@ -296,5 +297,5 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_invoke", e)
         finally:
-            if input.session_id is None and "backend" in locals():
+            if input.session_id is None and backend is not None:
                 await session_manager.release_backend(backend, ephemeral_sid)
