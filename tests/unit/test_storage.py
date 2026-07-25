@@ -434,3 +434,26 @@ async def test_storage_state_restore_batches_storage_evals(
     # set_cookie is called once per cookie, eval is batched to one call per storage type.
     assert session.backend.set_cookie.call_count == 2
     assert session.backend.eval.call_count == 2
+
+
+@pytest.mark.unit
+async def test_storage_state_restore_rejects_malformed_json(
+    session_manager_with_mock: SessionManager, mock_session_id: str, tmp_path
+) -> None:
+    from mcp.server.fastmcp import FastMCP
+
+    from wavexis_mcp.models import StorageStateRestoreInput
+    from wavexis_mcp.tools.storage import register
+
+    mcp = FastMCP("test")
+    register(mcp, session_manager_with_mock)
+
+    state_path = tmp_path / "state.json"
+    state_path.write_text("not json")
+
+    tool = mcp._tool_manager.get_tool("wavexis_storage_state_restore")
+    result = await tool.fn(
+        StorageStateRestoreInput(session_id=mock_session_id, input_path=str(state_path))
+    )
+    data = json.loads(result)
+    assert "error" in data

@@ -68,9 +68,15 @@ def _read_json(path: str) -> object:
 
     Returns:
         The deserialized JSON object.
+
+    Raises:
+        ValueError: If the file contains malformed JSON.
     """
     p = secure_output_path(path)
-    return json.loads(p.read_text(encoding="utf-8"))
+    try:
+        return json.loads(p.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"Invalid JSON in {path!r}: {exc}") from exc
 
 
 def register(mcp: FastMCP, session_manager: SessionManager) -> None:
