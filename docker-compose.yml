@@ -3,6 +3,10 @@ services:
     build: .
     restart: unless-stopped
     ports:
-      - "8765:8765"
+      - "127.0.0.1:8765:8765"
     environment:
       - WAVEXIS_BROWSER_PATH=/usr/bin/chromium
+      - WAVEXIS_MCP_OUTPUT_DIR=/home/wavexis/output
+      - CI=true
+    volumes:
+      - ./output:/home/wavexis/output

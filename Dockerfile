@@ -11,9 +11,9 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends chromium && \
     rm -rf /var/lib/apt/lists/*
 
-# Install wavexis-mcp
-COPY --from=builder /build/dist/wavexis_mcp-*.whl /tmp/
-RUN pip install --no-cache-dir /tmp/wavexis_mcp-*.whl
+# Install wavexis-mcp (wheel filename uses PEP 625 normalized package name)
+COPY --from=builder /build/dist/*.whl /tmp/
+RUN pip install --no-cache-dir /tmp/*.whl
 
 # Create a non-root user and a writable output directory
 RUN useradd -m -u 1000 wavexis && \
@@ -29,5 +29,10 @@ EXPOSE 8765
 
 USER wavexis
 
-# Run in HTTP mode with all capability tiers
-ENTRYPOINT ["wavexis-mcp", "--transport=http", "--host=0.0.0.0", "--port=8765", "--caps=all"]
+# Run in HTTP mode with the core capability tier by default.
+# Use --caps=all or --allow-remote only after reviewing the security implications.
+ENTRYPOINT ["wavexis-mcp", "--transport=http", "--host=0.0.0.0", "--port=8765", "--caps=core"]
+
+# Basic health check using Python's stdlib (no extra curl dependency).
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+  CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8765/').read()" || exit 1
