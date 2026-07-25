@@ -8,11 +8,14 @@ action verb detection.
 
 from __future__ import annotations
 
+import asyncio
 import re
 from dataclasses import dataclass, field
 from typing import Any
 
 from wavexis.backend.base import AbstractBackend
+
+_ACT_ACTION_TIMEOUT = 30.0
 
 _ACTION_VERBS: dict[str, str] = {
     "click": "click",
@@ -364,15 +367,27 @@ async def execute_act(
     for attempt in range(max_retries):
         try:
             if match.action == "click":
-                await backend.click(selector or f"#{match.ref}")
+                await asyncio.wait_for(
+                    backend.click(selector or f"#{match.ref}"), timeout=_ACT_ACTION_TIMEOUT
+                )
             elif match.action == "type":
-                await backend.type_text(selector or f"#{match.ref}", text_value or "")
+                await asyncio.wait_for(
+                    backend.type_text(selector or f"#{match.ref}", text_value or ""),
+                    timeout=_ACT_ACTION_TIMEOUT,
+                )
             elif match.action == "fill":
-                await backend.fill(selector or f"#{match.ref}", text_value or "")
+                await asyncio.wait_for(
+                    backend.fill(selector or f"#{match.ref}", text_value or ""),
+                    timeout=_ACT_ACTION_TIMEOUT,
+                )
             elif match.action == "hover":
-                await backend.hover(selector or f"#{match.ref}")
+                await asyncio.wait_for(
+                    backend.hover(selector or f"#{match.ref}"), timeout=_ACT_ACTION_TIMEOUT
+                )
             elif match.action == "focus":
-                await backend.dom_focus(selector or f"#{match.ref}")
+                await asyncio.wait_for(
+                    backend.dom_focus(selector or f"#{match.ref}"), timeout=_ACT_ACTION_TIMEOUT
+                )
 
             result["status"] = "ok"
             result["attempts"] = attempt + 1

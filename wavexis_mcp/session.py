@@ -65,6 +65,7 @@ class SessionManager:
 
     def __init__(self) -> None:
         self._sessions: dict[str, BrowserSession] = {}
+        self._pending: set[str] = set()
         self._backend_manager = BackendManager()
         self.rate_limiter: RateLimiter | None = None
         self._cond = asyncio.Condition()
@@ -133,29 +134,35 @@ class SessionManager:
         backend_instance = self._backend_manager.select(preferred)
         backend_name = backend_instance.__class__.__name__.replace("Backend", "").lower()
 
+        # Reserve capacity before the expensive launch so concurrent opens cannot
+        # both pass the limit check and exceed _MAX_SESSIONS.
+        session_id = str(uuid.uuid4())
         async with self._cond:
             if self._shutting_down:
                 raise RuntimeError("SessionManager is shutting down")
-            if len(self._sessions) >= _MAX_SESSIONS:
+            if len(self._sessions) + len(self._pending) >= _MAX_SESSIONS:
                 raise RuntimeError(f"Maximum number of sessions ({_MAX_SESSIONS}) reached")
+            self._pending.add(session_id)
 
-        opts = BrowserOptions(
-            headless=headless,
-            width=width,
-            height=height,
-            user_agent=user_agent,
-            extra_headers=extra_headers or {},
-            proxy=proxy,
-            timeout=timeout,
-            user_data_dir=user_data_dir,
-            browser_url=connect_endpoint,
-            remote_url=remote_url,
-            stealth=stealth,
-        )
         try:
+            opts = BrowserOptions(
+                headless=headless,
+                width=width,
+                height=height,
+                user_agent=user_agent,
+                extra_headers=extra_headers or {},
+                proxy=proxy,
+                timeout=timeout,
+                user_data_dir=user_data_dir,
+                browser_url=connect_endpoint,
+                remote_url=remote_url,
+                stealth=stealth,
+            )
             await backend_instance.launch(opts)
             self._wrap_backend(backend_instance)
         except Exception:
+            async with self._cond:
+                self._pending.discard(session_id)
             try:
                 await backend_instance.close()
             except Exception:
@@ -163,6 +170,7 @@ class SessionManager:
             raise
 
         async with self._cond:
+            self._pending.discard(session_id)
             if self._shutting_down:
                 try:
                     await backend_instance.close()
@@ -175,7 +183,6 @@ class SessionManager:
                 except Exception:
                     _logger.exception("Failed to close backend after session limit reached")
                 raise RuntimeError(f"Maximum number of sessions ({_MAX_SESSIONS}) reached")
-            session_id = str(uuid.uuid4())
             now = time.time()
             self._sessions[session_id] = BrowserSession(
                 session_id=session_id,
@@ -426,6 +433,7 @@ class SessionManager:
         """
         async with self._cond:
             self._shutting_down = True
+            self._pending.clear()
             ids = list(self._sessions.keys())
         for sid in ids:
             try:

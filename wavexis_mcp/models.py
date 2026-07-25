@@ -11,7 +11,14 @@ from __future__ import annotations
 
 from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    StringConstraints,
+    field_validator,
+    model_validator,
+)
 
 SelectorStr = Annotated[str, StringConstraints(min_length=1, strip_whitespace=True)]
 
@@ -68,6 +75,14 @@ class BaseInput(BaseModel):
     @classmethod
     def _limit(cls, data: Any) -> Any:
         return _limit_input_size(data)
+
+    @field_validator("session_id", mode="before", check_fields=False)
+    @classmethod
+    def _session_id_not_empty(cls, value: Any) -> Any:
+        """Reject empty or whitespace-only session IDs in every input model."""
+        if isinstance(value, str) and not value.strip():
+            raise ValueError("session_id cannot be empty")
+        return value
 
 
 # ── Session management ──────────────────────────────────────────

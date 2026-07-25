@@ -13,6 +13,7 @@ import contextlib
 import fnmatch
 import functools
 import json
+import logging
 import re
 from collections import deque
 from collections.abc import Awaitable, Callable
@@ -54,6 +55,8 @@ from wavexis_mcp.models import (
     UnrouteInput,
 )
 from wavexis_mcp.session import BrowserSession, SessionManager
+
+_logger = logging.getLogger(__name__)
 
 # Headers that could be used to bypass security controls or perform
 # request smuggling when set by an MCP client.
@@ -126,11 +129,14 @@ def _matches_pattern(pattern: str, url: str) -> bool:
     try:
         return _glob_to_regex(pattern).match(url, timeout=1.0) is not None
     except (ValueError, TimeoutError):
+        _logger.warning("Pattern %r for URL %r exceeded safety limits", pattern, url)
         return False
     except (re.error, _regex.error):
+        _logger.warning("Pattern %r is not a valid regex; trying fnmatch fallback", pattern)
         try:
             return fnmatch.fnmatch(url, pattern)
         except Exception:
+            _logger.exception("fnmatch fallback failed for pattern %r", pattern)
             return False
 
 
@@ -172,8 +178,10 @@ def _on_network_event(session: BrowserSession, event: dict[str, Any]) -> None:
         }
         backend._network_log.append(entry)
         backend._network_log_map[request_id] = entry
-        while len(backend._network_log_map) > _NETWORK_LOG_MAX * 2 and backend._network_log_map:
-            backend._network_log_map.pop(next(iter(backend._network_log_map)))
+        if len(backend._network_log_map) > _NETWORK_LOG_MAX:
+            excess = len(backend._network_log_map) - _NETWORK_LOG_MAX
+            for key in list(backend._network_log_map.keys())[:excess]:
+                backend._network_log_map.pop(key, None)
     elif event_type == "network_response":
         entry = backend._network_log_map.get(request_id)
         if entry:
@@ -665,6 +673,9 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                             r for r in all_requests if rx.search(r.get("url", ""), timeout=1.0)
                         ]
                     except Exception:
+                        _logger.warning(
+                            "Regex filter %r failed; falling back to substring match", input.filter
+                        )
                         all_requests = [r for r in all_requests if input.filter in r.get("url", "")]
                 if input.resource_type:
                     all_requests = [r for r in all_requests if r.get("type") == input.resource_type]

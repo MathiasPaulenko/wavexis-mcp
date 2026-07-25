@@ -37,14 +37,9 @@ _logger = logging.getLogger(__name__)
 _recordings_lock = asyncio.Lock()
 
 
-def _total_frame_count(recordings: dict[str, dict[str, Any]]) -> int:
-    """Return the total number of captured frames across all recordings."""
-    return sum(len(rec.get("frames", [])) for rec in recordings.values())
-
-
 def _make_frame_handler(
     recording: dict[str, Any],
-    recordings: dict[str, dict[str, Any]],
+    total_ref: list[int],
 ) -> Any:
     """Create a CDP ``Page.screencastFrame`` handler for *recording*."""
 
@@ -52,13 +47,14 @@ def _make_frame_handler(
         """Decode and store a screencast frame while respecting limits."""
         if len(recording.get("frames", [])) >= _MAX_FRAMES_PER_RECORDING:
             return
-        if _total_frame_count(recordings) >= _MAX_TOTAL_FRAMES:
+        if total_ref[0] >= _MAX_TOTAL_FRAMES:
             return
         data = params.get("data") if isinstance(params, dict) else None
         if not data:
             return
         try:
             recording["frames"].append(base64.b64decode(data))
+            total_ref[0] += 1
         except Exception:
             _logger.exception("Failed to process screencast frame")
 
@@ -68,7 +64,7 @@ def _make_frame_handler(
 def _attach_screencast_handler(
     backend: Any,
     recording: dict[str, Any],
-    recordings: dict[str, dict[str, Any]],
+    total_ref: list[int],
 ) -> bool:
     """Attach a ``Page.screencastFrame`` listener to the backend if possible.
 
@@ -99,7 +95,7 @@ def _attach_screencast_handler(
     if target is None or not hasattr(target, "on") or not hasattr(target, "off"):
         return False
 
-    handler = _make_frame_handler(recording, recordings)
+    handler = _make_frame_handler(recording, total_ref)
     try:
         target.on("Page.screencastFrame", handler)
         recording["_screencast_target"] = target
@@ -133,6 +129,7 @@ def register(
     if recordings is None:
         recordings = {}
     mcp._wavexis_video_recordings = recordings  # type: ignore[attr-defined]
+    total_frames: list[int] = [0]
 
     @mcp.tool(
         annotations=ToolAnnotations(
@@ -163,7 +160,7 @@ def register(
 
             # Attach the frame listener before starting the screencast so the
             # first frame is not lost.
-            _attach_screencast_handler(session.backend, recording, recordings)
+            _attach_screencast_handler(session.backend, recording, total_frames)
 
             start = getattr(session.backend, "page_start_screencast", None)
             if start is not None:
@@ -184,7 +181,8 @@ def register(
                 recordings[recording_id] = recording
                 while len(recordings) > _MAX_VIDEO_RECORDINGS:
                     oldest = min(recordings, key=lambda rid: recordings[rid]["start_time"])
-                    recordings.pop(oldest)
+                    oldest_rec = recordings.pop(oldest)
+                    total_frames[0] -= len(oldest_rec.get("frames", []))
             return format_json_response(
                 {
                     "recording_id": recording_id,
@@ -237,6 +235,7 @@ def register(
                     )
 
                 rec = recordings.pop(recording_id)
+                total_frames[0] -= len(rec.get("frames", []))
                 _detach_screencast_handler(rec)
             start_time = rec["start_time"]
             duration_ms = int((time.time() - start_time) * 1000)

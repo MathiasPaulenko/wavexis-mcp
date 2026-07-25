@@ -13,7 +13,7 @@ docker build -t wavexis-mcp .
 docker run -p 8765:8765 wavexis-mcp
 ```
 
-The server starts on port 8765 with all capability tiers enabled. Connect from any MCP client via HTTP+SSE transport.
+The server starts on port 8765 with core capability tiers enabled. Use `--caps=all` when running the image to enable every tier.
 
 ## Docker Compose
 

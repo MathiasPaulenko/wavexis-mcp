@@ -786,8 +786,12 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """
         try:
             session = session_manager.get(input.session_id)
-            safe_path = str(secure_output_path(input.path))
-            ext_id = await session.backend.extension_install(safe_path)
+            safe_path = secure_output_path(input.path)
+            if safe_path.suffix.lower() != ".crx" and not safe_path.is_dir():
+                raise ValueError(
+                    f"Extension path must be a .crx file or unpacked directory: {input.path!r}"
+                )
+            ext_id = await session.backend.extension_install(str(safe_path))
             return format_json_response({"extension_id": ext_id, "status": "installed"})
         except Exception as e:
             return format_error("wavexis_extension_install", e)

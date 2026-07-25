@@ -2,6 +2,7 @@ services:
   wavexis-mcp:
     build: .
     restart: unless-stopped
+    command: ["--transport=http", "--host=0.0.0.0", "--port=8765", "--caps=all"]
     ports:
       - "127.0.0.1:8765:8765"
     environment:

@@ -27,7 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Regression tests for deep input nesting, a11y tree cycles, missing file uploads, oversized network patterns, and nested output directory creation.
 
-## [1.6.7] - 2026-07-25
+## [1.6.7] - 2025-07-25
 
 ### Changed
 

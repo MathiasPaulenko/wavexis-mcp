@@ -16,6 +16,7 @@ from mcp.types import ToolAnnotations
 from pydantic import BaseModel, Field
 
 from wavexis_mcp.formatter import format_error, format_json_response
+from wavexis_mcp.models import BaseInput
 from wavexis_mcp.session import SessionManager
 
 _MAX_FIND_PATTERN_LENGTH = 500
@@ -135,7 +136,7 @@ class FindInput(BaseModel):
     session_id: str = Field(...)
 
 
-class GetConfigInput(BaseModel):
+class GetConfigInput(BaseInput):
     """Input for querying server configuration."""
 
     pass
