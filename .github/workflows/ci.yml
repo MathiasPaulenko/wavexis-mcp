@@ -56,6 +56,9 @@ jobs:
       - name: Check package with twine
         run: twine check dist/*
 
+      - name: Build documentation
+        run: NO_MKDOCS_2_WARNING=1 python -m mkdocs build -q
+
       - name: Unit tests
         run: pytest tests/unit -v --cov=wavexis_mcp --cov-report=xml
 

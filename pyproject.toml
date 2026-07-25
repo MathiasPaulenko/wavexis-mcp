@@ -34,7 +34,8 @@ classifiers = [
 dependencies = [
     "mcp>=1.0,<2",
     "wavexis>=2.16.16,<3.0",
-    "pydantic>=2.0",
+    "pydantic>=2.0,<3",
+    "pyyaml>=6.0,<7.0",
 ]
 
 [project.optional-dependencies]
@@ -52,6 +53,7 @@ dev = [
     "mkdocs>=1.6",
     "mkdocs-material>=9.5",
     "mkdocstrings[python]>=0.25",
+    "pymdown-extensions>=10.0",
     "wavexis[cdp]",
 ]
 
@@ -84,10 +86,6 @@ python_version = "3.11"
 module = ["wavexis.*", "yaml.*"]
 ignore_missing_imports = true
 
-[[tool.mypy.overrides]]
-module = ["numpy.*"]
-follow_imports = "skip"
-
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 asyncio_default_test_loop_scope = "function"
@@ -105,3 +103,17 @@ markers = [
 
 [tool.hatch.build.targets.wheel]
 packages = ["wavexis_mcp"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/wavexis_mcp",
+    "/tests",
+    "/docs",
+    "/scripts",
+    "/README.md",
+    "/LICENSE",
+    "/CHANGELOG.md",
+    "/CONTRIBUTING.md",
+    "/SECURITY.md",
+    "/AGENTS.md",
+]

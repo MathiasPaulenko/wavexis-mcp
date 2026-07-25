@@ -92,7 +92,7 @@ def validate_url(url: str, *, allow_internal: bool | None = None) -> None:
     if parsed.scheme not in {"http", "https"}:
         raise ValueError(f"URL scheme {parsed.scheme!r} is not allowed: {url}")
 
-    hostname = (parsed.hostname or "").lower()
+    hostname = (parsed.hostname or "").lower().strip()
     if not hostname:
         raise ValueError(f"URL has no host: {url}")
 

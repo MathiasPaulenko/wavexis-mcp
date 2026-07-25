@@ -68,6 +68,7 @@ _THROTTLE_PRESETS: dict[str, dict[str, int | bool]] = {
 
 
 _NETWORK_LOG_MAX = 1000
+_MAX_ROUTE_ENTRIES = 100
 
 
 @functools.lru_cache(maxsize=256)
@@ -854,6 +855,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             )
             try:
                 if input.url:
+                    validate_url(input.url)
                     await backend.navigate(input.url)
                 har_path = str(secure_output_path(input.har_path))
                 await backend.replay_har(har_path, input.url_filter)
@@ -895,6 +897,8 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                 remove_headers=remove_headers,
             )
             backend._route_entries.append(route)
+            while len(backend._route_entries) > _MAX_ROUTE_ENTRIES:
+                backend._route_entries.pop(0)
             await _refresh_routes(session)
             return format_json_response({"status": "ok", "pattern": input.pattern})
         except Exception as e:

@@ -2,7 +2,7 @@
 
 ## Verification commands
 
-Run from the repository root:
+Run from the repository root (PowerShell):
 
 ```powershell
 python -m pytest tests/unit -q
@@ -11,8 +11,14 @@ ruff format --check
 mypy wavexis_mcp
 python -m bandit -r wavexis_mcp
 python -m build
-twine check dist/*
+python -m twine check dist/*
 $env:NO_MKDOCS_2_WARNING=1; python -m mkdocs build -q
+```
+
+On Unix shells use the same commands with `twine` and:
+
+```bash
+NO_MKDOCS_2_WARNING=1 python -m mkdocs build -q
 ```
 
 ## Test environment

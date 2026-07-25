@@ -9,10 +9,12 @@ stdio and HTTP transports.
 from __future__ import annotations
 
 import argparse
+import asyncio
 import atexit
 import sys
 from collections.abc import AsyncIterator, Awaitable, Callable
-from contextlib import asynccontextmanager, suppress
+from contextlib import AbstractAsyncContextManager, asynccontextmanager, suppress
+from functools import partial
 from typing import cast
 
 from mcp.server.fastmcp import FastMCP
@@ -26,23 +28,26 @@ from wavexis_mcp.models import ActInput
 from wavexis_mcp.rate_limiter import RateLimiter
 from wavexis_mcp.session import SessionManager
 
-_session_manager = SessionManager()
-_caps_manager = CapsManager("core")
-_rate_limiter = RateLimiter()
 
+def _make_lifespan(
+    session_manager: SessionManager,
+) -> Callable[[FastMCP], AbstractAsyncContextManager[None]]:
+    """Create a lifespan context manager that cleans up *session_manager* on shutdown."""
 
-@asynccontextmanager
-async def lifespan(_app: FastMCP) -> AsyncIterator[None]:
-    """Manage server lifecycle — cleanup sessions on shutdown.
+    @asynccontextmanager
+    async def _lifespan(_app: FastMCP) -> AsyncIterator[None]:
+        """Manage server lifecycle — cleanup sessions on shutdown.
 
-    Args:
-        _app: The FastMCP application instance (unused).
+        Args:
+            _app: The FastMCP application instance (unused).
 
-    Yields:
-        ``None`` — control returns to the server after cleanup.
-    """
-    yield
-    await _session_manager.cleanup_all()
+        Yields:
+            ``None`` — control returns to the server after cleanup.
+        """
+        yield
+        await session_manager.cleanup_all()
+
+    return _lifespan
 
 
 def _print_startup_info(caps_manager: CapsManager) -> None:
@@ -93,6 +98,7 @@ def create_server(
     caps: str = "core",
     rate_limit: int = 60,
     rate_burst: int = 10,
+    session_manager: SessionManager | None = None,
 ) -> FastMCP:
     """Create and configure the FastMCP server with the given capability tiers.
 
@@ -100,30 +106,41 @@ def create_server(
     only when enabled via the *caps* string.  M1-M4 features (act,
     resources, prompts, rate limiting) are also registered here.
 
+    Each call returns an isolated ``FastMCP`` instance with its own
+    ``SessionManager`` and ``CapsManager`` so servers can be created
+    repeatedly without sharing global state.
+
     Args:
         caps: Comma-separated tier names or ``"all"``.
         rate_limit: Maximum tool calls per second per session.
         rate_burst: Maximum burst size for rate limiting.
+        session_manager: Optional existing ``SessionManager`` to use
+            (primarily for testing).  If omitted, a new instance is created.
 
     Returns:
         A configured ``FastMCP`` instance with all enabled tools registered.
     """
-    global _caps_manager, _rate_limiter, _session_manager
-    _caps_manager = CapsManager(caps)
-    _rate_limiter = RateLimiter(rate=rate_limit, burst=rate_burst)
-    _session_manager.rate_limiter = _rate_limiter
+    caps_manager = CapsManager(caps)
+    rate_limiter = RateLimiter(rate=rate_limit, burst=rate_burst)
+    session_manager = session_manager or SessionManager()
+    session_manager.rate_limiter = rate_limiter
 
     mcp = FastMCP(
         "wavexis-mcp",
-        lifespan=lifespan,
+        lifespan=_make_lifespan(session_manager),
         instructions=(
             "WaveXisMCP — browser automation via wavexis. "
-            f"Enabled tiers: {', '.join(sorted(_caps_manager.enabled_tiers()))}. "
+            f"Enabled tiers: {', '.join(sorted(caps_manager.enabled_tiers()))}. "
             "Use wavexis_session_open for multi-step workflows, "
             "or pass 'url' for stateless one-shot calls. "
             "Use wavexis_act for natural language interaction."
         ),
     )
+
+    # Expose internals for ``main()`` and tests without module-level globals.
+    mcp._wavexis_session_manager = session_manager  # type: ignore[attr-defined]
+    mcp._wavexis_rate_limiter = rate_limiter  # type: ignore[attr-defined]
+    mcp._wavexis_caps_manager = caps_manager  # type: ignore[attr-defined]
 
     from wavexis_mcp.tools import (
         a11y,
@@ -150,53 +167,53 @@ def create_server(
         workflows,
     )
 
-    session.register(mcp, _session_manager)
-    navigation.register(mcp, _session_manager)
-    capture.register(mcp, _session_manager)
-    javascript.register(mcp, _session_manager)
-    dom.register(mcp, _session_manager)
-    input.register(mcp, _session_manager)
-    cookies.register(mcp, _session_manager)
-    tabs.register(mcp, _session_manager)
-    utility.register(mcp, _session_manager)
-    playwright_parity.register(mcp, _session_manager)
+    session.register(mcp, session_manager)
+    navigation.register(mcp, session_manager)
+    capture.register(mcp, session_manager)
+    javascript.register(mcp, session_manager)
+    dom.register(mcp, session_manager)
+    input.register(mcp, session_manager)
+    cookies.register(mcp, session_manager)
+    tabs.register(mcp, session_manager)
+    utility.register(mcp, session_manager)
+    playwright_parity.register(mcp, session_manager)
 
-    if _caps_manager.is_enabled("network"):
-        network.register(mcp, _session_manager)
-    if _caps_manager.is_enabled("storage"):
-        storage.register(mcp, _session_manager)
-    if _caps_manager.is_enabled("emulation"):
-        emulation.register(mcp, _session_manager)
-    if _caps_manager.is_enabled("a11y"):
-        a11y.register(mcp, _session_manager)
-    if _caps_manager.is_enabled("interactions"):
-        interactions.register(mcp, _session_manager)
-    if _caps_manager.is_enabled("devtools"):
-        devtools.register(mcp, _session_manager)
-    if _caps_manager.is_enabled("vision"):
-        vision.register(mcp, _session_manager)
-    if _caps_manager.is_enabled("video"):
-        video.register(mcp, _session_manager)
-    if _caps_manager.is_enabled("testing"):
-        testing.register(mcp, _session_manager)
-    if _caps_manager.is_enabled("workflows"):
-        workflows.register(mcp, _session_manager)
-    if _caps_manager.is_enabled("data"):
-        data.register(mcp, _session_manager)
-    if _caps_manager.is_enabled("experimental"):
-        experimental.register(mcp, _session_manager)
+    if caps_manager.is_enabled("network"):
+        network.register(mcp, session_manager)
+    if caps_manager.is_enabled("storage"):
+        storage.register(mcp, session_manager)
+    if caps_manager.is_enabled("emulation"):
+        emulation.register(mcp, session_manager)
+    if caps_manager.is_enabled("a11y"):
+        a11y.register(mcp, session_manager)
+    if caps_manager.is_enabled("interactions"):
+        interactions.register(mcp, session_manager)
+    if caps_manager.is_enabled("devtools"):
+        devtools.register(mcp, session_manager)
+    if caps_manager.is_enabled("vision"):
+        vision.register(mcp, session_manager)
+    if caps_manager.is_enabled("video"):
+        video.register(mcp, session_manager)
+    if caps_manager.is_enabled("testing"):
+        testing.register(mcp, session_manager)
+    if caps_manager.is_enabled("workflows"):
+        workflows.register(mcp, session_manager)
+    if caps_manager.is_enabled("data"):
+        data.register(mcp, session_manager)
+    if caps_manager.is_enabled("experimental"):
+        experimental.register(mcp, session_manager)
 
     # M1: wavexis_act — natural language interaction
-    _register_act_tool(mcp, _session_manager)
+    _register_act_tool(mcp, session_manager)
 
     # M3: MCP resources and prompts
     from wavexis_mcp.prompts import register as register_prompts
     from wavexis_mcp.resources import register as register_resources
 
-    register_resources(mcp, _session_manager)
+    register_resources(mcp, session_manager)
     register_prompts(mcp)
 
-    _print_startup_info(_caps_manager)
+    _print_startup_info(caps_manager)
 
     return mcp
 
@@ -232,6 +249,11 @@ def _register_act_tool(mcp: FastMCP, session_manager: SessionManager) -> None:
             JSON string with ``action``, ``element``, ``score``, ``status``.
         """
         try:
+            if not input.session_id:
+                return format_error(
+                    "wavexis_act",
+                    ValueError("session_id is required for wavexis_act"),
+                )
             session = session_manager.get(input.session_id)
             raw = await session_manager.call_backend(session.backend.a11y_tree())
             nodes = _build_a11y_tree(raw)
@@ -259,14 +281,10 @@ def _register_act_tool(mcp: FastMCP, session_manager: SessionManager) -> None:
             return format_error("wavexis_act", e)
 
 
-def _atexit_cleanup() -> None:
+def _atexit_cleanup(session_manager: SessionManager) -> None:
     """Kill any orphaned browser processes on exit."""
-    import asyncio
-
     with suppress(Exception):
-        loop = asyncio.new_event_loop()
-        loop.run_until_complete(_session_manager.cleanup_all())
-        loop.close()
+        asyncio.run(session_manager.cleanup_all())
 
 
 def _print_help(caps: str = "core") -> None:
@@ -418,8 +436,14 @@ def main() -> None:
         rate_limit=args.rate_limit,
         rate_burst=args.rate_burst,
     )
-    _apply_rate_limiting(mcp, _rate_limiter)
-    atexit.register(_atexit_cleanup)
+
+    session_manager = getattr(mcp, "_wavexis_session_manager", None)
+    rate_limiter = getattr(mcp, "_wavexis_rate_limiter", None)
+
+    _apply_rate_limiting(mcp, rate_limiter)
+
+    if isinstance(session_manager, SessionManager):
+        atexit.register(partial(_atexit_cleanup, session_manager))
 
     if args.transport == "http":
         # --allow-remote intentionally binds to all interfaces.

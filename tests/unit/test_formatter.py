@@ -13,6 +13,7 @@ from wavexis_mcp.formatter import (
     format_error,
     format_json_response,
     save_to_file,
+    secure_output_path,
     validate_url,
 )
 
@@ -62,3 +63,63 @@ def test_validate_url_rejects_metadata_ip() -> None:
 def test_validate_url_rejects_localhost() -> None:
     with pytest.raises(ValueError):
         validate_url("http://localhost:8080/")
+
+
+@pytest.mark.parametrize(
+    ("url",),
+    [
+        ("http://192.168.1.1/",),
+        ("http://10.0.0.1/",),
+        ("http://172.16.0.1/",),
+        ("http://172.31.255.255/",),
+        ("http://127.0.0.1/",),
+        ("http://169.254.169.254/latest/meta-data/",),
+        ("http://metadata/",),
+        ("http://metadata.google.internal/",),
+        ("http://metadata.google/",),
+    ],
+)
+def test_validate_url_rejects_private_and_blocked_hosts(url: str) -> None:
+    with pytest.raises(ValueError):
+        validate_url(url)
+
+
+def test_validate_url_allows_internal_when_requested() -> None:
+    validate_url("http://127.0.0.1/", allow_internal=True)  # should not raise
+
+
+def test_validate_url_allows_internal_via_environment(monkeypatch) -> None:
+    monkeypatch.setenv("WAVEXIS_MCP_ALLOW_INTERNAL_URLS", "1")
+    validate_url("http://192.168.1.1/")  # should not raise
+
+
+def test_validate_url_rejects_malformed_url() -> None:
+    with pytest.raises(ValueError):
+        validate_url("not-a-url")
+
+
+def test_secure_output_path_resolves_within_base(tmp_path: Path) -> None:
+    result = secure_output_path("subdir/file.txt", base_dir=tmp_path)
+    assert result == (tmp_path / "subdir" / "file.txt").resolve()
+
+
+def test_secure_output_path_rejects_traversal(tmp_path: Path) -> None:
+    with pytest.raises(ValueError):
+        secure_output_path("../../../etc/passwd", base_dir=tmp_path)
+
+
+def test_secure_output_path_rejects_absolute_escape(tmp_path: Path) -> None:
+    with pytest.raises(ValueError):
+        secure_output_path("/etc/passwd", base_dir=tmp_path)
+
+
+def test_secure_output_path_uses_wavexis_output_dir_env(monkeypatch, tmp_path: Path) -> None:
+    monkeypatch.setenv("WAVEXIS_MCP_OUTPUT_DIR", str(tmp_path))
+    result = secure_output_path("file.txt")
+    assert result == (tmp_path / "file.txt").resolve()
+
+
+def test_secure_output_path_rejects_whitespace_host_url() -> None:
+    # Hostname containing only whitespace must be rejected.
+    with pytest.raises(ValueError, match="URL has no host"):
+        validate_url("http://   /path")

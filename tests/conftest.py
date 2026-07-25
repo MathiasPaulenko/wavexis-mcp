@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -220,6 +220,15 @@ def session_manager_with_mock(mock_backend: AsyncMock) -> SessionManager:
 def _wavexis_output_dir(tmp_path: pytest.Any, monkeypatch: pytest.MonkeyPatch) -> None:
     """Sandbox all file operations to the per-test temporary directory."""
     monkeypatch.setenv("WAVEXIS_MCP_OUTPUT_DIR", str(tmp_path))
+
+
+@pytest.fixture(autouse=True)
+def _mock_backend_manager(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Prevent real browser process launches from BackendManager in unit tests."""
+    mock = MagicMock()
+    mock.return_value.list_available.return_value = ["cdp"]
+    mock.return_value.install_check.return_value = {"cdp": "1.0.0"}
+    monkeypatch.setattr("wavexis.backend.manager.BackendManager", mock)
 
 
 @pytest.fixture

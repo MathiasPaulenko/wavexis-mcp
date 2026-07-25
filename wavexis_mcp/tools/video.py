@@ -23,6 +23,8 @@ from wavexis_mcp.models import (
 )
 from wavexis_mcp.session import SessionManager
 
+_MAX_VIDEO_RECORDINGS = 100
+
 
 def register(
     mcp: FastMCP,
@@ -76,6 +78,9 @@ def register(
                 "output_path": input.output_path,
                 "frames": [],
             }
+            while len(recordings) > _MAX_VIDEO_RECORDINGS:
+                oldest = min(recordings, key=lambda rid: recordings[rid]["start_time"])
+                recordings.pop(oldest)
             return format_json_response(
                 {
                     "recording_id": recording_id,

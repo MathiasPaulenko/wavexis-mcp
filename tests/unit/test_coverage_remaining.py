@@ -36,13 +36,8 @@ def coverage_mcp(session_manager_with_mock: SessionManager, mock_session_id: str
         )
         mock_mgr_cls.return_value = mock_mgr
 
-        original_session_manager = server_module._session_manager
-        server_module._session_manager = session_manager_with_mock
-        try:
-            mcp = server_module.create_server(caps="all")
-            yield mcp
-        finally:
-            server_module._session_manager = original_session_manager
+        mcp = server_module.create_server(caps="all", session_manager=session_manager_with_mock)
+        yield mcp
 
 
 # -- utility.py
@@ -505,14 +500,16 @@ def test_print_help_and_startup(capsys) -> None:
 
 @pytest.mark.unit
 async def test_lifespan_and_atexit_cleanup(coverage_mcp: Any, monkeypatch) -> None:
-    async with server_module.lifespan(None):
-        pass
-
     fake_mgr = MagicMock()
     fake_mgr.cleanup_all = AsyncMock()
-    monkeypatch.setattr(server_module, "_session_manager", fake_mgr)
 
-    t = threading.Thread(target=server_module._atexit_cleanup)
+    lifespan = server_module._make_lifespan(fake_mgr)
+    async with lifespan(None):
+        pass
+    fake_mgr.cleanup_all.assert_awaited_once()
+
+    fake_mgr.cleanup_all.reset_mock()
+    t = threading.Thread(target=server_module._atexit_cleanup, args=(fake_mgr,))
     t.start()
     t.join()
     fake_mgr.cleanup_all.assert_awaited_once()
@@ -524,9 +521,8 @@ async def test_atexit_cleanup_exception(coverage_mcp: Any, monkeypatch) -> None:
 
     fake_mgr = MagicMock()
     fake_mgr.cleanup_all = AsyncMock(side_effect=RuntimeError("boom"))
-    monkeypatch.setattr(server_module, "_session_manager", fake_mgr)
 
-    t = threading.Thread(target=server_module._atexit_cleanup)
+    t = threading.Thread(target=server_module._atexit_cleanup, args=(fake_mgr,))
     t.start()
     t.join()
 

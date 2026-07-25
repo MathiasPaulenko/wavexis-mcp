@@ -9,9 +9,11 @@ Interactions, and DevTools) and separated by section comments.
 
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints
+
+SelectorStr = Annotated[str, StringConstraints(min_length=1, strip_whitespace=True)]
 
 _WaitStrategy = Literal["load", "domcontentloaded", "networkidle", "selector", "url", "none"]
 
@@ -242,7 +244,7 @@ class EvalInput(BaseModel):
 class DOMGetInput(BaseModel):
     """Input for getting HTML of an element."""
 
-    selector: str = Field(..., description="CSS selector for the target element")
+    selector: SelectorStr = Field(..., description="CSS selector for the target element")
     session_id: str | None = Field(default=None)
     url: str | None = Field(default=None)
     outer: bool = Field(default=True, description="Return outerHTML (True) or innerHTML (False)")
@@ -254,7 +256,7 @@ class DOMGetInput(BaseModel):
 class DOMQueryInput(BaseModel):
     """Input for querying elements by CSS selector."""
 
-    selector: str = Field(...)
+    selector: SelectorStr = Field(...)
     session_id: str | None = Field(default=None)
     url: str | None = Field(default=None)
     all: bool = Field(default=False, description="Return all matches (True) or first only (False)")
@@ -268,7 +270,7 @@ class DOMQueryInput(BaseModel):
 class DOMSetAttrInput(BaseModel):
     """Input for setting an attribute on an element."""
 
-    selector: str = Field(...)
+    selector: SelectorStr = Field(...)
     name: str = Field(..., description="Attribute name")
     value: str = Field(..., description="Attribute value")
     session_id: str = Field(...)
@@ -277,7 +279,7 @@ class DOMSetAttrInput(BaseModel):
 class DOMGetAttrInput(BaseModel):
     """Input for getting an attribute value from an element."""
 
-    selector: str = Field(...)
+    selector: SelectorStr = Field(...)
     name: str = Field(...)
     session_id: str = Field(...)
 
@@ -285,7 +287,7 @@ class DOMGetAttrInput(BaseModel):
 class DOMRemoveAttrInput(BaseModel):
     """Input for removing an attribute from an element."""
 
-    selector: str = Field(...)
+    selector: SelectorStr = Field(...)
     name: str = Field(...)
     session_id: str = Field(...)
 
@@ -293,14 +295,14 @@ class DOMRemoveAttrInput(BaseModel):
 class DOMRemoveInput(BaseModel):
     """Input for removing an element from the DOM."""
 
-    selector: str = Field(...)
+    selector: SelectorStr = Field(...)
     session_id: str = Field(...)
 
 
 class DOMFocusInput(BaseModel):
     """Input for focusing an element."""
 
-    selector: str = Field(...)
+    selector: SelectorStr = Field(...)
     session_id: str = Field(...)
 
 
@@ -325,7 +327,7 @@ class DOMSnapshotInput(BaseModel):
 class ClickInput(BaseModel):
     """Input for clicking an element."""
 
-    selector: str = Field(..., description="CSS selector for element to click")
+    selector: SelectorStr = Field(..., description="CSS selector for element to click")
     session_id: str | None = Field(default=None)
     url: str | None = Field(default=None)
     button: Literal["left", "right", "middle"] = Field(
@@ -340,7 +342,7 @@ class ClickInput(BaseModel):
 class DoubleClickInput(BaseModel):
     """Input for double-clicking an element."""
 
-    selector: str = Field(..., description="CSS selector for element to double-click")
+    selector: SelectorStr = Field(..., description="CSS selector for element to double-click")
     session_id: str | None = Field(default=None)
     url: str | None = Field(default=None)
     auto_wait: bool = Field(default=True, description="Wait for the element before clicking")
@@ -352,7 +354,7 @@ class DoubleClickInput(BaseModel):
 class RightClickInput(BaseModel):
     """Input for right-clicking an element."""
 
-    selector: str = Field(..., description="CSS selector for element to right-click")
+    selector: SelectorStr = Field(..., description="CSS selector for element to right-click")
     session_id: str | None = Field(default=None)
     url: str | None = Field(default=None)
     auto_wait: bool = Field(default=True, description="Wait for the element before clicking")
@@ -364,7 +366,7 @@ class RightClickInput(BaseModel):
 class TypeInput(BaseModel):
     """Input for typing text into an element."""
 
-    selector: str = Field(...)
+    selector: SelectorStr = Field(...)
     text: str = Field(..., description="Text to type character by character")
     session_id: str | None = Field(default=None)
     url: str | None = Field(default=None)
@@ -377,7 +379,7 @@ class TypeInput(BaseModel):
 class FillInput(BaseModel):
     """Input for filling an input element."""
 
-    selector: str = Field(...)
+    selector: SelectorStr = Field(...)
     value: str = Field(..., description="Value to fill (replaces existing content)")
     session_id: str | None = Field(default=None)
     url: str | None = Field(default=None)
@@ -416,7 +418,9 @@ class NLFillInput(BaseModel):
 class FormField(BaseModel):
     """A single form field descriptor for ``FillFormInput``."""
 
-    selector: str = Field(..., min_length=1, description="CSS selector for the input element")
+    selector: SelectorStr = Field(
+        ..., min_length=1, description="CSS selector for the input element"
+    )
     value: str = Field(..., description="Value to fill")
 
 
@@ -434,7 +438,7 @@ class FillFormInput(BaseModel):
 class SelectOptionInput(BaseModel):
     """Input for selecting an option in a ``<select>`` element."""
 
-    selector: str = Field(..., description="CSS selector for <select> element")
+    selector: SelectorStr = Field(..., description="CSS selector for <select> element")
     value: str = Field(..., description="Option value to select")
     session_id: str | None = Field(default=None)
     url: str | None = Field(default=None)
@@ -446,7 +450,7 @@ class SelectOptionInput(BaseModel):
 class HoverInput(BaseModel):
     """Input for hovering over an element."""
 
-    selector: str = Field(...)
+    selector: SelectorStr = Field(...)
     session_id: str | None = Field(default=None)
     url: str | None = Field(default=None)
     wait_timeout: int = Field(default=30000, ge=1000, le=300000)
@@ -476,7 +480,7 @@ class DragInput(BaseModel):
 class TapInput(BaseModel):
     """Input for tapping an element (touch emulation)."""
 
-    selector: str = Field(..., description="CSS selector for element to tap")
+    selector: SelectorStr = Field(..., description="CSS selector for element to tap")
     session_id: str | None = Field(default=None)
     url: str | None = Field(default=None)
     wait_timeout: int = Field(default=30000, ge=1000, le=300000)
@@ -487,7 +491,7 @@ class TapInput(BaseModel):
 class SetFilesInput(BaseModel):
     """Input for uploading files to a file input element."""
 
-    selector: str = Field(..., description="CSS selector for <input type='file'> element")
+    selector: SelectorStr = Field(..., description="CSS selector for <input type='file'> element")
     files: list[str] = Field(..., min_length=1, description="Absolute file paths to upload")
     session_id: str | None = Field(default=None)
     url: str | None = Field(default=None)
@@ -499,7 +503,7 @@ class SetFilesInput(BaseModel):
 class DropInput(BaseModel):
     """Input for dropping files or MIME-typed data onto an element."""
 
-    selector: str = Field(..., description="CSS selector for the drop target")
+    selector: SelectorStr = Field(..., description="CSS selector for the drop target")
     data: dict[str, str] = Field(
         default_factory=dict, description="MIME type to string payload map"
     )
@@ -514,7 +518,7 @@ class DropInput(BaseModel):
 class CheckInput(BaseModel):
     """Input for checking/unchecking a checkbox or radio."""
 
-    selector: str = Field(..., description="CSS selector for checkbox/radio")
+    selector: SelectorStr = Field(..., description="CSS selector for checkbox/radio")
     session_id: str = Field(...)
 
 
@@ -1078,7 +1082,7 @@ class PerfCSSCoverageInput(BaseModel):
 class CSSGetStylesInput(BaseModel):
     """Input for getting inline and matched CSS styles."""
 
-    selector: str = Field(...)
+    selector: SelectorStr = Field(...)
     session_id: str = Field(...)
 
 
@@ -1098,7 +1102,7 @@ class CSSGetRulesInput(BaseModel):
 class CSSGetComputedInput(BaseModel):
     """Input for getting computed styles for an element."""
 
-    selector: str = Field(...)
+    selector: SelectorStr = Field(...)
     session_id: str = Field(...)
 
 
@@ -1143,7 +1147,7 @@ class DebugPauseInput(BaseModel):
 class DebugGetListenersInput(BaseModel):
     """Input for getting event listeners on an element."""
 
-    selector: str = Field(...)
+    selector: SelectorStr = Field(...)
     session_id: str = Field(...)
 
 
@@ -1153,7 +1157,7 @@ class DebugGetListenersInput(BaseModel):
 class OverlayHighlightInput(BaseModel):
     """Input for highlighting an element with a colored overlay."""
 
-    selector: str = Field(...)
+    selector: SelectorStr = Field(...)
     color: str = Field(default="rgba(255,0,0,0.5)", description="RGBA color string")
     session_id: str = Field(...)
 
@@ -1228,7 +1232,7 @@ class MouseMoveInput(BaseModel):
     """Input for moving the mouse to an element by CSS selector."""
 
     session_id: str = Field(...)
-    selector: str = Field(..., description="CSS selector for the target element")
+    selector: SelectorStr = Field(..., description="CSS selector for the target element")
 
 
 class MouseMoveXYInput(BaseModel):
@@ -1328,7 +1332,7 @@ class AssertVisibleInput(BaseModel):
     """Input for asserting element visibility."""
 
     session_id: str = Field(...)
-    selector: str = Field(..., description="CSS selector for the element")
+    selector: SelectorStr = Field(..., description="CSS selector for the element")
     timeout: int = Field(default=5000, ge=100, le=30000)
 
 
@@ -1344,7 +1348,7 @@ class AssertValueInput(BaseModel):
     """Input for asserting the value of a form element."""
 
     session_id: str = Field(...)
-    selector: str = Field(..., description="CSS selector for the input element")
+    selector: SelectorStr = Field(..., description="CSS selector for the input element")
     value: str = Field(..., description="Expected value")
     timeout: int = Field(default=5000, ge=100, le=30000)
 
@@ -1353,7 +1357,7 @@ class AssertListInput(BaseModel):
     """Input for asserting all text items appear inside a list element."""
 
     session_id: str = Field(...)
-    selector: str = Field(..., description="CSS selector for the list element")
+    selector: SelectorStr = Field(..., description="CSS selector for the list element")
     items: list[str] = Field(..., min_length=1, description="Expected visible text items")
     timeout: int = Field(default=5000, ge=100, le=30000)
 
@@ -1369,7 +1373,7 @@ class GenerateLocatorInput(BaseModel):
     """Input for generating a robust CSS selector."""
 
     session_id: str = Field(...)
-    selector: str = Field(..., description="Approximate CSS selector")
+    selector: SelectorStr = Field(..., description="Approximate CSS selector")
     description: str | None = Field(default=None, description="Natural-language description")
 
 
@@ -1889,7 +1893,7 @@ class IframeEvalInput(BaseModel):
     """Input for evaluating JS inside an iframe."""
 
     session_id: str = Field(...)
-    iframe_selector: str = Field(..., description="CSS selector for the <iframe> element")
+    iframe_selector: SelectorStr = Field(..., description="CSS selector for the <iframe> element")
     expression: str = Field(..., description="JavaScript expression to evaluate")
     await_promise: bool = Field(default=False)
 
@@ -1898,16 +1902,16 @@ class IframeClickInput(BaseModel):
     """Input for clicking an element inside an iframe."""
 
     session_id: str = Field(...)
-    iframe_selector: str = Field(..., description="CSS selector for the <iframe> element")
-    selector: str = Field(..., description="CSS selector inside the iframe")
+    iframe_selector: SelectorStr = Field(..., description="CSS selector for the <iframe> element")
+    selector: SelectorStr = Field(..., description="CSS selector inside the iframe")
 
 
 class IframeFillInput(BaseModel):
     """Input for filling an input inside an iframe."""
 
     session_id: str = Field(...)
-    iframe_selector: str = Field(..., description="CSS selector for the <iframe> element")
-    selector: str = Field(..., description="CSS selector inside the iframe")
+    iframe_selector: SelectorStr = Field(..., description="CSS selector for the <iframe> element")
+    selector: SelectorStr = Field(..., description="CSS selector inside the iframe")
     value: str = Field(..., description="Value to set in the input field")
 
 

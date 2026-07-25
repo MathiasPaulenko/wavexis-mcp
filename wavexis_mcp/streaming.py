@@ -68,8 +68,8 @@ class StreamingHandler:
             try:
                 await subscribe(event_types)
                 return stream_id
-            except Exception:
-                logger.warning("subscribe_events failed, falling back to polling")
+            except Exception as exc:
+                logger.warning("subscribe_events failed, falling back to polling: %s", exc)
 
         # Fallback: polling-based streaming
         async with self._lock:

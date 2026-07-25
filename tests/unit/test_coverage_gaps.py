@@ -26,13 +26,8 @@ def coverage_mcp(session_manager_with_mock: SessionManager, mock_session_id: str
         )
         mock_mgr_cls.return_value = mock_mgr
 
-        original_session_manager = server_module._session_manager
-        server_module._session_manager = session_manager_with_mock
-        try:
-            mcp = server_module.create_server(caps="all")
-            yield mcp
-        finally:
-            server_module._session_manager = original_session_manager
+        mcp = server_module.create_server(caps="all", session_manager=session_manager_with_mock)
+        yield mcp
 
 
 @pytest.mark.unit

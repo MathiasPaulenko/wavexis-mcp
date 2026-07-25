@@ -310,8 +310,8 @@ class SessionManager:
         Returns:
             A tuple of ``(backend, session_id_or_None)``.
         """
-        if session_id:
-            async with self._cond:
+        async with self._cond:
+            if session_id:
                 session = self.get(session_id)
                 session.ref_count += 1
                 return session.backend, session_id
@@ -335,10 +335,12 @@ class SessionManager:
         try:
             await backend_instance.launch(opts)
             self._wrap_backend(backend_instance)
-        except Exception:
-            with contextlib.suppress(Exception):
+        except Exception as exc:
+            try:
                 await backend_instance.close()
-            raise
+            except Exception:
+                _logger.exception("Failed to close backend after launch failure")
+            raise exc
         return backend_instance, None
 
     async def release_backend(

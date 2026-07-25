@@ -16,7 +16,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from pydantic import BaseModel
 
-import wavexis_mcp.server as _server_module
 from wavexis_mcp.server import create_server
 from wavexis_mcp.session import SessionManager
 
@@ -297,11 +296,13 @@ async def test_all_tools_smoke(
     session_manager_with_mock: SessionManager, mock_session_id: str
 ) -> None:
     """Call every registered tool with safe defaults and a mock backend."""
-    _server_module._session_manager = session_manager_with_mock
-
     # Prevent real browser launches from stateful/session tools.
     session_manager_with_mock.open = AsyncMock(return_value="new-session")
     session_manager_with_mock.close = AsyncMock()
+
+    backend = _MockBackend()
+    session_manager_with_mock._backend_manager = MagicMock()
+    session_manager_with_mock._backend_manager.select = MagicMock(return_value=backend)
 
     with patch("wavexis.backend.manager.BackendManager") as mock_mgr_cls:
         mock_mgr = MagicMock()
@@ -309,8 +310,7 @@ async def test_all_tools_smoke(
         mock_mgr.install_check = MagicMock(return_value={"cdp": "1.0.0"})
         mock_mgr_cls.return_value = mock_mgr
 
-        mcp = create_server(caps="all")
-        backend = _MockBackend()
+        mcp = create_server(caps="all", session_manager=session_manager_with_mock)
 
         # Replace the backend of the mock session with our generic one.
         session = session_manager_with_mock.get(mock_session_id)
@@ -364,9 +364,12 @@ async def test_all_tools_error_smoke(
     session_manager_with_mock: SessionManager, mock_session_id: str
 ) -> None:
     """Call every tool with a failing backend to cover error branches."""
-    _server_module._session_manager = session_manager_with_mock
     session_manager_with_mock.open = AsyncMock(return_value="new-session")
     session_manager_with_mock.close = AsyncMock()
+
+    backend = _FailingBackend()
+    session_manager_with_mock._backend_manager = MagicMock()
+    session_manager_with_mock._backend_manager.select = MagicMock(return_value=backend)
 
     with patch("wavexis.backend.manager.BackendManager") as mock_mgr_cls:
         mock_mgr = MagicMock()
@@ -374,9 +377,9 @@ async def test_all_tools_error_smoke(
         mock_mgr.install_check = MagicMock(return_value={"cdp": "1.0.0"})
         mock_mgr_cls.return_value = mock_mgr
 
-        mcp = create_server(caps="all")
+        mcp = create_server(caps="all", session_manager=session_manager_with_mock)
         session = session_manager_with_mock.get(mock_session_id)
-        session.backend = _FailingBackend()
+        session.backend = backend
 
         failures: list[tuple[str, str]] = []
         for name in sorted(mcp._tool_manager._tools.keys()):
@@ -403,9 +406,12 @@ async def test_all_tools_output_path_smoke(
     session_manager_with_mock: SessionManager, mock_session_id: str, tmp_path: Any
 ) -> None:
     """Call every tool with output_path set where available to exercise save-to-file branches."""
-    _server_module._session_manager = session_manager_with_mock
     session_manager_with_mock.open = AsyncMock(return_value="new-session")
     session_manager_with_mock.close = AsyncMock()
+
+    backend = _MockBackend()
+    session_manager_with_mock._backend_manager = MagicMock()
+    session_manager_with_mock._backend_manager.select = MagicMock(return_value=backend)
 
     with patch("wavexis.backend.manager.BackendManager") as mock_mgr_cls:
         mock_mgr = MagicMock()
@@ -413,8 +419,7 @@ async def test_all_tools_output_path_smoke(
         mock_mgr.install_check = MagicMock(return_value={"cdp": "1.0.0"})
         mock_mgr_cls.return_value = mock_mgr
 
-        mcp = create_server(caps="all")
-        backend = _MockBackend()
+        mcp = create_server(caps="all", session_manager=session_manager_with_mock)
 
         session = session_manager_with_mock.get(mock_session_id)
         session.backend = backend

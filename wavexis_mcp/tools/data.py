@@ -25,6 +25,7 @@ from wavexis_mcp.formatter import (
     format_json_response,
     save_to_file,
     secure_output_path,
+    validate_url,
 )
 from wavexis_mcp.models import (
     CoreWebVitalsInput,
@@ -42,9 +43,11 @@ async def _try_navigate(backend: AbstractBackend, url: str, wait: WaitStrategy) 
     """Attempt to navigate to *url*, returning True on success.
 
     Any backend navigation error is suppressed and reported as a failure
-    so the crawler can continue with the next URL.
+    so the crawler can continue with the next URL.  The URL is validated
+    before navigation to block unsafe schemes and private hosts.
     """
     try:
+        validate_url(url)
         await backend.navigate(url, wait)
     except Exception:
         return False

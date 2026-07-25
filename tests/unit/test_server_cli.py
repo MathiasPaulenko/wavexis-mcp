@@ -131,25 +131,18 @@ async def test_wavexis_act_no_match(
         return_value={"children": []}
     )
 
-    from wavexis_mcp import server as server_module
-
-    original = server_module._session_manager
-    server_module._session_manager = session_manager_with_mock
-    try:
-        mcp = create_server("core")
-        tool = mcp._tool_manager.get_tool("wavexis_act")
-        if tool is None:
-            pytest.skip("wavexis_act not available with core caps")
-        result = await tool.fn(
-            ActInput(
-                instruction="click the nonexistent button",
-                session_id=mock_session_id,
-            )
+    mcp = create_server("core", session_manager=session_manager_with_mock)
+    tool = mcp._tool_manager.get_tool("wavexis_act")
+    if tool is None:
+        pytest.skip("wavexis_act not available with core caps")
+    result = await tool.fn(
+        ActInput(
+            instruction="click the nonexistent button",
+            session_id=mock_session_id,
         )
-        data = json.loads(result)
-        assert data["status"] == "no_match"
-    finally:
-        server_module._session_manager = original
+    )
+    data = json.loads(result)
+    assert data["status"] == "no_match"
 
 
 @pytest.mark.unit
@@ -163,27 +156,20 @@ async def test_wavexis_act_error(
         side_effect=RuntimeError("backend error")
     )
 
-    mcp = create_server("core")
+    mcp = create_server("core", session_manager=session_manager_with_mock)
     tool = mcp._tool_manager.get_tool("wavexis_act")
     if tool is None:
         pytest.skip("wavexis_act not available with core caps")
 
-    from wavexis_mcp import server as server_module
-
-    original = server_module._session_manager
-    server_module._session_manager = session_manager_with_mock
-    try:
-        result = await tool.fn(
-            ActInput(
-                instruction="click submit",
-                session_id=mock_session_id,
-            )
+    result = await tool.fn(
+        ActInput(
+            instruction="click submit",
+            session_id=mock_session_id,
         )
-        data = json.loads(result)
-        assert "error" in data
-        assert data["tool"] == "wavexis_act"
-    finally:
-        server_module._session_manager = original
+    )
+    data = json.loads(result)
+    assert "error" in data
+    assert data["tool"] == "wavexis_act"
 
 
 # ── main entry point ─────────────────────────────────────

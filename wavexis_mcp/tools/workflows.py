@@ -12,7 +12,7 @@ from typing import Any
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
 
-from wavexis_mcp.formatter import format_error, format_json_response
+from wavexis_mcp.formatter import format_error, format_json_response, validate_url
 from wavexis_mcp.models import (
     BrowserContextCloseInput,
     BrowserContextCreateInput,
@@ -53,7 +53,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             import yaml
 
             config = yaml.safe_load(input.config)
-            actions = config.get("actions", []) if config else []
+            if config is None:
+                config = {}
+            if not isinstance(config, dict):
+                return format_error(
+                    "wavexis_multi_action",
+                    ValueError("YAML config must be a dictionary"),
+                )
+            actions = config.get("actions", [])
 
             backend, sid = await session_manager.acquire_backend(
                 input.session_id,
@@ -68,8 +75,11 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                     try:
                         for action_type, params in action.items():
                             if action_type == "navigate":
+                                action_url = params.get("url", "")
+                                if action_url:
+                                    validate_url(action_url)
                                 wait = session_manager.make_wait(timeout=30000)
-                                await backend.navigate(params.get("url", ""), wait)
+                                await backend.navigate(action_url, wait)
                                 results.append({"action": i, "type": "navigate", "status": "ok"})
                             elif action_type == "screenshot":
                                 from wavexis.config import ScreenshotParams
