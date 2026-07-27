@@ -9,6 +9,7 @@ action verb detection.
 from __future__ import annotations
 
 import asyncio
+import json
 import re
 from dataclasses import dataclass, field
 from typing import Any
@@ -65,6 +66,8 @@ class MatchResult:
         action: Detected action (``"click"``, ``"type"``, ``"fill"``, ``"hover"``).
         score: Match confidence score (0-100).
         selector: CSS selector derived from the element, if available.
+        node_id: Optional accessibility node ID from the backend.
+        backend_node_id: Optional backend DOM node ID for precise targeting.
     """
 
     ref: str
@@ -73,6 +76,8 @@ class MatchResult:
     action: str
     score: float
     selector: str | None = None
+    node_id: str | None = None
+    backend_node_id: str | None = None
     extra: dict[str, Any] = field(default_factory=dict)
 
 
@@ -104,6 +109,22 @@ def _extract_keywords(instruction: str) -> list[str]:
         "this",
         "is",
         "are",
+        "into",
+        "from",
+        "by",
+        "over",
+        "up",
+        "down",
+        "off",
+        "out",
+        "under",
+        "above",
+        "below",
+        "through",
+        "during",
+        "before",
+        "after",
+        "near",
     }
     words = re.findall(r"[^\W\d_]+", instruction.lower())
     return [w for w in words if w not in stop_words and len(w) > 1]
@@ -153,19 +174,23 @@ def _flatten_tree(
         parent_path: Path of parent refs (for ancestry tracking).
 
     Returns:
-        List of flat node dicts with ``ref``, ``role``, ``name``, ``path``.
+        List of flat node dicts with ``ref``, ``role``, ``name``, ``path``,
+        ``node_id`` and ``backend_node_id``.
     """
     flat: list[dict[str, Any]] = []
     for node in nodes:
         path = (parent_path or []) + [node.get("ref", "")]
-        flat.append(
-            {
-                "ref": node.get("ref", ""),
-                "role": node.get("role", "unknown"),
-                "name": node.get("name", ""),
-                "path": path,
-            }
-        )
+        entry: dict[str, Any] = {
+            "ref": node.get("ref", ""),
+            "role": node.get("role", "unknown"),
+            "name": node.get("name", ""),
+            "path": path,
+        }
+        if node.get("node_id"):
+            entry["node_id"] = node["node_id"]
+        if node.get("backend_node_id"):
+            entry["backend_node_id"] = node["backend_node_id"]
+        flat.append(entry)
         children = node.get("children", [])
         if children:
             flat.extend(_flatten_tree(children, path))
@@ -238,6 +263,264 @@ def _escape_css_attr(value: str) -> str:
     return value.replace("\\", "\\\\").replace('"', '\\"')
 
 
+def _role_matches(
+    element_role: str,
+    tag_name: str,
+    dom_role: str | None,
+    el_type: str | None,
+) -> bool:
+    """Check whether a DOM element matches an ARIA role from the a11y tree."""
+    role = element_role.lower()
+    tag = tag_name.lower()
+    dom = (dom_role or "").lower()
+    el_type = (el_type or "").lower()
+    if role in ("button", "submit"):
+        return (
+            tag == "button" or el_type in ("button", "submit", "image", "reset") or dom == "button"
+        )
+    if role == "link":
+        return tag == "a" or dom == "link"
+    if role in ("textbox", "searchbox"):
+        return (
+            tag in ("input", "textarea")
+            or el_type == "text"
+            or dom
+            in (
+                "textbox",
+                "searchbox",
+            )
+        )
+    if role == "combobox":
+        return tag == "select" or dom == "combobox"
+    if role == "checkbox":
+        return el_type == "checkbox" or dom == "checkbox"
+    if role == "radio":
+        return el_type == "radio" or dom == "radio"
+    if role == "heading":
+        return tag in ("h1", "h2", "h3", "h4", "h5", "h6") or dom == "heading"
+    if role == "tab":
+        return dom == "tab" or el_type == "tab"
+    if role == "listbox":
+        return tag == "select" or dom == "listbox"
+    return True
+
+
+def _build_action_script(role: str, name: str, action: str, value: str | None) -> str:
+    """Build a JavaScript snippet that finds an element by role+name and acts on it.
+
+    This is the fallback used by ``execute_act`` when the CSS selector derived from
+    the accessibility tree does not match an element in the real DOM.
+    """
+    safe_role = json.dumps(role)
+    safe_name = json.dumps(name)
+    safe_action = json.dumps(action)
+    safe_value = json.dumps(value or "")
+
+    lines: list[str] = [
+        "(function() {",
+        f"  const role = {safe_role}.toLowerCase();",
+        f"  const name = {safe_name}.toLowerCase();",
+        f"  const action = {safe_action};",
+        f"  const value = {safe_value};",
+        "",
+        "  function roleMatches(el) {",
+        "    const tag = el.tagName.toLowerCase();",
+        "    const domRole = (el.getAttribute('role') || '').toLowerCase();",
+        "    const type = (el.type || '').toLowerCase();",
+        "    if (role === 'button' || role === 'submit') {",
+        "      return (",
+        "        tag === 'button'",
+        "        || type in {'button':1,'submit':1,'image':1,'reset':1}",
+        "        || domRole === 'button'",
+        "      );",
+        "    }",
+        "    if (role === 'link') return tag === 'a' || domRole === 'link';",
+        "    if (role === 'textbox' || role === 'searchbox') {",
+        "      return (",
+        "        tag === 'textarea'",
+        "        || tag === 'input'",
+        "        || domRole === 'textbox'",
+        "        || domRole === 'searchbox'",
+        "      );",
+        "    }",
+        "    if (role === 'combobox') return tag === 'select' || domRole === 'combobox';",
+        "    if (role === 'checkbox') return type === 'checkbox' || domRole === 'checkbox';",
+        "    if (role === 'radio') return type === 'radio' || domRole === 'radio';",
+        "    if (role === 'heading') return /^h[1-6]$/.test(tag) || domRole === 'heading';",
+        "    if (role === 'tab') return domRole === 'tab' || type === 'tab';",
+        "    if (role === 'listbox') return tag === 'select' || domRole === 'listbox';",
+        "    return true;",
+        "  }",
+        "",
+        "  function nameMatches(el) {",
+        "    if (!name) return true;",
+        "    const texts = [];",
+        "    const ariaLabel = el.getAttribute('aria-label');",
+        "    if (ariaLabel) texts.push(ariaLabel);",
+        "    const label = el.labels && el.labels[0] ?",
+        "      el.labels[0].textContent : '';",
+        "    if (label) texts.push(label);",
+        "    const title = el.getAttribute('title') || '';",
+        "    if (title) texts.push(title);",
+        "    const placeholder = el.getAttribute('placeholder') || '';",
+        "    if (placeholder) texts.push(placeholder);",
+        "    const elValue = el.value || '';",
+        "    if (elValue && (el.tagName === 'INPUT' || el.tagName === 'SELECT')) {",
+        "      texts.push(elValue);",
+        "    }",
+        "    if (el.alt) texts.push(el.alt);",
+        "    texts.push(el.textContent || '');",
+        "    const all = texts.join(' ')",
+        "      .toLowerCase().replace(/\\s+/g, ' ').trim();",
+        "    return all.includes(name) || name.includes(all);",
+        "  }",
+        "",
+        "  const all = document.querySelectorAll('*');",
+        "  let el = null;",
+        "  for (let i = 0; i < all.length; i++) {",
+        "    const candidate = all[i];",
+        "    if (roleMatches(candidate) && nameMatches(candidate)) {",
+        "      el = candidate;",
+        "      break;",
+        "    }",
+        "  }",
+        "",
+        "  if (!el) {",
+        f"    const msg = 'No DOM element matched role ' + role +       ' and name {safe_name}';",
+        "    return JSON.stringify({status: 'error', error: msg});",
+        "  }",
+        "",
+        "  el.scrollIntoView({block: 'center', behavior: 'instant'});",
+        "",
+        "  function dispatchMouse(type) {",
+        "    const rect = el.getBoundingClientRect();",
+        "    const x = rect.left + rect.width / 2;",
+        "    const y = rect.top + rect.height / 2;",
+        "    const opts = {bubbles: true, cancelable: true, view: window,",
+        "      clientX: x, clientY: y, button: 0,",
+        "      buttons: type === 'mousedown' ? 1 : 0};",
+        "    el.dispatchEvent(new MouseEvent(type, opts));",
+        "  }",
+        "",
+        "  if (action === 'click') {",
+        "    dispatchMouse('mousedown');",
+        "    dispatchMouse('mouseup');",
+        "    dispatchMouse('click');",
+        "    el.click();",
+        "  } else if (action === 'focus') {",
+        "    el.focus();",
+        "  } else if (action === 'hover') {",
+        "    const rect = el.getBoundingClientRect();",
+        "    const x = rect.left + rect.width / 2;",
+        "    const y = rect.top + rect.height / 2;",
+        "    const hoverOpts = {bubbles: true, cancelable: true, view: window,",
+        "      clientX: x, clientY: y};",
+        "    el.dispatchEvent(new MouseEvent('mouseover', hoverOpts));",
+        "    el.dispatchEvent(new MouseEvent('mouseenter', hoverOpts));",
+        "  } else if (action === 'fill' || action === 'type') {",
+        "    const editable = el.tagName === 'INPUT'",
+        "      || el.tagName === 'TEXTAREA'",
+        "      || el.tagName === 'SELECT'",
+        "      || el.isContentEditable;",
+        "    if (!editable) {",
+        "      const err = 'Target element is not an editable input';",
+        "      return JSON.stringify({status: 'error', error: err});",
+        "    }",
+        "    el.focus();",
+        "    if (action === 'fill') el.value = value;",
+        "    else el.value += value;",
+        "    el.dispatchEvent(new Event('input', {bubbles: true}));",
+        "    el.dispatchEvent(new Event('change', {bubbles: true}));",
+        "    const lastKey = value.slice(-1) || 'x';",
+        "    el.dispatchEvent(new KeyboardEvent('keyup',",
+        "      {bubbles: true, key: lastKey}));",
+        "  }",
+        "",
+        "  const outText = (el.textContent || '').trim().slice(0, 80);",
+        "  return JSON.stringify({",
+        "    status: 'ok', tag: el.tagName, id: el.id || '',",
+        "    class: el.className || '', text: outText",
+        "  });",
+        "})()",
+    ]
+    return "\n".join(lines)
+
+
+async def _execute_action_via_js(
+    backend: AbstractBackend,
+    role: str,
+    name: str,
+    action: str,
+    value: str | None,
+) -> None:
+    """Execute an action on the best matching DOM element via in-page JavaScript.
+
+    Raises:
+        RuntimeError: if no matching element is found or the action cannot be performed.
+    """
+    import json as _json
+
+    script = _build_action_script(role, name, action, value)
+    raw = await backend.eval(script, await_promise=False)
+    # backend.eval may return a string or an object depending on the protocol.
+    if isinstance(raw, str):
+        try:
+            result = _json.loads(raw)
+        except _json.JSONDecodeError:
+            result = {"status": "error", "error": f"Unexpected JS result: {raw!r}"}
+    elif isinstance(raw, dict):
+        result = raw
+    else:
+        result = {
+            "status": "error",
+            "error": f"Unexpected JS result type: {type(raw).__name__}",
+        }
+
+    if result.get("status") != "ok":
+        raise RuntimeError(result.get("error", "JavaScript action fallback failed"))
+
+
+def _derive_selector(name: str | None, role: str | None, ref: str) -> str:
+    """Derive a CSS selector from the a11y element data.
+
+    Prefers ``[aria-label]`` when the accessible name is present. If the name is
+    unavailable we fall back to the element ref as a selector placeholder; the
+    JavaScript fallback in ``execute_act`` then resolves the element by role+name.
+    """
+    if name:
+        escaped = _escape_css_attr(name)
+        return f'[aria-label="{escaped}"]'
+    return f"#{ref}"
+
+
+def _semantic_keywords(
+    instruction: str, action: str, keywords: list[str], role_keywords: set[str]
+) -> list[str]:
+    """Return the descriptive keywords an element must satisfy to be a match.
+
+    Filters out action verbs, quoted input values, and role keywords/synonyms so
+    that only words describing the target element remain. Input values are only
+    stripped for ``type`` or ``fill`` actions.
+    """
+    value: str | None = None
+    if action in ("type", "fill"):
+        value = _extract_value(instruction, action)
+
+    role_synonyms: set[str] = set()
+    for rk in role_keywords:
+        role_synonyms.update(_ROLE_KEYWORDS.get(rk, set()))
+
+    action_verbs = set(_ACTION_VERBS.keys())
+    result: list[str] = []
+    for kw in keywords:
+        if kw in (action, value) or kw in action_verbs:
+            continue
+        if kw in role_keywords or kw in role_synonyms:
+            continue
+        result.append(kw)
+    return result
+
+
 def _extract_value(instruction: str, action: str) -> str | None:
     """Extract the text value to type or fill from an instruction.
 
@@ -290,13 +573,18 @@ def match_instruction(
 
     action = _detect_action(instruction)
     role_keywords = _detect_role_keywords(keywords)
+
+    # Action verbs and typed values should not influence the name/role scoring.
+    value = _extract_value(instruction, action) if action in ("type", "fill") else None
+    scoring_keywords = [kw for kw in keywords if kw not in _ACTION_VERBS and kw != value]
+
     flat = _flatten_tree(tree)
 
     best: MatchResult | None = None
     best_score = 0.0
 
     for element in flat:
-        score = _score_element(element, keywords, role_keywords)
+        score = _score_element(element, scoring_keywords, role_keywords)
         if score > best_score:
             best_score = score
             best = MatchResult(
@@ -305,7 +593,21 @@ def match_instruction(
                 name=element["name"],
                 action=action,
                 score=score,
+                node_id=element.get("node_id"),
+                backend_node_id=element.get("backend_node_id"),
             )
+
+    if best is None or best_score <= 0:
+        return None
+
+    # Require at least one descriptive keyword to be present in the element's
+    # name or role, otherwise generic instructions like "click the elephant
+    # button" would match any button on the page.
+    semantic_keywords = _semantic_keywords(instruction, action, keywords, role_keywords)
+    if semantic_keywords:
+        match_text = f"{best.name} {best.role}".lower()
+        if not any(kw in match_text for kw in semantic_keywords):
+            return None
 
     return best
 
@@ -342,12 +644,7 @@ async def execute_act(
             "message": "No matching element found in accessibility tree.",
         }
 
-    # Derive a selector from the element name or role
-    selector: str | None = None
-    if match.name:
-        # Try to use aria-label or text-based selector
-        escaped_name = _escape_css_attr(match.name)
-        selector = f'[aria-label="{escaped_name}"]'
+    selector = _derive_selector(match.name, match.role, match.ref)
 
     result: dict[str, Any] = {
         "action": match.action,
@@ -364,39 +661,49 @@ async def execute_act(
     if text_value is not None:
         result["value"] = text_value
 
+    last_error: Exception | None = None
     for attempt in range(max_retries):
         try:
             if match.action == "click":
-                await asyncio.wait_for(
-                    backend.click(selector or f"#{match.ref}"), timeout=_ACT_ACTION_TIMEOUT
-                )
+                await asyncio.wait_for(backend.click(selector), timeout=_ACT_ACTION_TIMEOUT)
             elif match.action == "type":
                 await asyncio.wait_for(
-                    backend.type_text(selector or f"#{match.ref}", text_value or ""),
+                    backend.type_text(selector, text_value or ""),
                     timeout=_ACT_ACTION_TIMEOUT,
                 )
             elif match.action == "fill":
                 await asyncio.wait_for(
-                    backend.fill(selector or f"#{match.ref}", text_value or ""),
+                    backend.fill(selector, text_value or ""),
                     timeout=_ACT_ACTION_TIMEOUT,
                 )
             elif match.action == "hover":
-                await asyncio.wait_for(
-                    backend.hover(selector or f"#{match.ref}"), timeout=_ACT_ACTION_TIMEOUT
-                )
+                await asyncio.wait_for(backend.hover(selector), timeout=_ACT_ACTION_TIMEOUT)
             elif match.action == "focus":
-                await asyncio.wait_for(
-                    backend.dom_focus(selector or f"#{match.ref}"), timeout=_ACT_ACTION_TIMEOUT
-                )
+                await asyncio.wait_for(backend.dom_focus(selector), timeout=_ACT_ACTION_TIMEOUT)
 
             result["status"] = "ok"
             result["attempts"] = attempt + 1
             return result
         except Exception as e:
+            last_error = e
+            # On the last attempt, fall back to a JavaScript search by role+name.
             if attempt == max_retries - 1:
-                result["status"] = "error"
-                result["error"] = str(e)
-                result["attempts"] = attempt + 1
-            # Retry with next strategy could go here
+                try:
+                    await _execute_action_via_js(
+                        backend,
+                        match.role,
+                        match.name,
+                        match.action,
+                        text_value,
+                    )
+                    result["status"] = "ok"
+                    result["attempts"] = attempt + 1
+                    result["fallback"] = "js"
+                    return result
+                except Exception as js_err:
+                    result["status"] = "error"
+                    result["error"] = f"{last_error}; JS fallback: {js_err}"
+                    result["attempts"] = attempt + 1
+            # Retry with the same selector on transient errors.
 
     return result
