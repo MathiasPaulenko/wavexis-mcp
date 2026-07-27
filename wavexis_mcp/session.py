@@ -60,6 +60,7 @@ class _BackendProxy:
                 sig = None
 
             if inspect.iscoroutinefunction(attr):
+
                 async def _async_wrapper(*args: Any, **kwargs: Any) -> Any:
                     return await asyncio.wait_for(attr(*args, **kwargs), timeout=self._timeout)
 

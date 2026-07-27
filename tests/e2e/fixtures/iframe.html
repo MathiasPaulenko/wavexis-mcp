@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>WaveXisMCP E2E — Iframe</title>
+  <style>
+    body { font-family: sans-serif; margin: 2rem; }
+    iframe { width: 100%; height: 300px; border: 1px solid #ccc; border-radius: 8px; }
+  </style>
+</head>
+<body>
+  <h1 id="iframe-heading">Iframe Test Page</h1>
+  <p>This page contains iframes for testing iframe interactions.</p>
+
+  <iframe id="test-iframe" src="data:text/html;charset=utf-8,%3C!DOCTYPE html%3E%3Chtml%3E%3Cbody%3E%3Ch1 id='iframe-h1'%3EIframe Content%3C/h1%3E%3Cp id='iframe-text'%3EHello from iframe%3C/p%3E%3Cbutton id='iframe-btn' onclick='document.getElementById(%22iframe-result%22).textContent=%22Clicked!%22'%3EIframe Button%3C/button%3E%3Cspan id='iframe-result'%3ENot clicked%3C/span%3E%3Cinput id='iframe-input' type='text' placeholder='Type in iframe'%3E%3C/body%3E%3C/html%3E" title="Test Iframe"></iframe>
+
+  <iframe id="empty-iframe" src="about:blank" title="Empty Iframe"></iframe>
+
+  <script>
+    console.log("Iframe page loaded");
+  </script>
+</body>
+</html>

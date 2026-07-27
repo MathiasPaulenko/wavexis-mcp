@@ -6,6 +6,7 @@ import json
 from unittest.mock import AsyncMock
 
 import pytest
+from wavexis.config import CookieParams
 
 from wavexis_mcp.models import (
     CacheStorageDeleteInput,
@@ -457,3 +458,37 @@ async def test_storage_state_restore_rejects_malformed_json(
     )
     data = json.loads(result)
     assert "error" in data
+
+
+@pytest.mark.unit
+async def test_storage_state_restore_cookie_domain_defaults_to_empty_string(
+    session_manager_with_mock: SessionManager, mock_session_id: str, tmp_path
+) -> None:
+    """Missing cookie domain must default to '' so CookieParams.domain stays a str."""
+    from mcp.server.fastmcp import FastMCP
+
+    from wavexis_mcp.models import StorageStateRestoreInput
+    from wavexis_mcp.tools.storage import register
+
+    mcp = FastMCP("test")
+    register(mcp, session_manager_with_mock)
+
+    state = {"cookies": [{"name": "sid", "value": "123"}]}
+    state_path = tmp_path / "state.json"
+    state_path.write_text(json.dumps(state))
+
+    session = session_manager_with_mock.get(mock_session_id)
+    session.backend.set_cookie.reset_mock()
+
+    tool = mcp._tool_manager.get_tool("wavexis_storage_state_restore")
+    result = await tool.fn(
+        StorageStateRestoreInput(session_id=mock_session_id, input_path=str(state_path))
+    )
+    data = json.loads(result)
+    assert data["status"] == "ok"
+
+    params: CookieParams = session.backend.set_cookie.call_args.args[0]
+    assert params.name == "sid"
+    assert params.value == "123"
+    assert params.domain == ""
+    assert isinstance(params.domain, str)

@@ -45,8 +45,6 @@ async def _append_frame(
     """Decode and append a screencast frame to *recording* under the lock."""
     if recording.get("_stopped"):
         return
-    if total_ref[0] >= _MAX_TOTAL_FRAMES:
-        return
     try:
         decoded = base64.b64decode(data)
     except Exception:
@@ -54,6 +52,8 @@ async def _append_frame(
         return
     async with _recordings_lock:
         if recording.get("_stopped"):
+            return
+        if total_ref[0] >= _MAX_TOTAL_FRAMES:
             return
         frames = recording.get("frames", [])
         if len(frames) >= _MAX_FRAMES_PER_RECORDING:
@@ -80,9 +80,11 @@ def _make_frame_handler(
             return
         future = asyncio.run_coroutine_threadsafe(_append_frame(recording, total_ref, data), loop)
         future.add_done_callback(
-            lambda f: _logger.exception("Frame append failed: %s", f.exception())
-            if f.exception()
-            else None
+            lambda f: (
+                _logger.exception("Frame append failed: %s", f.exception())
+                if f.exception()
+                else None
+            )
         )
 
     return handler
@@ -209,8 +211,8 @@ def register(
                 recordings[recording_id] = recording
                 while len(recordings) > _MAX_VIDEO_RECORDINGS:
                     oldest = min(recordings, key=lambda rid: recordings[rid]["start_time"])
+                    recordings[oldest]["_stopped"] = True
                     oldest_rec = recordings.pop(oldest)
-                    oldest_rec["_stopped"] = True
                     _detach_screencast_handler(oldest_rec)
                     total_frames[0] -= len(oldest_rec.get("frames", []))
             return format_json_response(
@@ -322,28 +324,29 @@ def register(
             JSON string with ``status`` and ``chapter`` info.
         """
         try:
-            rec = recordings.get(input.recording_id)
-            if rec is None:
-                return format_error(
-                    "wavexis_video_add_chapter",
-                    RuntimeError(f"Recording {input.recording_id} not found"),
+            async with _recordings_lock:
+                rec = recordings.get(input.recording_id)
+                if rec is None:
+                    return format_error(
+                        "wavexis_video_add_chapter",
+                        RuntimeError(f"Recording {input.recording_id} not found"),
+                    )
+
+                timestamp_ms = input.timestamp_ms
+                if timestamp_ms is None:
+                    timestamp_ms = int((time.time() - rec["start_time"]) * 1000)
+
+                chapter = {"title": input.title, "timestamp_ms": timestamp_ms}
+                chapters: list[Any] = rec.get("chapters", [])
+                chapters.append(chapter)
+                rec["chapters"] = chapters
+
+                return format_json_response(
+                    {
+                        "status": "ok",
+                        "chapter": chapter,
+                    }
                 )
-
-            timestamp_ms = input.timestamp_ms
-            if timestamp_ms is None:
-                timestamp_ms = int((time.time() - rec["start_time"]) * 1000)
-
-            chapter = {"title": input.title, "timestamp_ms": timestamp_ms}
-            chapters: list[Any] = rec.get("chapters", [])
-            chapters.append(chapter)
-            rec["chapters"] = chapters
-
-            return format_json_response(
-                {
-                    "status": "ok",
-                    "chapter": chapter,
-                }
-            )
         except Exception as e:
             return format_error("wavexis_video_add_chapter", e)
 

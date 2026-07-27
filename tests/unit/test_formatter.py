@@ -92,6 +92,40 @@ def test_validate_url_rejects_private_and_blocked_hosts(url: str) -> None:
         validate_url(url)
 
 
+@pytest.mark.parametrize(
+    ("url",),
+    [
+        ("http://0x7f.0.0.1/",),
+        ("http://0177.0.0.1/",),
+        ("http://127.1/",),
+        ("http://0x7f000001/",),
+        ("http://2130706433/",),
+    ],
+)
+def test_validate_url_rejects_alternate_ipv4_literals(url: str) -> None:
+    """Hex, octal, shorthand, and packed-integer IPv4 forms are rejected."""
+    with pytest.raises(ValueError):
+        validate_url(url)
+
+
+def test_validate_url_allows_alternate_public_ipv4_literal() -> None:
+    """Alternate forms of public IPs are still allowed."""
+    validate_url("http://0x01020304/")  # 1.2.3.4
+
+
+def test_validate_url_rejects_ipv6_fallback_loopback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The socket.inet_pton IPv6 fallback normalizes and blocks loopback addresses."""
+
+    def _reject_ip(value: str) -> None:
+        raise ValueError("blocked")
+
+    monkeypatch.setattr("wavexis_mcp.formatter.ipaddress.ip_address", _reject_ip)
+    with pytest.raises(ValueError):
+        validate_url("http://[::1]/")
+
+
 def test_validate_url_allows_internal_when_requested() -> None:
     validate_url("http://127.0.0.1/", allow_internal=True)  # should not raise
 

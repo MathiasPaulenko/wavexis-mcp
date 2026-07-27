@@ -621,8 +621,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                     {
                         "status": "error",
                         "error": (
-                            f"Too many cookies to restore: {len(cookies)} > "
-                            f"{_MAX_RESTORE_COOKIES}"
+                            f"Too many cookies to restore: {len(cookies)} > {_MAX_RESTORE_COOKIES}"
                         ),
                     }
                 )

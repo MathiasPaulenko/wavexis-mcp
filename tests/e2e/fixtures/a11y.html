@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>WaveXisMCP E2E — Accessibility</title>
+  <style>
+    body { font-family: sans-serif; margin: 2rem; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
+  </style>
+</head>
+<body>
+  <h1 id="a11y-heading">Accessibility Test Page</h1>
+  <p id="a11y-desc">A page with various ARIA roles for accessibility testing.</p>
+
+  <nav role="navigation" aria-label="Main navigation">
+    <ul>
+      <li><a href="index.html" role="link">Home</a></li>
+      <li><a href="form.html" role="link">Form</a></li>
+      <li><a href="dynamic.html" role="link">Dynamic</a></li>
+    </ul>
+  </nav>
+
+  <main role="main">
+    <section aria-labelledby="section-title">
+      <h2 id="section-title">Form Section</h2>
+
+      <form id="a11y-form" aria-label="User registration">
+        <div>
+          <label for="a11y-username">Username</label>
+          <input type="text" id="a11y-username" name="username" aria-required="true" aria-describedby="username-help">
+          <span id="username-help" class="sr-only">Username must be at least 3 characters</span>
+        </div>
+
+        <div>
+          <label for="a11y-password">Password</label>
+          <input type="password" id="a11y-password" name="password" aria-required="true">
+        </div>
+
+        <div>
+          <label for="a11y-role">Role</label>
+          <select id="a11y-role" name="role">
+            <option value="admin">Admin</option>
+            <option value="user">User</option>
+            <option value="guest">Guest</option>
+          </select>
+        </div>
+
+        <div role="group" aria-label="Subscription preferences">
+          <label><input type="checkbox" id="a11y-subscribe" name="subscribe" checked> Subscribe</label>
+          <label><input type="checkbox" id="a11y-terms" name="terms" aria-required="true"> Accept terms</label>
+        </div>
+
+        <button type="button" id="a11y-submit" role="button" aria-label="Submit registration">Register</button>
+        <button type="button" id="a11y-cancel" role="button" aria-label="Cancel registration">Cancel</button>
+      </form>
+    </section>
+
+    <section aria-labelledby="status-title">
+      <h2 id="status-title">Status</h2>
+      <div role="status" id="a11y-status" aria-live="polite">No status updates</div>
+      <button id="a11y-update-status" onclick="updateStatus()">Update Status</button>
+    </section>
+
+    <section aria-labelledby="alert-title">
+      <h2 id="alert-title">Alerts</h2>
+      <div role="alert" id="a11y-alert" aria-live="assertive" style="display:none;">This is an alert message</div>
+      <button id="a11y-show-alert" onclick="showAlert()">Show Alert</button>
+    </section>
+  </main>
+
+  <footer role="contentinfo">
+    <p>WaveXisMCP E2E Test — Accessibility Page</p>
+  </footer>
+
+  <script>
+    console.log("A11y page loaded");
+    function updateStatus() {
+      document.getElementById("a11y-status").textContent = "Status updated at " + new Date().toISOString();
+    }
+    function showAlert() {
+      var el = document.getElementById("a11y-alert");
+      el.style.display = "block";
+      el.textContent = "Alert triggered at " + new Date().toISOString();
+    }
+  </script>
+</body>
+</html>

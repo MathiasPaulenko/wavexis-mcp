@@ -107,6 +107,28 @@ async def test_fill_form(session_manager_with_mock: SessionManager, mock_session
 
 
 @pytest.mark.unit
+async def test_fill_form_returns_error_on_failure(mock_backend: AsyncMock) -> None:
+    """The fill_form tool returns a formatted error if session setup fails."""
+    from mcp.server.fastmcp import FastMCP
+
+    from wavexis_mcp.tools.input import register
+
+    mcp = FastMCP("test")
+    mgr = SessionManager()
+    mgr._backend_manager.select = MagicMock(return_value=mock_backend)
+    mgr.acquire_backend = AsyncMock(side_effect=Exception("backend failed"))
+    register(mcp, mgr)
+
+    tool = mcp._tool_manager.get_tool("wavexis_fill_form")
+    result = await tool.fn(
+        FillFormInput(fields=[FormField(selector="#name", value="Alice")])
+    )
+    data = json.loads(result)
+    assert data["tool"] == "wavexis_fill_form"
+    assert data["type"] == "Exception"
+
+
+@pytest.mark.unit
 async def test_select_option(mock_backend: AsyncMock) -> None:
     from mcp.server.fastmcp import FastMCP
 

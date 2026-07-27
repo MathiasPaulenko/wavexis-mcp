@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>WaveXisMCP E2E — Dynamic</title>
+  <style>
+    body { font-family: sans-serif; margin: 2rem; }
+    #dynamic-content { border: 1px solid #ccc; padding: 1rem; margin: 1rem 0; min-height: 50px; }
+    .item { padding: 0.5rem; margin: 0.25rem 0; background: #e9ecef; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <h1 id="dynamic-heading">Dynamic Content Page</h1>
+
+  <div id="controls">
+    <button id="add-item-btn" onclick="addItem()">Add Item</button>
+    <button id="clear-items-btn" onclick="clearItems()">Clear Items</button>
+    <button id="delayed-btn" onclick="delayedContent()">Delayed Content</button>
+  </div>
+
+  <div id="dynamic-content">
+    <p id="initial-text">Initial content</p>
+  </div>
+
+  <div id="counter-section">
+    <p>Counter: <span id="counter">0</span></p>
+    <button id="increment-btn" onclick="increment()">Increment</button>
+  </div>
+
+  <script>
+    console.log("Dynamic page loaded");
+    console.info("Info message");
+    console.warn("Warning message");
+    console.error("Error message");
+
+    var itemCount = 0;
+
+    function addItem() {
+      itemCount++;
+      var div = document.createElement("div");
+      div.className = "item";
+      div.id = "item-" + itemCount;
+      div.textContent = "Item " + itemCount;
+      document.getElementById("dynamic-content").appendChild(div);
+    }
+
+    function clearItems() {
+      var content = document.getElementById("dynamic-content");
+      content.innerHTML = '<p id="initial-text">Cleared</p>';
+      itemCount = 0;
+    }
+
+    function increment() {
+      var el = document.getElementById("counter");
+      el.textContent = parseInt(el.textContent) + 1;
+    }
+
+    function delayedContent() {
+      setTimeout(function() {
+        var p = document.createElement("p");
+        p.id = "delayed-text";
+        p.textContent = "Appeared after delay";
+        document.getElementById("dynamic-content").appendChild(p);
+      }, 500);
+    }
+
+    // Set a cookie for testing
+    document.cookie = "test_cookie=value123; path=/";
+
+    // Use localStorage
+    localStorage.setItem("local_key", "local_value");
+    localStorage.setItem("counter", "0");
+
+    // Use sessionStorage
+    sessionStorage.setItem("session_key", "session_value");
+  </script>
+</body>
+</html>

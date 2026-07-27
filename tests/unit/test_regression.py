@@ -176,6 +176,30 @@ def test_base_input_rejects_empty_session_id() -> None:
 
 
 @pytest.mark.unit
+def test_base_input_strips_session_id_whitespace() -> None:
+    """Padded session_ids are stripped so lookups do not fail on whitespace."""
+    from wavexis_mcp.models import SessionInfoInput
+
+    input_obj = SessionInfoInput(session_id="  abc-123  ")
+    assert input_obj.session_id == "abc-123"
+
+
+@pytest.mark.unit
+def test_base_input_rejects_oversized_nested_payload(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Payloads that split fields across many small nested containers must still fail."""
+    from wavexis_mcp.models import SetHeadersInput
+
+    monkeypatch.setattr("wavexis_mcp.models._MAX_TOTAL_FIELDS", 2)
+    with pytest.raises(ValueError):
+        SetHeadersInput(
+            session_id="sid",
+            headers={"outer": {"a": "b", "c": "d"}},
+        )
+
+
+@pytest.mark.unit
 async def test_session_open_respects_limit_concurrently(
     session_manager_with_mock: SessionManager,
     mock_backend: AsyncMock,

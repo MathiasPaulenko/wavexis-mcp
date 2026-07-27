@@ -27,22 +27,28 @@ _WaitStrategy = Literal["load", "domcontentloaded", "networkidle", "selector", "
 # Reasonable limits to prevent DoS from maliciously large payloads.
 _MAX_STRING_LENGTH = 50_000
 _MAX_CONTAINER_SIZE = 1_000
+_MAX_TOTAL_FIELDS = 10_000
 
 
 def _limit_input_size(data: Any) -> Any:
     """Reject oversized strings, lists, and dicts before field validation.
 
     Uses an explicit traversal stack so deeply nested payloads cannot
-    overflow the Python call stack before validation begins.
+    overflow the Python call stack before validation begins.  The total
+    number of container entries across the whole payload is also bounded
+    so attackers cannot split a large payload across many small nested
+    containers.
     """
     if isinstance(data, dict):
         if len(data) > _MAX_CONTAINER_SIZE:
             raise ValueError(f"input exceeds {_MAX_CONTAINER_SIZE} fields")
         stack = list(data.values())
+        total = len(stack)
     elif isinstance(data, list):
         if len(data) > _MAX_CONTAINER_SIZE:
             raise ValueError(f"input list exceeds {_MAX_CONTAINER_SIZE} items")
         stack = list(data)
+        total = len(stack)
     else:
         return data
 
@@ -51,10 +57,20 @@ def _limit_input_size(data: Any) -> Any:
         if isinstance(item, dict):
             if len(item) > _MAX_CONTAINER_SIZE:
                 raise ValueError(f"input exceeds {_MAX_CONTAINER_SIZE} fields")
+            total += len(item)
+            if total > _MAX_TOTAL_FIELDS:
+                raise ValueError(
+                    f"input exceeds {_MAX_TOTAL_FIELDS} total fields"
+                )
             stack.extend(item.values())
         elif isinstance(item, list):
             if len(item) > _MAX_CONTAINER_SIZE:
                 raise ValueError(f"input list exceeds {_MAX_CONTAINER_SIZE} items")
+            total += len(item)
+            if total > _MAX_TOTAL_FIELDS:
+                raise ValueError(
+                    f"input exceeds {_MAX_TOTAL_FIELDS} total items"
+                )
             stack.extend(item)
         elif isinstance(item, str) and len(item) > _MAX_STRING_LENGTH:
             raise ValueError(f"input string exceeds {_MAX_STRING_LENGTH} characters")
@@ -78,9 +94,15 @@ class BaseInput(BaseModel):
     @field_validator("session_id", mode="before", check_fields=False)
     @classmethod
     def _session_id_not_empty(cls, value: Any) -> Any:
-        """Reject empty or whitespace-only session IDs in every input model."""
-        if isinstance(value, str) and not value.strip():
-            raise ValueError("session_id cannot be empty")
+        """Reject empty or whitespace-only session IDs in every input model.
+
+        Non-empty session IDs are stripped so accidental leading or trailing
+        whitespace does not cause a ``SessionNotFoundError`` later.
+        """
+        if isinstance(value, str):
+            value = value.strip()
+            if not value:
+                raise ValueError("session_id cannot be empty")
         return value
 
 
@@ -498,7 +520,12 @@ class FormField(BaseModel):
 class FillFormInput(BaseInput):
     """Input for filling multiple form fields in one call."""
 
-    fields: list[FormField] = Field(..., min_length=1, description="Form fields to fill")
+    fields: list[FormField] = Field(
+        ...,
+        min_length=1,
+        max_length=100,
+        description="Form fields to fill",
+    )
     session_id: str | None = Field(default=None)
     url: str | None = Field(default=None)
     wait_timeout: int = Field(default=30000, ge=1000, le=300000)

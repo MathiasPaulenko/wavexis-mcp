@@ -99,6 +99,7 @@ filterwarnings = [
 markers = [
     "unit: fast isolated tests with mocks",
     "integration: tests against a real Chrome browser",
+    "e2e: end-to-end tests with real Chrome through the full MCP server",
     "slow: tests that take more than 5 seconds",
     "chrome: tests that require Chrome specifically",
 ]

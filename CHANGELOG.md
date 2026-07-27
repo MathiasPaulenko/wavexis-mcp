@@ -7,8 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.8] - 2025-07-27
+
+### Added
+
+- Full E2E test suite (118 tests) covering all 13 capability tiers against real Chrome browsers:
+  - `test_e2e_core.py` — navigation, DOM, click, type, eval, screenshot, scrape, cookies, tabs.
+  - `test_e2e_network_storage.py` — network monitoring, cookies, localStorage, sessionStorage, cache, IndexedDB.
+  - `test_e2e_emulation_a11y.py` — device emulation, viewport, sensors, touch, accessibility tree, axe audit.
+  - `test_e2e_devtools_vision.py` — performance traces, CSS, console, security, overlays, coordinate-based mouse, video.
+  - `test_e2e_testing_workflows.py` — assertions, multi-action YAML, raw CDP, browser contexts, data extraction, act.
+  - `test_e2e_full_server.py` — full workflow integration, multi-tab, stateless mode, error handling.
+  - Local HTML fixture pages for all test scenarios.
+- Regression tests for deep input nesting, a11y tree cycles, missing file uploads, oversized network patterns, and nested output directory creation.
+
 ### Fixed
 
+- Corrected input parameter names across E2E tests (`url_pattern`, `json_schema`, `node_id` as str, `strategy`+`selector` for wait).
+- Fixed assertion formats to match actual tool response keys (no `status` field where not returned).
+- Set `WAVEXIS_MCP_ALLOW_RAW_COMMANDS=all` in E2E conftest for raw CDP tests.
 - Made `wavexis_mcp/models.py` `_limit_input_size()` iterative to avoid `RecursionError` on deeply nested payloads.
 - Added cycle detection and recursion guards to a11y tree formatting and counting in `wavexis_mcp/tools/a11y.py`.
 - Offloaded `secure_output_path()`, parent directory creation, and file writes to a thread in `wavexis_mcp/formatter.py`.
@@ -23,9 +40,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Reverted `pyproject.toml` mypy target from Python 3.12 back to 3.11 to match `requires-python`.
 - Replaced `eval()` usage in `tests/unit/test_security.py` with a safer annotation lookup.
 
-### Added
+### Changed
 
-- Regression tests for deep input nesting, a11y tree cycles, missing file uploads, oversized network patterns, and nested output directory creation.
+- Added `bug_hunt_report.txt` to `.gitignore`.
+- Cleaned up ~120 temporary log files and temp scripts from the repository root.
 
 ## [1.6.7] - 2025-07-25
 

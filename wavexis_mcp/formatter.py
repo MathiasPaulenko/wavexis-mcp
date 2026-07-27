@@ -12,6 +12,7 @@ import ipaddress
 import json
 import logging
 import os
+import socket
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
@@ -128,10 +129,25 @@ def validate_url(url: str, *, allow_internal: bool | None = None) -> None:
     try:
         addr = ipaddress.ip_address(hostname)
     except ValueError:
-        # Hostname is not an IP literal; further checks are not possible without
-        # DNS resolution, which introduces TOCTOU concerns.  Non-IP hostnames are
-        # accepted unless they match the explicit blocklist above.
-        return
+        # ``ipaddress`` only accepts the canonical dotted-decimal/hex IPv6 forms.
+        # Browsers and lower-level libc parsers also accept hex, octal, and
+        # shorthand IPv4 forms (e.g. ``0x7f.0.0.1``, ``0177.0.0.1``, ``127.1``)
+        # which can be used to bypass the blocklist above.  Normalize through
+        # ``socket`` so those alternate forms are caught and checked.
+        try:
+            packed = socket.inet_aton(hostname)
+            normalized = socket.inet_ntoa(packed)
+            addr = ipaddress.ip_address(normalized)
+        except (OSError, ValueError):
+            try:
+                packed = socket.inet_pton(socket.AF_INET6, hostname)
+                normalized = socket.inet_ntop(socket.AF_INET6, packed)
+                addr = ipaddress.ip_address(normalized)
+            except (OSError, ValueError):
+                # Hostname is not an IP literal; further checks are not possible
+                # without DNS resolution, which introduces TOCTOU concerns.
+                # Non-IP hostnames are accepted unless they match the blocklist.
+                return
 
     if (
         addr.is_loopback or addr.is_link_local or addr.is_private or addr.is_reserved

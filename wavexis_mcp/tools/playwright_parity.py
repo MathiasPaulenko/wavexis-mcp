@@ -13,7 +13,7 @@ from typing import Any, Literal
 import regex as _regex
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from wavexis_mcp.formatter import format_error, format_json_response
 from wavexis_mcp.models import BaseInput
@@ -40,7 +40,7 @@ def _modifiers(alt: bool, ctrl: bool, meta: bool, shift: bool) -> int:
 # ── Input models ──────────────────────────────────────────────────
 
 
-class KeyDownInput(BaseModel):
+class KeyDownInput(BaseInput):
     """Input for dispatching a keyDown event."""
 
     key: str = Field(..., min_length=1, description="Key to press (e.g. 'Enter', 'a', 'ArrowLeft')")
@@ -52,7 +52,7 @@ class KeyDownInput(BaseModel):
     session_id: str = Field(...)
 
 
-class KeyUpInput(BaseModel):
+class KeyUpInput(BaseInput):
     """Input for dispatching a keyUp event."""
 
     key: str = Field(..., min_length=1, description="Key to release (e.g. 'Enter', 'a')")
@@ -64,7 +64,7 @@ class KeyUpInput(BaseModel):
     session_id: str = Field(...)
 
 
-class PressKeysInput(BaseModel):
+class PressKeysInput(BaseInput):
     """Input for typing a sequence of keys at the page level."""
 
     text: str = Field(
@@ -77,7 +77,7 @@ class PressKeysInput(BaseModel):
     session_id: str = Field(...)
 
 
-class MouseDragXYInput(BaseModel):
+class MouseDragXYInput(BaseInput):
     """Input for dragging the mouse from one screen coordinate to another."""
 
     start_x: float = Field(...)
@@ -89,13 +89,13 @@ class MouseDragXYInput(BaseModel):
     session_id: str = Field(...)
 
 
-class ConsoleClearInput(BaseModel):
+class ConsoleClearInput(BaseInput):
     """Input for clearing console messages."""
 
     session_id: str = Field(...)
 
 
-class CookieGetInput(BaseModel):
+class CookieGetInput(BaseInput):
     """Input for getting a specific cookie by name (and optional domain/path)."""
 
     name: str = Field(..., min_length=1)
@@ -104,7 +104,7 @@ class CookieGetInput(BaseModel):
     session_id: str = Field(...)
 
 
-class CookieListInput(BaseModel):
+class CookieListInput(BaseInput):
     """Input for listing cookies with optional filters."""
 
     name: str | None = Field(default=None)
@@ -114,7 +114,7 @@ class CookieListInput(BaseModel):
     session_id: str = Field(...)
 
 
-class ClosePageInput(BaseModel):
+class ClosePageInput(BaseInput):
     """Input for closing the current page/tab."""
 
     tab_id: str | None = Field(
@@ -123,7 +123,7 @@ class ClosePageInput(BaseModel):
     session_id: str = Field(...)
 
 
-class FindInput(BaseModel):
+class FindInput(BaseInput):
     """Input for finding text in the ARIA/accessibility snapshot."""
 
     text: str = Field(

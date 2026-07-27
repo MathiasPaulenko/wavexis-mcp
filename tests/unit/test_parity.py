@@ -6,6 +6,7 @@ import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from pydantic import ValidationError
 
 from wavexis_mcp.session import SessionManager
 from wavexis_mcp.tools.playwright_parity import (
@@ -194,3 +195,17 @@ async def test_get_config(session_manager_with_mock: SessionManager, mock_sessio
         result = await tool.fn(GetConfigInput())
         data = json.loads(result)
         assert data["available_backends"] == ["cdp"]
+
+
+@pytest.mark.unit
+def test_parity_input_rejects_empty_session_id() -> None:
+    """BaseInput._session_id_not_empty must apply to parity models."""
+    with pytest.raises(ValidationError):
+        KeyDownInput(key="a", session_id="   ")
+
+
+@pytest.mark.unit
+def test_parity_input_rejects_oversized_string() -> None:
+    """BaseInput._limit must reject oversized parity input fields."""
+    with pytest.raises(ValidationError):
+        KeyDownInput(key="a", session_id="sid", code="x" * 50001)

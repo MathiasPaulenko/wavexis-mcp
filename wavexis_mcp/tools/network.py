@@ -151,9 +151,10 @@ def _matches_pattern(pattern: str, url: str) -> bool:
 def _init_network_log(session: BrowserSession) -> None:
     """Attach a per-session network event log to the backend if missing."""
     backend = cast(Any, _backend(session))
-    if not isinstance(getattr(backend, "_network_log", None), deque) or getattr(
-        backend, "_network_log_lock", None
-    ) is None:
+    if (
+        not isinstance(getattr(backend, "_network_log", None), deque)
+        or getattr(backend, "_network_log_lock", None) is None
+    ):
         with _NETWORK_LOG_INIT_LOCK:
             if not isinstance(getattr(backend, "_network_log", None), deque):
                 backend._network_log = deque(maxlen=_NETWORK_LOG_MAX)
@@ -367,9 +368,10 @@ async def _refresh_routes(session: BrowserSession) -> None:
     backend._route_handler = handler
     with contextlib.suppress(Exception):
         cdp_session = backend._require_session()
-        cdp_session.on("Fetch.requestPaused", handler)
-        # Disable any previous Fetch interception before enabling with new patterns.
+        # Disable any previous Fetch interception before attaching the new handler
+        # so requests cannot be routed through an unconfigured handler.
         await backend.raw("Fetch.disable", {})
+        cdp_session.on("Fetch.requestPaused", handler)
         await backend.raw("Fetch.enable", {"patterns": patterns})
 
 

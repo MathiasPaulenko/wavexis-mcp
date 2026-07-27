@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>WaveXisMCP E2E — Shadow DOM</title>
+  <style>
+    body { font-family: sans-serif; margin: 2rem; }
+  </style>
+</head>
+<body>
+  <h1 id="shadow-heading">Shadow DOM Test Page</h1>
+  <p>This page contains a custom element with Shadow DOM.</p>
+
+  <div id="shadow-host"></div>
+
+  <script>
+    console.log("Shadow DOM page loaded");
+
+    var host = document.getElementById("shadow-host");
+    var shadow = host.attachShadow({ mode: "open" });
+
+    shadow.innerHTML = `
+      <style>
+        .shadow-card { border: 2px solid #6c5ce7; padding: 1rem; margin: 1rem 0; border-radius: 8px; }
+        .shadow-btn { padding: 0.5rem 1rem; cursor: pointer; background: #6c5ce7; color: #fff; border: none; border-radius: 4px; }
+        .shadow-input { margin: 0.5rem 0; padding: 0.25rem; }
+        .shadow-text { color: #6c5ce7; font-weight: bold; }
+      </style>
+      <div class="shadow-card" id="shadow-card">
+        <h2>Inside Shadow DOM</h2>
+        <p class="shadow-text" id="shadow-text">Shadow content visible</p>
+        <input class="shadow-input" id="shadow-input" type="text" placeholder="Type in shadow DOM">
+        <button class="shadow-btn" id="shadow-btn" onclick="shadowClick()">Shadow Button</button>
+        <span id="shadow-result">Not clicked</span>
+      </div>
+    `;
+
+    function shadowClick() {
+      shadow.getElementById("shadow-result").textContent = "Shadow button clicked!";
+    }
+  </script>
+</body>
+</html>

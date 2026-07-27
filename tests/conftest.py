@@ -235,6 +235,8 @@ def _mock_backend_manager(
     """
     if request.node.get_closest_marker("chrome"):
         return
+    if request.node.get_closest_marker("e2e"):
+        return
 
     mgr = MagicMock()
     # Calling BackendManager() should return the same mock so tests can replace

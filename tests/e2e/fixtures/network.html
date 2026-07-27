@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>WaveXisMCP E2E — Network</title>
+  <style>
+    body { font-family: sans-serif; margin: 2rem; }
+    #network-log { background: #f8f9fa; padding: 1rem; border-radius: 8px; max-height: 300px; overflow-y: auto; }
+    .log-entry { padding: 0.25rem; border-bottom: 1px solid #eee; }
+    .btn { padding: 0.5rem 1rem; cursor: pointer; background: #007bff; color: #fff; border: none; border-radius: 4px; margin: 0.5rem 0; }
+  </style>
+</head>
+<body>
+  <h1 id="network-heading">Network Test Page</h1>
+  <p>This page makes various network requests for testing network tools.</p>
+
+  <div id="controls">
+    <button class="btn" id="fetch-json-btn" onclick="fetchJSON()">Fetch JSON</button>
+    <button class="btn" id="fetch-text-btn" onclick="fetchText()">Fetch Text</button>
+    <button class="btn" id="fetch-error-btn" onclick="fetchError()">Fetch Error (404)</button>
+    <button class="btn" id="xhr-btn" onclick="makeXHR()">XHR Request</button>
+  </div>
+
+  <div id="network-log">
+    <p class="log-entry" id="log-initial">Network log will appear here</p>
+  </div>
+
+  <script>
+    console.log("Network page loaded");
+
+    function log(msg) {
+      var logDiv = document.getElementById("network-log");
+      var entry = document.createElement("p");
+      entry.className = "log-entry";
+      entry.textContent = new Date().toISOString() + " — " + msg;
+      logDiv.appendChild(entry);
+    }
+
+    async function fetchJSON() {
+      try {
+        log("Fetching JSON from /api/data...");
+        var resp = await fetch("/api/data");
+        var data = await resp.json();
+        log("JSON response: " + JSON.stringify(data));
+      } catch(e) {
+        log("Fetch error: " + e.message);
+      }
+    }
+
+    async function fetchText() {
+      try {
+        log("Fetching text from /api/text...");
+        var resp = await fetch("/api/text");
+        var text = await resp.text();
+        log("Text response: " + text.substring(0, 100));
+      } catch(e) {
+        log("Fetch error: " + e.message);
+      }
+    }
+
+    async function fetchError() {
+      try {
+        log("Fetching 404 from /api/notfound...");
+        var resp = await fetch("/api/notfound");
+        log("Status: " + resp.status + " " + resp.statusText);
+      } catch(e) {
+        log("Fetch error: " + e.message);
+      }
+    }
+
+    function makeXHR() {
+      log("Making XHR to /api/data...");
+      var xhr = new XMLHttpRequest();
+      xhr.open("GET", "/api/data", true);
+      xhr.onload = function() { log("XHR response: " + xhr.responseText); };
+      xhr.onerror = function() { log("XHR error"); };
+      xhr.send();
+    }
+  </script>
+</body>
+</html>

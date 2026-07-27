@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>WaveXisMCP E2E — Form</title>
+  <style>
+    body { font-family: sans-serif; margin: 2rem; }
+    label { display: block; margin-top: 0.5rem; }
+    input, select, textarea { margin-top: 0.25rem; }
+    .btn { padding: 0.5rem 1rem; cursor: pointer; background: #28a745; color: #fff; border: none; border-radius: 4px; margin-top: 1rem; }
+  </style>
+</head>
+<body>
+  <h1 id="form-heading">Test Form</h1>
+  <form id="test-form" onsubmit="event.preventDefault(); document.getElementById('form-status').textContent='Submitted';">
+    <label for="name">Name:</label>
+    <input type="text" id="name" name="name" placeholder="Enter your name">
+
+    <label for="email">Email:</label>
+    <input type="email" id="email" name="email" placeholder="Enter your email">
+
+    <label for="password">Password:</label>
+    <input type="password" id="password" name="password" placeholder="Enter password">
+
+    <label for="age">Age:</label>
+    <input type="number" id="age" name="age" value="25" min="0" max="120">
+
+    <label for="country">Country:</label>
+    <select id="country" name="country">
+      <option value="us">United States</option>
+      <option value="uk">United Kingdom</option>
+      <option value="es">Spain</option>
+      <option value="de">Germany</option>
+    </select>
+
+    <label for="comments">Comments:</label>
+    <textarea id="comments" name="comments" rows="3" placeholder="Your comments"></textarea>
+
+    <fieldset>
+      <legend>Preferences</legend>
+      <label><input type="checkbox" id="subscribe" name="subscribe" checked> Subscribe to newsletter</label>
+      <label><input type="checkbox" id="terms" name="terms"> Accept terms</label>
+    </fieldset>
+
+    <fieldset>
+      <legend>Plan</legend>
+      <label><input type="radio" id="free" name="plan" value="free" checked> Free</label>
+      <label><input type="radio" id="pro" name="plan" value="pro"> Pro</label>
+      <label><input type="radio" id="enterprise" name="plan" value="enterprise"> Enterprise</label>
+    </fieldset>
+
+    <label for="file-upload">File upload:</label>
+    <input type="file" id="file-upload" name="file-upload">
+
+    <button type="submit" class="btn" id="submit-btn">Submit Form</button>
+    <button type="button" class="btn" id="reset-btn" onclick="document.getElementById('test-form').reset(); document.getElementById('form-status').textContent='Reset';">Reset</button>
+  </form>
+  <p id="form-status">Form not submitted</p>
+
+  <script>
+    console.log("Form page loaded");
+  </script>
+</body>
+</html>

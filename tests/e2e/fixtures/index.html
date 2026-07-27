@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>WaveXisMCP E2E — Index</title>
+  <style>
+    body { font-family: sans-serif; margin: 2rem; }
+    h1 { color: #333; }
+    .card { border: 1px solid #ccc; padding: 1rem; margin: 1rem 0; border-radius: 8px; }
+    .btn { padding: 0.5rem 1rem; cursor: pointer; background: #007bff; color: #fff; border: none; border-radius: 4px; }
+    .btn:hover { background: #0056b3; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <h1 id="main-heading">WaveXisMCP Test Page</h1>
+  <p id="description">A page for end-to-end testing of the WaveXisMCP server.</p>
+
+  <div class="card" id="links-card">
+    <h2>Navigation Links</h2>
+    <a href="form.html" id="form-link">Go to Form</a><br>
+    <a href="dynamic.html" id="dynamic-link">Go to Dynamic</a><br>
+    <a href="storage.html" id="storage-link">Go to Storage</a><br>
+    <a href="a11y.html" id="a11y-link">Go to A11y</a><br>
+    <a href="shadow.html" id="shadow-link">Go to Shadow DOM</a><br>
+    <a href="iframe.html" id="iframe-link">Go to Iframe</a>
+  </div>
+
+  <div class="card" id="buttons-card">
+    <h2>Interactive Elements</h2>
+    <button class="btn" id="click-me" onclick="document.getElementById('click-result').textContent='Clicked!'">Click Me</button>
+    <span id="click-result">Not clicked</span><br><br>
+    <button class="btn" id="toggle-visibility" onclick="toggleVis()">Toggle Hidden Text</button>
+    <p id="toggle-target" class="hidden">This text is toggled visible.</p>
+  </div>
+
+  <div class="card" id="text-card">
+    <h2>Text Content</h2>
+    <p id="lorem">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+    <p id="data-para" data-role="content" data-value="42">This paragraph has data attributes.</p>
+  </div>
+
+  <script>
+    console.log("Index page loaded");
+    function toggleVis() {
+      var el = document.getElementById("toggle-target");
+      el.classList.toggle("hidden");
+    }
+  </script>
+</body>
+</html>

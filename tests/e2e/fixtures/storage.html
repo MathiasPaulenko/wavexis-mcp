@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>WaveXisMCP E2E — Storage</title>
+  <style>
+    body { font-family: sans-serif; margin: 2rem; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ccc; padding: 0.5rem; text-align: left; }
+    th { background: #f8f9fa; }
+  </style>
+</head>
+<body>
+  <h1 id="storage-heading">Storage Test Page</h1>
+
+  <h2>localStorage</h2>
+  <table id="local-storage-table">
+    <tr><th>Key</th><th>Value</th></tr>
+  </table>
+
+  <h2>sessionStorage</h2>
+  <table id="session-storage-table">
+    <tr><th>Key</th><th>Value</th></tr>
+  </table>
+
+  <h2>Cache Storage</h2>
+  <p id="cache-status">Cache not initialized</p>
+  <button id="init-cache-btn" onclick="initCache()">Initialize Cache</button>
+
+  <h2>IndexedDB</h2>
+  <p id="indexeddb-status">IndexedDB not initialized</p>
+  <button id="init-idb-btn" onclick="initIndexedDB()">Initialize IndexedDB</button>
+
+  <script>
+    console.log("Storage page loaded");
+
+    // Populate localStorage
+    localStorage.setItem("user_name", "Test User");
+    localStorage.setItem("user_email", "test@example.com");
+    localStorage.setItem("settings_theme", "dark");
+    localStorage.setItem("settings_lang", "en");
+
+    // Populate sessionStorage
+    sessionStorage.setItem("temp_data", "temporary");
+    sessionStorage.setItem("csrf_token", "abc123");
+
+    // Render tables
+    function renderTable(tableId, storage) {
+      var table = document.getElementById(tableId);
+      for (var i = 0; i < storage.length; i++) {
+        var key = storage.key(i);
+        var row = table.insertRow();
+        row.insertCell().textContent = key;
+        row.insertCell().textContent = storage.getItem(key);
+      }
+    }
+    renderTable("local-storage-table", localStorage);
+    renderTable("session-storage-table", sessionStorage);
+
+    // Cache Storage
+    async function initCache() {
+      try {
+        var cache = await caches.open("test-cache");
+        var response = new Response("cached content");
+        await cache.put(new Request("/test-resource"), response);
+        document.getElementById("cache-status").textContent = "Cache initialized with 1 entry";
+      } catch(e) {
+        document.getElementById("cache-status").textContent = "Cache error: " + e.message;
+      }
+    }
+
+    // IndexedDB
+    function initIndexedDB() {
+      var request = indexedDB.open("test-db", 1);
+      request.onupgradeneeded = function(e) {
+        var db = e.target.result;
+        if (!db.objectStoreNames.contains("items")) {
+          db.createObjectStore("items", { keyPath: "id" });
+        }
+      };
+      request.onsuccess = function(e) {
+        var db = e.target.result;
+        var tx = db.transaction("items", "readwrite");
+        var store = tx.objectStore("items");
+        store.add({ id: 1, name: "Test Item", value: 42 });
+        store.add({ id: 2, name: "Second Item", value: 99 });
+        tx.oncomplete = function() {
+          document.getElementById("indexeddb-status").textContent = "IndexedDB initialized with 2 items";
+        };
+      };
+      request.onerror = function(e) {
+        document.getElementById("indexeddb-status").textContent = "IndexedDB error: " + e.target.error;
+      };
+    }
+  </script>
+</body>
+</html>
