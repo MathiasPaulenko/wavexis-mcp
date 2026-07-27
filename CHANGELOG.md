@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.11] - 2025-07-27
+
+### Fixed
+
+- `wavexis_act` now falls back to an in-page JavaScript search by role and name when the CSS selector derived from the a11y tree fails, enabling reliable natural-language clicks, fills, and hovers against real pages.
+- Tightened `wavexis_act` scoring to ignore action verbs and typed values, preventing generic instructions from matching unrelated headings or elements.
+
+### Changed
+
+- `format_json_response` normalises successful dict responses to include `status: "ok"` when no explicit `status` or `error` field is present.
+- A11y snapshots now include `node_id` and `backend_node_id` and skip `InlineTextBox`/`LineBreak` nodes to reduce token bloat.
+
 ## [1.6.10] - 2025-07-27
 
 ### Fixed
