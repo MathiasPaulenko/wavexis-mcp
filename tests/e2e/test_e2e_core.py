@@ -1,4 +1,5 @@
-"""E2E tests for core tier tools: session, navigation, capture, JS, DOM, input, cookies, tabs, utility.
+"""E2E tests for core tier tools: session, navigation, capture, JS, DOM,
+input, cookies, tabs, utility.
 
 These tests exercise the full stack: Pydantic validation → tool handler →
 SessionManager → wavexis backend → CDP → Chrome against local fixture pages.
@@ -7,7 +8,6 @@ SessionManager → wavexis backend → CDP → Chrome against local fixture page
 from __future__ import annotations
 
 import base64
-import json
 
 import pytest
 
@@ -72,11 +72,19 @@ class TestNavigation:
         await call_tool("wavexis_back", session_id=chrome_session)
 
         # Verify we're on form page via JS
-        title = await call_tool("wavexis_eval", expression="document.title", session_id=chrome_session)
+        title = await call_tool(
+            "wavexis_eval",
+            expression="document.title",
+            session_id=chrome_session,
+        )
         assert "Form" in str(title.get("result", ""))
 
         await call_tool("wavexis_forward", session_id=chrome_session)
-        title2 = await call_tool("wavexis_eval", expression="document.title", session_id=chrome_session)
+        title2 = await call_tool(
+            "wavexis_eval",
+            expression="document.title",
+            session_id=chrome_session,
+        )
         assert "Index" in str(title2.get("result", "")) or "Form" in str(title2.get("result", ""))
 
     async def test_reload(self, call_tool, chrome_session) -> None:
@@ -124,7 +132,11 @@ class TestCapture:
 
     async def test_scrape(self, call_tool, chrome_session, base_url) -> None:
         """Scrape page content and verify text."""
-        data = await call_tool("wavexis_scrape", urls=[f"{base_url}/index.html"], session_id=chrome_session)
+        data = await call_tool(
+            "wavexis_scrape",
+            urls=[f"{base_url}/index.html"],
+            session_id=chrome_session,
+        )
         results = data.get("results", [])
         assert isinstance(results, list)
         assert len(results) >= 1
@@ -433,7 +445,11 @@ class TestCookies:
     async def test_get_cookies(self, call_tool, chrome_session, base_url) -> None:
         """Get cookies from the current page."""
         # Navigate to dynamic page which sets a cookie
-        await call_tool("wavexis_navigate", url=f"{base_url}/dynamic.html", session_id=chrome_session)
+        await call_tool(
+            "wavexis_navigate",
+            url=f"{base_url}/dynamic.html",
+            session_id=chrome_session,
+        )
         data = await call_tool("wavexis_cookies_get", session_id=chrome_session)
         cookies = data.get("cookies", [])
         assert isinstance(cookies, list)

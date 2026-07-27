@@ -45,7 +45,11 @@ class TestNetwork:
 
     async def test_network_requests(self, call_tool, chrome_session, base_url) -> None:
         """Navigate to network page, trigger fetch, and list network requests."""
-        await call_tool("wavexis_navigate", url=f"{base_url}/network.html", session_id=chrome_session)
+        await call_tool(
+            "wavexis_navigate",
+            url=f"{base_url}/network.html",
+            session_id=chrome_session,
+        )
 
         # Trigger a fetch request
         await call_tool(
@@ -55,7 +59,13 @@ class TestNetwork:
         )
 
         # Give it a moment
-        await call_tool("wavexis_wait", strategy="selector", selector="body", session_id=chrome_session, timeout=2000)
+        await call_tool(
+            "wavexis_wait",
+            strategy="selector",
+            selector="body",
+            session_id=chrome_session,
+            timeout=2000,
+        )
 
         data = await call_tool("wavexis_network_requests", session_id=chrome_session)
         requests = data.get("requests", [])
@@ -113,7 +123,11 @@ class TestStorage:
 
     async def test_localstorage_get_set(self, call_tool, chrome_session, base_url) -> None:
         """Set and get a localStorage item."""
-        await call_tool("wavexis_navigate", url=f"{base_url}/storage.html", session_id=chrome_session)
+        await call_tool(
+            "wavexis_navigate",
+            url=f"{base_url}/storage.html",
+            session_id=chrome_session,
+        )
 
         # Get pre-set value
         data = await call_tool(
@@ -143,7 +157,11 @@ class TestStorage:
 
     async def test_localstorage_list(self, call_tool, chrome_session, base_url) -> None:
         """List all localStorage entries."""
-        await call_tool("wavexis_navigate", url=f"{base_url}/storage.html", session_id=chrome_session)
+        await call_tool(
+            "wavexis_navigate",
+            url=f"{base_url}/storage.html",
+            session_id=chrome_session,
+        )
         data = await call_tool("wavexis_localstorage_list", session_id=chrome_session)
         entries = data.get("entries", {})
         assert isinstance(entries, dict)
@@ -151,7 +169,11 @@ class TestStorage:
 
     async def test_localstorage_delete(self, call_tool, chrome_session, base_url) -> None:
         """Delete a localStorage item."""
-        await call_tool("wavexis_navigate", url=f"{base_url}/storage.html", session_id=chrome_session)
+        await call_tool(
+            "wavexis_navigate",
+            url=f"{base_url}/storage.html",
+            session_id=chrome_session,
+        )
         data = await call_tool(
             "wavexis_localstorage_delete",
             key="user_name",
@@ -161,7 +183,11 @@ class TestStorage:
 
     async def test_sessionstorage_get_set(self, call_tool, chrome_session, base_url) -> None:
         """Set and get a sessionStorage item."""
-        await call_tool("wavexis_navigate", url=f"{base_url}/storage.html", session_id=chrome_session)
+        await call_tool(
+            "wavexis_navigate",
+            url=f"{base_url}/storage.html",
+            session_id=chrome_session,
+        )
 
         data = await call_tool(
             "wavexis_sessionstorage_get",
@@ -173,19 +199,31 @@ class TestStorage:
 
     async def test_sessionstorage_list(self, call_tool, chrome_session, base_url) -> None:
         """List all sessionStorage entries."""
-        await call_tool("wavexis_navigate", url=f"{base_url}/storage.html", session_id=chrome_session)
+        await call_tool(
+            "wavexis_navigate",
+            url=f"{base_url}/storage.html",
+            session_id=chrome_session,
+        )
         data = await call_tool("wavexis_sessionstorage_list", session_id=chrome_session)
         entries = data.get("entries", {})
         assert len(entries) >= 1
 
     async def test_cache_storage_list(self, call_tool, chrome_session, base_url) -> None:
         """List Cache Storage entries."""
-        await call_tool("wavexis_navigate", url=f"{base_url}/storage.html", session_id=chrome_session)
+        await call_tool(
+            "wavexis_navigate",
+            url=f"{base_url}/storage.html",
+            session_id=chrome_session,
+        )
 
         # Initialize cache first
         await call_tool(
             "wavexis_eval",
-            expression="caches.open('test-cache').then(c => c.put(new Request('/test'), new Response('data')))",
+            expression=(
+                "caches.open('test-cache')"
+                ".then(c => c.put(new Request('/test'),"
+                " new Response('data')))"
+            ),
             session_id=chrome_session,
             await_promise=True,
         )
@@ -196,7 +234,11 @@ class TestStorage:
 
     async def test_indexeddb_list(self, call_tool, chrome_session, base_url) -> None:
         """List IndexedDB databases."""
-        await call_tool("wavexis_navigate", url=f"{base_url}/storage.html", session_id=chrome_session)
+        await call_tool(
+            "wavexis_navigate",
+            url=f"{base_url}/storage.html",
+            session_id=chrome_session,
+        )
 
         # Initialize IndexedDB first
         await call_tool(
@@ -218,9 +260,15 @@ class TestStorage:
         dbs = data.get("databases", [])
         assert isinstance(dbs, list)
 
-    async def test_storage_state_save_restore(self, call_tool, chrome_session, base_url, tmp_path) -> None:
+    async def test_storage_state_save_restore(
+        self, call_tool, chrome_session, base_url, tmp_path
+    ) -> None:
         """Save and restore browser storage state."""
-        await call_tool("wavexis_navigate", url=f"{base_url}/storage.html", session_id=chrome_session)
+        await call_tool(
+            "wavexis_navigate",
+            url=f"{base_url}/storage.html",
+            session_id=chrome_session,
+        )
 
         # Save state
         save_path = str(tmp_path / "storage_state.json")
@@ -234,7 +282,7 @@ class TestStorage:
         # Verify file exists
         from pathlib import Path
 
-        assert Path(save_path).exists()
+        assert Path(save_path).is_file()  # noqa: ASYNC240
 
         # Restore state
         restore_data = await call_tool(
@@ -242,4 +290,8 @@ class TestStorage:
             input_path=save_path,
             session_id=chrome_session,
         )
-        assert restore_data.get("status") == "ok" or "cookies" in restore_data or "error" in restore_data
+        assert (
+            restore_data.get("status") == "ok"
+            or "cookies" in restore_data
+            or "error" in restore_data
+        )

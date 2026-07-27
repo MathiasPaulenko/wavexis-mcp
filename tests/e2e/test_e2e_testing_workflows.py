@@ -91,7 +91,9 @@ class TestWorkflows:
         results = data.get("results", [])
         assert len(results) >= 2
 
-    async def test_multi_action_navigate_and_screenshot(self, call_tool, chrome_session, base_url) -> None:
+    async def test_multi_action_navigate_and_screenshot(
+        self, call_tool, chrome_session, base_url
+    ) -> None:
         """Execute a multi-action workflow: navigate + screenshot."""
         yaml_config = (
             f"actions:\n"

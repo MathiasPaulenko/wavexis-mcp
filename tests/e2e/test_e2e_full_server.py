@@ -10,8 +10,6 @@ These tests validate the MCP server as a whole:
 
 from __future__ import annotations
 
-import json
-
 import pytest
 from mcp.server.fastmcp import FastMCP
 
@@ -276,7 +274,11 @@ class TestErrorHandling:
             session_id=chrome_session,
         )
         # eval returns result+type on success, error key on failure
-        assert "error" in data or "exceptionDetails" in str(data.get("result", "")) or data.get("type") == "undefined"
+        assert (
+            "error" in data
+            or "exceptionDetails" in str(data.get("result", ""))
+            or data.get("type") == "undefined"
+        )
 
     async def test_session_close_already_closed(self, call_tool) -> None:
         """Close a session that was already closed."""

@@ -63,7 +63,11 @@ class TestDevTools:
 
     async def test_console_messages(self, call_tool, chrome_session, base_url) -> None:
         """Capture console messages from a page that logs."""
-        await call_tool("wavexis_navigate", url=f"{base_url}/dynamic.html", session_id=chrome_session)
+        await call_tool(
+            "wavexis_navigate",
+            url=f"{base_url}/dynamic.html",
+            session_id=chrome_session,
+        )
         data = await call_tool("wavexis_console_messages", session_id=chrome_session)
         messages = data.get("messages", [])
         assert isinstance(messages, list)

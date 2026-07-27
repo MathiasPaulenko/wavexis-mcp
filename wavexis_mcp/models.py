@@ -59,18 +59,14 @@ def _limit_input_size(data: Any) -> Any:
                 raise ValueError(f"input exceeds {_MAX_CONTAINER_SIZE} fields")
             total += len(item)
             if total > _MAX_TOTAL_FIELDS:
-                raise ValueError(
-                    f"input exceeds {_MAX_TOTAL_FIELDS} total fields"
-                )
+                raise ValueError(f"input exceeds {_MAX_TOTAL_FIELDS} total fields")
             stack.extend(item.values())
         elif isinstance(item, list):
             if len(item) > _MAX_CONTAINER_SIZE:
                 raise ValueError(f"input list exceeds {_MAX_CONTAINER_SIZE} items")
             total += len(item)
             if total > _MAX_TOTAL_FIELDS:
-                raise ValueError(
-                    f"input exceeds {_MAX_TOTAL_FIELDS} total items"
-                )
+                raise ValueError(f"input exceeds {_MAX_TOTAL_FIELDS} total items")
             stack.extend(item)
         elif isinstance(item, str) and len(item) > _MAX_STRING_LENGTH:
             raise ValueError(f"input string exceeds {_MAX_STRING_LENGTH} characters")

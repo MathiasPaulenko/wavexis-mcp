@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.10] - 2025-07-27
+
+### Fixed
+
+- Fixed 25 ruff lint errors in E2E test files (E501 line-too-long, F401 unused imports, F841 unused variables, ASYNC240).
+- Fixed `wavexis_multi_action` example in README to use inline YAML string instead of `@workflow.yaml` file path syntax.
+
 ## [1.6.9] - 2025-07-27
 
 ### Fixed

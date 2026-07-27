@@ -129,7 +129,7 @@ class TestAccessibility:
         """Get a specific a11y node by first taking a snapshot to get a node_id."""
         await call_tool("wavexis_navigate", url=f"{base_url}/a11y.html", session_id=chrome_session)
         # First take snapshot to get a node_id
-        snap = await call_tool("wavexis_a11y_snapshot", session_id=chrome_session)
+        await call_tool("wavexis_a11y_snapshot", session_id=chrome_session)
         # Try with node_id="1" (root or first node)
         data = await call_tool(
             "wavexis_a11y_node",

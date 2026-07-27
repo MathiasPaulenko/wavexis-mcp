@@ -120,9 +120,7 @@ async def test_fill_form_returns_error_on_failure(mock_backend: AsyncMock) -> No
     register(mcp, mgr)
 
     tool = mcp._tool_manager.get_tool("wavexis_fill_form")
-    result = await tool.fn(
-        FillFormInput(fields=[FormField(selector="#name", value="Alice")])
-    )
+    result = await tool.fn(FillFormInput(fields=[FormField(selector="#name", value="Alice")]))
     data = json.loads(result)
     assert data["tool"] == "wavexis_fill_form"
     assert data["type"] == "Exception"
