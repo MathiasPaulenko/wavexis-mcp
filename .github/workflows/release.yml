@@ -52,7 +52,7 @@ jobs:
           name: dist
           path: dist/
       - name: Install twine
-        run: pip install "twine>=5.0"
+        run: pip install "twine>=6.0"
       - name: Verify package with twine
         run: twine check dist/*
       - uses: pypa/gh-action-pypi-publish@release/v1
