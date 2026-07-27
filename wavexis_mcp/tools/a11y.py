@@ -102,6 +102,8 @@ def _build_a11y_tree(raw: dict[str, Any] | list[dict[str, Any]]) -> list[dict[st
         by_id[node_id] = {
             "role": _extract_role(node),
             "name": _extract_name(node),
+            "node_id": node_id,
+            "backend_node_id": str(node.get("backendDOMNodeId", "")),
             "children": [],
             "_visited": False,
         }
@@ -152,7 +154,7 @@ def _format_a11y_tree(
 
     Returns:
         List of formatted node dicts with ``ref``, ``role``, ``name``,
-        ``level``, and optional ``children``.
+        ``level``, ``node_id``, ``backend_node_id`` and optional ``children``.
     """
     if ref_counter is None:
         ref_counter = [0]
@@ -164,14 +166,22 @@ def _format_a11y_tree(
         if node_id in seen:
             continue
         seen.add(node_id)
+        role = node.get("role", "unknown")
+        if role in ("InlineTextBox", "LineBreak"):
+            # Skip purely presentational text fragments to reduce token bloat.
+            continue
         ref_counter[0] += 1
         ref = f"el-{ref_counter[0]}"
         entry: dict[str, Any] = {
             "ref": ref,
-            "role": node.get("role", "unknown"),
+            "role": role,
             "name": node.get("name", ""),
             "level": level,
         }
+        if node.get("node_id"):
+            entry["node_id"] = node["node_id"]
+        if node.get("backend_node_id"):
+            entry["backend_node_id"] = node["backend_node_id"]
         children = node.get("children", [])
         if children and level < _MAX_A11Y_DEPTH:
             entry["children"] = _format_a11y_tree(children, level + 1, ref_counter, seen)
