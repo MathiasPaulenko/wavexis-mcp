@@ -168,10 +168,11 @@ wavexis_session_open(backend="bidi")
 
 ## Multi-action YAML
 
-Chain multiple actions in a single tool call:
+Chain multiple actions in a single tool call by passing a YAML string:
 
-```yaml
-# workflow.yaml
+```text
+wavexis_multi_action(
+    config="""
 actions:
   - navigate: https://example.com
   - screenshot:
@@ -182,10 +183,9 @@ actions:
       selector: "#username"
       text: admin@example.com
   - screenshot: {}
-```
-
-```text
-wavexis_multi_action(config="@workflow.yaml", session_id="abc-123")
+""",
+    session_id="abc-123"
+)
 ```
 
 Supported action types: `navigate`, `screenshot`, `eval`, `click`, `type`, `fill`. Set `continue_on_error: true` to keep executing on failures.
