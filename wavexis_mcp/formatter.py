@@ -207,12 +207,19 @@ async def save_to_file(data: bytes, path: str) -> dict[str, Any]:
 def format_json_response(data: object) -> str:
     """Serialize arbitrary data as a JSON string.
 
+    Normalises successful dict responses to include ``status: "ok"`` when
+    the caller did not supply an explicit ``status`` or ``error`` field. This
+    lets LLM clients uniformly check for success without special-casing each
+    tool's unique payload.
+
     Args:
         data: JSON-serializable Python object.
 
     Returns:
         A JSON string with ``ensure_ascii=False``.
     """
+    if isinstance(data, dict) and "status" not in data and "error" not in data:
+        data = {**data, "status": "ok"}
     return json.dumps(data, default=str, ensure_ascii=False)
 
 
