@@ -45,8 +45,8 @@ Test responsive design by emulating a mobile device before capturing:
 wavexis_session_open(backend="cdp")
 → {"session_id": "abc-123"}
 
-wavexis_emulate_device(session_id="abc-123", device="iPhone 15")
-wavexis_navigate(session_id="abc-123", url="https://example.com", wait_until="networkidle")
+wavexis_emulate_device(session_id="abc-123", device="iphone-15")
+wavexis_navigate(session_id="abc-123", url="https://example.com", wait_strategy="networkidle")
 wavexis_screenshot(session_id="abc-123", full_page=true)
 → {"data": "iVBORw0KGgo...", "format": "png", "encoding": "base64"}
 

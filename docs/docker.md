@@ -65,14 +65,14 @@ The Dockerfile copies the wheel from `dist/` and installs it. Make sure to run `
 The GitHub Actions release workflow (`.github/workflows/release.yml`) automatically builds and pushes the Docker image to GHCR when a version tag (`v*.*.*`) is pushed:
 
 ```bash
-git tag v1.4.0
-git push origin v1.4.0
+git tag v1.6.8
+git push origin v1.6.8
 ```
 
 This creates:
 
 - `ghcr.io/mathiaspaulenko/wavexis-mcp:latest`
-- `ghcr.io/mathiaspaulenko/wavexis-mcp:v1.4.0`
+- `ghcr.io/mathiaspaulenko/wavexis-mcp:v1.6.8`
 
 ## Environment Variables
 
@@ -80,6 +80,8 @@ This creates:
 |----------|---------|-------------|
 | `WAVEXIS_BROWSER_PATH` | `/usr/bin/chromium` | Path to Chromium binary inside the container |
 | `WAVEXIS_BACKEND` | `cdp` | Default backend: `cdp` or `bidi` |
+| `WAVEXIS_MCP_OUTPUT_DIR` | `/home/wavexis/output` | Base directory for file outputs |
+| `CI` | `true` | Enables Chrome `--no-sandbox` flag for container compatibility |
 
 ## Use cases
 

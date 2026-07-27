@@ -18,7 +18,7 @@ wavexis_assert_visible(session_id="abc-123", selector="#hero", timeout=5000)
 wavexis_assert_text_visible(session_id="abc-123", text="Welcome")
 → {"passed": true}
 
-wavexis_assert_url(session_id="abc-123", url="https://example.com")
+wavexis_assert_url(session_id="abc-123", url_pattern="https://example.com")
 → {"passed": true}
 
 wavexis_session_close(session_id="abc-123")
@@ -56,8 +56,7 @@ wavexis_click(session_id="abc-123", selector="#submit")
 # 4. Verify redirect to dashboard
 wavexis_assert_url(
     session_id="abc-123",
-    url="https://app.example.com/dashboard",
-    match_type="startswith"
+    url_pattern="https://app.example.com/dashboard*"
 )
 → {"passed": true}
 
@@ -82,8 +81,7 @@ wavexis_navigate(session_id="abc-123", url="https://example.com")
 
 wavexis_generate_locator(
     session_id="abc-123",
-    selector=".btn-primary",
-    all=true
+    selector=".btn-primary"
 )
 → {"locators": [
     "#submit-btn",

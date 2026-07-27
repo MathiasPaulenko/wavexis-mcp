@@ -8,7 +8,7 @@ The simplest case — scrape one URL without managing a session:
 
 ```text
 wavexis_scrape(
-    url="https://example.com",
+    urls=["https://example.com"],
     selector="article",
     output_format="text"
 )
@@ -79,7 +79,7 @@ Some pages require JavaScript to render content. Use a session and wait for the 
 wavexis_session_open(backend="cdp")
 → {"session_id": "abc-123"}
 
-wavexis_navigate(session_id="abc-123", url="https://spa.example.com", wait_until="networkidle")
+wavexis_navigate(session_id="abc-123", url="https://spa.example.com", wait_strategy="networkidle")
 wavexis_wait(session_id="abc-123", strategy="selector", selector="[data-loaded]")
 wavexis_scrape(
     session_id="abc-123",

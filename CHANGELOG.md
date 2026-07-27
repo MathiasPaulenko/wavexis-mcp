@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.9] - 2025-07-27
+
+### Fixed
+
+- Corrected `wavexis_scrape` examples to use `urls=` (list) instead of `url=` (string) in `docs/examples/scrape.md`.
+- Fixed `wait_until=` → `wait_strategy=` in scrape and screenshot examples.
+- Fixed `device="iPhone 15"` → `device="iphone-15"` (kebab-case preset) in screenshot example.
+- Fixed `wavexis_assert_url` examples to use `url_pattern=` instead of `url=`; removed non-existent `match_type` parameter in `docs/examples/testing.md`.
+- Removed non-existent `all=` parameter from `wavexis_generate_locator` example.
+- Fixed `wavexis_multi_action` examples to use `config=` instead of `actions=` in `docs/examples/multi-action.md`.
+- Fixed `wavexis_extract` parameter `schema` → `json_schema` and added missing `session_id` to `wavexis_record` in `docs/tools/data.md`.
+
+### Added
+
+- Documented `WAVEXIS_MCP_OUTPUT_DIR`, `WAVEXIS_MCP_ALLOW_INTERNAL_URLS`, and `WAVEXIS_MCP_ALLOW_RAW_COMMANDS` environment variables in `docs/configuration.md`.
+- Added `WAVEXIS_MCP_OUTPUT_DIR` and `CI` env vars to Docker documentation table in `docs/docker.md`.
+
+### Changed
+
+- Updated Docker CI/CD tag example from `v1.4.0` to `v1.6.8` in `docs/docker.md`.
+
 ## [1.6.8] - 2025-07-27
 
 ### Added

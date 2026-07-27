@@ -12,7 +12,7 @@ wavexis_session_open(backend="cdp")
 
 wavexis_multi_action(
     session_id="abc-123",
-    actions=[
+    config=[
         {"type": "navigate", "url": "https://example.com"},
         {"type": "wait", "strategy": "selector", "selector": "#content"},
         {"type": "click", "selector": "#login"},
@@ -48,7 +48,7 @@ By default, multi-action stops on the first error. Set `continue_on_error=true` 
 ```text
 wavexis_multi_action(
     session_id="abc-123",
-    actions=[
+    config=[
         {"type": "navigate", "url": "https://example.com"},
         {"type": "click", "selector": "#maybe-missing"},  # might fail
         {"type": "screenshot"}  # still runs

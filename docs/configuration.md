@@ -118,6 +118,9 @@ wavexis-mcp --caps=devtools,a11y
 |----------|---------|-------------|
 | `WAVEXIS_BROWSER_PATH` | auto-detect | Path to Chrome/Edge binary. If not set, WaveXisMCP auto-detects Chrome then Edge. |
 | `WAVEXIS_BACKEND` | `cdp` | Default backend: `cdp` or `bidi`. Can be overridden per session. |
+| `WAVEXIS_MCP_OUTPUT_DIR` | current directory | Base directory for file outputs (screenshots, PDFs, traces, etc.). All `output_path` parameters are resolved relative to this directory. Paths that escape this base are rejected. |
+| `WAVEXIS_MCP_ALLOW_INTERNAL_URLS` | unset | Set to `1` to allow navigation to private/internal IP addresses (e.g., `localhost`, `10.x.x.x`, `192.168.x.x`). By default, internal URLs are blocked to prevent SSRF. Useful for testing local development servers. |
+| `WAVEXIS_MCP_ALLOW_RAW_COMMANDS` | unset | Set to `all` to allow arbitrary CDP/BiDi commands via `wavexis_raw_cdp` and `wavexis_raw_bidi`. By default, only a read-only allowlist of safe commands is permitted. |
 
 ### Browser auto-detection
 
