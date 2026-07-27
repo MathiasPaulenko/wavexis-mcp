@@ -8,7 +8,6 @@ description = "MCP server exposing the wavexis browser automation library to LLM
 dynamic = ["version"]
 readme = "README.md"
 license = "MIT"
-license-files = ["LICENSE"]
 requires-python = ">=3.11"
 authors = [{ name = "Mathias Paulenko", email = "mathias.paulenko@outlook.com" }]
 maintainers = [{ name = "Mathias Paulenko", email = "mathias.paulenko@outlook.com" }]
