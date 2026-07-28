@@ -761,6 +761,7 @@ class CaptureHARInput(BaseInput):
     wait_ms: int = Field(default=3000, ge=500, le=30000)
     filter: str | None = Field(default=None, description="URL filter pattern")
     timeout: int = Field(default=30000, ge=1000, le=300000)
+    path: str | None = Field(default=None, description="Optional file path to write the HAR to")
     headless: bool = Field(default=True)
     backend: Literal["cdp", "bidi", "auto"] = Field(default="cdp")
 

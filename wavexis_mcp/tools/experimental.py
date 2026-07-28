@@ -7,6 +7,7 @@ These wrap less-common CDP domains for advanced automation.
 
 from __future__ import annotations
 
+import json
 from typing import Any, cast
 
 from mcp.server.fastmcp import FastMCP
@@ -162,11 +163,25 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         try:
             session = session_manager.get(input.session_id)
             validate_url(input.script_url)
-            await session.backend.raw(
-                "ServiceWorker.dispatchEvent",
-                {"scriptURL": input.script_url},
-            )
-            return format_json_response({"status": "ok", "script_url": input.script_url})
+            escaped = json.dumps(input.script_url)
+            js = f"""
+                (async () => {{
+                    try {{
+                        const reg = await navigator.serviceWorker.register({escaped});
+                        return {{
+                            scope: reg.scope,
+                            script_url: {escaped},
+                            state: reg.active ? 'activated' : 'installing'
+                        }};
+                    }} catch (e) {{
+                        return {{error: String(e && e.message ? e.message : e)}};
+                    }}
+                }})()
+            """
+            result = await session.backend.eval(js, await_promise=True)
+            if isinstance(result, dict) and result.get("error"):
+                raise RuntimeError(result["error"])
+            return format_json_response({"status": "ok", "registration": result})
         except Exception as e:
             return format_error("wavexis_service_worker_emulate", e)
 
@@ -489,6 +504,20 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         except Exception as e:
             return format_error("wavexis_media_get_messages", e)
 
+    def _media_control_js(player_id: str, action: str, time_ms: float = 0.0) -> str:
+        """Build a JS snippet that controls a <video>/<audio> element by id."""
+        time_sec = time_ms / 1000.0
+        return (
+            f"(function(){{ "
+            f"const el = document.getElementById({json.dumps(player_id)}); "
+            f"if (!el || (el.tagName !== 'VIDEO' && el.tagName !== 'AUDIO')) return false; "
+            f"if ('{action}' === 'play') {{ el.play(); }} "
+            f"else if ('{action}' === 'pause') {{ el.pause(); }} "
+            f"else if ('{action}' === 'seek') {{ el.currentTime = {time_sec}; }} "
+            f"return true; "
+            f"}})()"
+        )
+
     @mcp.tool(
         annotations=ToolAnnotations(
             readOnlyHint=False,
@@ -510,10 +539,10 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """
         try:
             session = session_manager.get(input.session_id)
-            await session.backend.raw(
-                "Media.playPlayer",
-                {"playerId": input.player_id},
-            )
+            js = _media_control_js(input.player_id, "play")
+            ok = await session.backend.eval(js)
+            if not ok:
+                raise ValueError(f"media element {input.player_id!r} not found")
             return format_json_response({"status": "ok"})
         except Exception as e:
             return format_error("wavexis_media_player_play", e)
@@ -539,10 +568,10 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """
         try:
             session = session_manager.get(input.session_id)
-            await session.backend.raw(
-                "Media.pausePlayer",
-                {"playerId": input.player_id},
-            )
+            js = _media_control_js(input.player_id, "pause")
+            ok = await session.backend.eval(js)
+            if not ok:
+                raise ValueError(f"media element {input.player_id!r} not found")
             return format_json_response({"status": "ok"})
         except Exception as e:
             return format_error("wavexis_media_player_pause", e)
@@ -568,10 +597,12 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """
         try:
             session = session_manager.get(input.session_id)
-            await session.backend.raw(
-                "Media.seekPlayer",
-                {"playerId": input.player_id, "currentTime": input.time_ms / 1000.0},
+            js = _media_control_js(
+                input.player_id, "seek", input.time_ms
             )
+            ok = await session.backend.eval(js)
+            if not ok:
+                raise ValueError(f"media element {input.player_id!r} not found")
             return format_json_response({"status": "ok", "time_ms": input.time_ms})
         except Exception as e:
             return format_error("wavexis_media_player_seek", e)

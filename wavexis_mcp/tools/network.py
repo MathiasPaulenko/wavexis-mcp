@@ -586,6 +586,12 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                 )
                 har = await backend.capture_har(params)
                 entries = len(har.get("log", {}).get("entries", [])) if isinstance(har, dict) else 0
+                if input.path:
+                    har_path = secure_output_path(input.path)
+                    har_path.write_text(
+                        json.dumps(har, indent=2, ensure_ascii=False, default=str),
+                        encoding="utf-8",
+                    )
                 return format_json_response({"har": har, "entries": entries})
             finally:
                 await session_manager.release_backend(backend, sid)

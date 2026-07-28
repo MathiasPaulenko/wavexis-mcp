@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.12] - 2026-07-27
+
+### Fixed
+
+- `wavexis_service_worker_emulate` now registers the service worker via an in-page JavaScript fallback, avoiding reliance on removed CDP `ServiceWorker` domain methods.
+- `wavexis_media_player_play`, `wavexis_media_player_pause`, and `wavexis_media_player_seek` now control `<video>`/`<audio>` elements by element ID through JavaScript, replacing the unavailable CDP `Media.*Player` commands.
+
+### Added
+
+- `wavexis_capture_har` now accepts an optional `path` field in `CaptureHARInput` to persist the captured HAR JSON to a file under `WAVEXIS_MCP_OUTPUT_DIR`.
+
+### Changed
+
+- `.gitignore` now ignores `output/` and `scripts/test_*.py` scratch artifacts.
+
 ## [1.6.11] - 2025-07-27
 
 ### Fixed
