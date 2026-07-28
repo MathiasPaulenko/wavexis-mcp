@@ -37,7 +37,7 @@ via `conftest.py`.
 ## Dependency pinning
 
 - `mcp` is pinned to `>=1.0,<2`.
-- `wavexis` is pinned to `>=2.16.16,<3.0`.
+- `wavexis` is pinned to `>=2.18.0,<3.0`.
 
 ## Useful project files
 

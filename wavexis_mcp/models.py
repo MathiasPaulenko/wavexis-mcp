@@ -133,6 +133,14 @@ class SessionOpenInput(BaseInput):
             "'firefox' (geckodriver). Only used when backend='bidi'."
         ),
     )
+    connect_existing: bool = Field(
+        default=False,
+        description=(
+            "Launch Chrome with --remote-debugging-port and connect to it. "
+            "Useful for reusing an existing browser profile with logged-in "
+            "sessions. The browser is launched headed (headless is ignored)."
+        ),
+    )
 
 
 class SessionCloseInput(BaseInput):

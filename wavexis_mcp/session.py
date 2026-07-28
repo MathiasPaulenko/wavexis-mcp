@@ -12,7 +12,12 @@ import asyncio
 import contextlib
 import inspect
 import logging
+import os
+import platform
+import shutil
+import tempfile
 import time
+import urllib.request
 import uuid
 from collections import deque
 from collections.abc import Awaitable
@@ -39,6 +44,109 @@ _T = TypeVar("_T")
 DEFAULT_BACKEND_TIMEOUT = 30.0
 _MAX_SESSIONS = 1000
 _logger = logging.getLogger(__name__)
+
+# Port used when auto-launching Chrome with --remote-debugging-port.
+_CONNECT_EXISTING_PORT = 9223
+
+
+def _find_chrome_binary() -> str | None:
+    """Find a Chrome or Edge binary on the system.
+
+    Returns the path to the first browser found, or ``None``.
+    """
+    candidates = [
+        # Windows
+        "chrome.exe",
+        "msedge.exe",
+        # macOS / Linux
+        "google-chrome",
+        "google-chrome-stable",
+        "chromium",
+        "chromium-browser",
+        "microsoft-edge",
+    ]
+    for name in candidates:
+        path = shutil.which(name)
+        if path:
+            return path
+    # Check common Windows install locations
+    if platform.system() == "Windows":
+        progfiles = os.environ.get("PROGRAMFILES", r"C:\Program Files")
+        progfiles86 = os.environ.get("PROGRAMFILES(X86)", r"C:\Program Files (x86)")
+        localappdata = os.environ.get("LOCALAPPDATA", "")
+        win_candidates = [
+            rf"{progfiles}\Google\Chrome\Application\chrome.exe",
+            rf"{progfiles86}\Google\Chrome\Application\chrome.exe",
+            rf"{localappdata}\Google\Chrome\Application\chrome.exe",
+            rf"{progfiles}\Microsoft\Edge\Application\msedge.exe",
+            rf"{progfiles86}\Microsoft\Edge\Application\msedge.exe",
+        ]
+        for path in win_candidates:
+            if os.path.isfile(path):
+                return path
+    return None
+
+
+async def _launch_chrome_with_debug_port(
+    port: int, user_data_dir: str | None
+) -> asyncio.subprocess.Process:
+    """Launch Chrome with --remote-debugging-port for CDP connection.
+
+    Args:
+        port: Port to listen on for CDP connections.
+        user_data_dir: Optional Chrome user data directory.
+
+    Returns:
+        The launched subprocess.
+
+    Raises:
+        RuntimeError: If Chrome cannot be found.
+    """
+    binary = _find_chrome_binary()
+    if binary is None:
+        raise RuntimeError(
+            "Could not find Chrome or Edge on the system. "
+            "Install Google Chrome or set connect_existing=False."
+        )
+
+    args = [
+        binary,
+        f"--remote-debugging-port={port}",
+        "--no-first-run",
+        "--no-default-browser-check",
+    ]
+    if user_data_dir:
+        args.append(f"--user-data-dir={user_data_dir}")
+    else:
+        # Use a temp profile to avoid clashing with the user's real profile.
+        tmp = tempfile.mkdtemp(prefix="wavexis-mcp-chrome-")
+        args.append(f"--user-data-dir={tmp}")
+
+    proc = await asyncio.create_subprocess_exec(
+        *args,
+        stdout=asyncio.subprocess.DEVNULL,
+        stderr=asyncio.subprocess.DEVNULL,
+    )
+    _logger.info("Launched Chrome (PID %d) with debug port %d", proc.pid, port)
+
+    # Wait for the debug port to become available by polling /json/version.
+    def _check_port() -> bool:
+        try:
+            with urllib.request.urlopen(  # nosec B310 - URL is hardcoded to localhost
+                f"http://localhost:{port}/json/version", timeout=1
+            ) as resp:
+                return bool(resp.status == 200)
+        except Exception:
+            return False
+
+    for _ in range(20):
+        await asyncio.sleep(0.5)
+        if await asyncio.to_thread(_check_port):
+            return proc
+
+    proc.terminate()
+    raise RuntimeError(f"Chrome did not expose its debug port on {port} within 10 seconds.")
+
 
 # Minimal web-vitals collection script injected after navigation when
 # auto_web_vitals is enabled.  Stores results in ``window.__wavexis_vitals``.
@@ -135,6 +243,7 @@ class BrowserSession:
         created_at: Unix timestamp of session creation.
         last_used: Unix timestamp of last activity.
         ref_count: Number of active stateless acquisitions.
+        chrome_proc: Optional Chrome subprocess launched by connect_existing.
     """
 
     session_id: str
@@ -143,6 +252,7 @@ class BrowserSession:
     created_at: float
     last_used: float = field(default_factory=time.time)
     ref_count: int = 0
+    chrome_proc: asyncio.subprocess.Process | None = None
 
 
 class SessionManager:
@@ -208,6 +318,7 @@ class SessionManager:
         remote_url: str | None = None,
         stealth: bool = False,
         browser: str = "chrome",
+        connect_existing: bool = False,
     ) -> str:
         """Launch a browser session and return its session ID.
 
@@ -244,6 +355,18 @@ class SessionManager:
             validate_websocket_url(remote_url)
         if proxy is not None:
             validate_proxy_url(proxy)
+
+        # When connect_existing is set, launch Chrome with --remote-debugging-port
+        # and connect to it via CDP. This reuses the user's browser profile.
+        chrome_proc: asyncio.subprocess.Process | None = None
+        if connect_existing and connect_endpoint is None and remote_url is None:
+            port = _CONNECT_EXISTING_PORT
+            chrome_proc = await _launch_chrome_with_debug_port(port, user_data_dir)
+            connect_endpoint = f"ws://localhost:{port}"
+            # Force CDP backend — BiDi doesn't support this connection mode.
+            backend = "cdp"
+            # Headless is meaningless when connecting to a headed Chrome.
+            headless = False
 
         # Reserve capacity before the expensive launch so concurrent opens cannot
         # both pass the limit check and exceed _MAX_SESSIONS.
@@ -327,6 +450,7 @@ class SessionManager:
                 backend_name=backend_name,
                 created_at=now,
                 last_used=now,
+                chrome_proc=chrome_proc,
             )
         return session_id
 
@@ -444,6 +568,14 @@ class SessionManager:
                 await popped.backend.close()
             except Exception:
                 _logger.exception("Failed to close backend for session %s", session_id)
+
+            # Terminate the Chrome subprocess if it was launched by connect_existing.
+            if popped.chrome_proc is not None:
+                with contextlib.suppress(Exception):
+                    popped.chrome_proc.terminate()
+                    await asyncio.wait_for(popped.chrome_proc.wait(), timeout=5.0)
+                popped.chrome_proc = None
+
         if self.rate_limiter is not None:
             await self.rate_limiter.cleanup(session_id)
 
