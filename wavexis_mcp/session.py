@@ -207,6 +207,7 @@ class SessionManager:
         connect_endpoint: str | None = None,
         remote_url: str | None = None,
         stealth: bool = False,
+        browser: str = "chrome",
     ) -> str:
         """Launch a browser session and return its session ID.
 
@@ -223,6 +224,7 @@ class SessionManager:
             connect_endpoint: WebSocket endpoint to connect to an existing browser.
             remote_url: Cloud browser WebSocket endpoint, or ``None``.
             stealth: Enable anti-bot stealth mode.
+            browser: Browser engine for BiDi (``"chrome"`` or ``"firefox"``).
 
         Returns:
             A unique session ID string.
@@ -270,6 +272,7 @@ class SessionManager:
                 browser_url=connect_endpoint,
                 remote_url=remote_url,
                 stealth=stealth,
+                browser=browser,
             )
             await asyncio.wait_for(backend_instance.launch(opts), timeout=30.0)
             self._wrap_backend(backend_instance)
@@ -536,6 +539,7 @@ class SessionManager:
         connect_endpoint: str | None = None,
         remote_url: str | None = None,
         stealth: bool = False,
+        browser: str = "chrome",
     ) -> tuple[AbstractBackend, str | None]:
         """Get a backend from an existing session or create an ephemeral one.
 
@@ -601,6 +605,7 @@ class SessionManager:
             browser_url=connect_endpoint,
             remote_url=remote_url,
             stealth=stealth,
+            browser=browser,
         )
         try:
             await asyncio.wait_for(backend_instance.launch(opts), timeout=30.0)

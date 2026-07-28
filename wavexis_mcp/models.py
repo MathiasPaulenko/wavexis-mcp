@@ -126,6 +126,13 @@ class SessionOpenInput(BaseInput):
     )
     remote_url: str | None = Field(default=None, description="Cloud browser WebSocket URL")
     stealth: bool = Field(default=False, description="Enable anti-bot stealth mode")
+    browser: Literal["chrome", "firefox"] = Field(
+        default="chrome",
+        description=(
+            "Browser engine for BiDi backend: 'chrome' (chromedriver) or "
+            "'firefox' (geckodriver). Only used when backend='bidi'."
+        ),
+    )
 
 
 class SessionCloseInput(BaseInput):
@@ -1574,6 +1581,10 @@ class InvokeInput(BaseInput):
     browser_url: str | None = Field(default=None)
     remote_url: str | None = Field(default=None)
     stealth: bool = Field(default=False)
+    browser: Literal["chrome", "firefox"] = Field(
+        default="chrome",
+        description="Browser engine for BiDi backend: 'chrome' or 'firefox'.",
+    )
     wait_strategy: _WaitStrategy = Field(default="load")
     wait_selector: str | None = Field(default=None)
     wait_timeout: int = Field(default=30000, ge=1000, le=300000)

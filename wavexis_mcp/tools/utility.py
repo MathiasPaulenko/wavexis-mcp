@@ -284,6 +284,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                     connect_endpoint=input.browser_url,
                     remote_url=input.remote_url,
                     stealth=input.stealth,
+                    browser=input.browser,
                 )
 
             if input.url:
