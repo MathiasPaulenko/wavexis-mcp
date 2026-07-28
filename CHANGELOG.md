@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.18] - 2026-07-28
+
+### Added
+
+- `docs/tutorials.md` — 9 step-by-step tutorials covering scraping, form filling, accessibility audits, debugging, crawling, video recording, multi-user testing, and ad blocking (M-4).
+- `docs/troubleshooting.md` — 15 common issues with symptoms, causes, and solutions (M-5).
+- `docs/benchmarks.md` — Performance comparison vs Playwright MCP covering startup time, latency, memory, throughput, install size, and tool coverage (M-6).
+- Updated `mkdocs.yml` nav with Tutorials, Troubleshooting, and Benchmarks pages.
+- Updated `docs/configuration.md` CLI flags table with `--blocked-origins`, `--storage-state`, and `--auto-web-vitals`.
+
 ## [1.6.17] - 2026-07-28
 
 ### Added

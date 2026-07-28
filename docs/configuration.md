@@ -110,6 +110,9 @@ wavexis-mcp --caps=devtools,a11y
 | `--caps` | `core` | Comma-separated capability tiers to enable |
 | `--rate-limit` | `60` | Max tool calls per second per session (token bucket) |
 | `--rate-burst` | `10` | Max burst size for rate limiting |
+| `--blocked-origins` | (empty) | Comma-separated URL patterns to block on every new session (e.g. `*.ads.example.com,*tracker*`) |
+| `--storage-state` | (unset) | Path to a JSON file with cookies/localStorage/sessionStorage to restore on every new session |
+| `--auto-web-vitals` | `false` | Inject web-vitals collection script (LCP, CLS, INP) after every navigation |
 | `--help` | — | Show help and exit |
 
 ## Environment variables

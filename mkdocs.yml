@@ -47,6 +47,9 @@ nav:
       - Docker: docker.md
       - Resources & Prompts: resources-prompts.md
       - Rate Limiting: rate-limiting.md
+      - Tutorials: tutorials.md
+      - Troubleshooting: troubleshooting.md
+      - Benchmarks: benchmarks.md
   - Tools:
       - Core: tools/core.md
       - Network: tools/network.md
