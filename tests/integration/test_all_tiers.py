@@ -98,7 +98,7 @@ async def test_one_tool_per_tier() -> None:
 async def test_all_tiers_enabled() -> None:
     """Verify all 13 tiers are enabled with --caps=all."""
     cm = CapsManager("all")
-    assert cm.enabled_tiers() == {
+    assert set(cm.enabled_tiers()) == {
         "core",
         "network",
         "storage",
