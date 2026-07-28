@@ -45,6 +45,7 @@ dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.23",
     "pytest-cov>=4.0",
+    "pytest-timeout>=2.2",
     "ruff>=0.4",
     "mypy>=1.10",
     "bandit>=1.7",
