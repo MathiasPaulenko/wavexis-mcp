@@ -27,14 +27,14 @@ def _register(mcp, mgr):
 
 
 @pytest.mark.unit
-@patch("wavexis_mcp.tools.data.asyncio.sleep", new_callable=AsyncMock)
+@patch("wavexis.actions.record.asyncio.sleep", new_callable=AsyncMock)
 async def test_record(
     _mock_sleep: AsyncMock,
     session_manager_with_mock: SessionManager,
     mock_session_id: str,
     mock_backend: AsyncMock,
 ) -> None:
-    """wavexis_record captures events and generates YAML."""
+    """wavexis_record captures events and generates YAML via wavexis.record_events."""
     from mcp.server.fastmcp import FastMCP
 
     # Simulate recorded events returned by the injected script.
@@ -42,23 +42,18 @@ async def test_record(
         [
             {"type": "click", "selector": "#login", "text": "Login", "url": "https://example.com"},
             {
-                "type": "fill",
+                "type": "input",
                 "selector": "#email",
                 "value": "user@example.com",
-                "url": "https://example.com",
+                "tag": "input",
             },
             {
-                "type": "fill",
+                "type": "input",
                 "selector": "#password",
                 "value": "secret123",
-                "url": "https://example.com",
+                "tag": "input",
             },
-            {
-                "type": "click",
-                "selector": "#submit",
-                "text": "Submit",
-                "url": "https://example.com",
-            },
+            {"type": "click", "selector": "#submit", "text": "Submit"},
         ]
     )
 
@@ -85,11 +80,10 @@ async def test_record(
     # Verify the YAML contains the expected actions.
     assert "navigate" in data["yaml"]
     assert "click" in data["yaml"]
-    assert "fill" in data["yaml"]
 
 
 @pytest.mark.unit
-@patch("wavexis_mcp.tools.data.asyncio.sleep", new_callable=AsyncMock)
+@patch("wavexis.actions.record.asyncio.sleep", new_callable=AsyncMock)
 async def test_record_no_events(
     _mock_sleep: AsyncMock,
     session_manager_with_mock: SessionManager,

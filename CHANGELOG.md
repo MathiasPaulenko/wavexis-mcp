@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.21] - 2026-07-28
+
+### Changed
+
+- `wavexis_record` now delegates event capture to `wavexis.actions.record.record_events()` and YAML conversion to `wavexis.actions.record.events_to_yaml()` instead of duplicating the logic in the MCP layer. Requires `wavexis>=2.17.3`.
+- Removed `_RECORD_INJECT_SCRIPT` and `_events_to_actions` from `wavexis_mcp/tools/data.py` — the recording script and event-to-action conversion now live in `wavexis` where they belong.
+
 ## [1.6.20] - 2026-07-28
 
 ### Added
