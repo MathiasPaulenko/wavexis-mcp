@@ -597,9 +597,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """
         try:
             session = session_manager.get(input.session_id)
-            js = _media_control_js(
-                input.player_id, "seek", input.time_ms
-            )
+            js = _media_control_js(input.player_id, "seek", input.time_ms)
             ok = await session.backend.eval(js)
             if not ok:
                 raise ValueError(f"media element {input.player_id!r} not found")
