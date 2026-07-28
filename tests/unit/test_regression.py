@@ -235,9 +235,13 @@ async def test_execute_act_times_out_and_retries(monkeypatch: pytest.MonkeyPatch
     async def slow_click(*args: Any, **kwargs: Any) -> None:
         await asyncio.sleep(5)
 
+    async def js_fallback_fails(*args: Any, **kwargs: Any) -> None:
+        raise RuntimeError("JS fallback also failed")
+
     backend = AsyncMock()
     backend.click = AsyncMock(side_effect=slow_click)
     monkeypatch.setattr(act_module, "_ACT_ACTION_TIMEOUT", 0.05)
+    monkeypatch.setattr(act_module, "_execute_action_via_js", js_fallback_fails)
 
     tree = [{"ref": "1", "role": "button", "name": "Submit", "children": []}]
     result = await execute_act(backend, "click submit", tree, max_retries=2)

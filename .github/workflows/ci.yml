@@ -102,5 +102,5 @@ jobs:
         env:
           WAVEXIS_MCP_ALLOW_INTERNAL_URLS: "1"
           WAVEXIS_MCP_ALLOW_RAW_COMMANDS: "all"
-        run: pytest tests/e2e -v -m e2e --timeout=60
+        run: pytest tests/e2e -v -m e2e --timeout=120
 

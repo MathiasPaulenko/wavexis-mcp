@@ -16,7 +16,7 @@ from typing import Any
 
 from wavexis.backend.base import AbstractBackend
 
-_ACT_ACTION_TIMEOUT = 30.0
+_ACT_ACTION_TIMEOUT = 10.0
 
 _ACTION_VERBS: dict[str, str] = {
     "click": "click",
@@ -686,24 +686,25 @@ async def execute_act(
             return result
         except Exception as e:
             last_error = e
-            # On the last attempt, fall back to a JavaScript search by role+name.
-            if attempt == max_retries - 1:
-                try:
-                    await _execute_action_via_js(
-                        backend,
-                        match.role,
-                        match.name,
-                        match.action,
-                        text_value,
-                    )
-                    result["status"] = "ok"
-                    result["attempts"] = attempt + 1
-                    result["fallback"] = "js"
-                    return result
-                except Exception as js_err:
+            # Fall back to a JavaScript search by role+name immediately —
+            # the CSS selector may not exist on the page (e.g. no aria-label).
+            try:
+                await _execute_action_via_js(
+                    backend,
+                    match.role,
+                    match.name,
+                    match.action,
+                    text_value,
+                )
+                result["status"] = "ok"
+                result["attempts"] = attempt + 1
+                result["fallback"] = "js"
+                return result
+            except Exception as js_err:
+                if attempt == max_retries - 1:
                     result["status"] = "error"
                     result["error"] = f"{last_error}; JS fallback: {js_err}"
                     result["attempts"] = attempt + 1
-            # Retry with the same selector on transient errors.
+                # Retry on transient errors.
 
     return result
