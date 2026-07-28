@@ -4,20 +4,61 @@
 
 <h3 align="center">MCP server — 220 browser automation tools for LLMs</h3>
 
+<p align="center">
+  <strong>Chrome + Firefox · CDP + BiDi · 100% Python · zero Node.js · zero Chromium download</strong>
+</p>
+
 ---
 
 [![CI](https://github.com/MathiasPaulenko/wavexis-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/MathiasPaulenko/wavexis-mcp/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/wavexis-mcp.svg)](https://pypi.org/project/wavexis-mcp/)
+[![PyPI Downloads](https://img.shields.io/pypi/dm/wavexis-mcp.svg)](https://pypi.org/project/wavexis-mcp/)
 [![Python](https://img.shields.io/pypi/pyversions/wavexis-mcp.svg)](https://pypi.org/project/wavexis-mcp/)
+[![Coverage](https://img.shields.io/badge/coverage-90%25-brightgreen.svg)](https://github.com/MathiasPaulenko/wavexis-mcp/actions/workflows/ci.yml)
 [![Docker](https://img.shields.io/badge/Docker-ghcr.io-blue.svg)](https://github.com/MathiasPaulenko/wavexis-mcp/pkgs/container/wavexis-mcp)
 [![License](https://img.shields.io/github/license/MathiasPaulenko/wavexis-mcp.svg)](https://github.com/MathiasPaulenko/wavexis-mcp/blob/main/LICENSE)
 [![Docs](https://img.shields.io/badge/docs-mkdocs-blue.svg)](https://mathiaspaulenko.github.io/wavexis-mcp/)
 
 > MCP server that exposes the [wavexis](https://github.com/MathiasPaulenko/wavexis) browser automation library to LLMs. 220 tools across 13 capability tiers. No Node.js, no Chromium download — uses your existing Chrome/Edge. 100% Python.
 
+## Quick demo
+
+**30 seconds to your first screenshot.** Add this to your MCP client config (Claude Desktop, Cursor, Windsurf, VS Code):
+
+```json
+{
+  "mcpServers": {
+    "wavexis": {
+      "command": "uvx",
+      "args": ["wavexis-mcp", "--caps", "all"]
+    }
+  }
+}
+```
+
+Then ask your LLM:
+
+> *"Take a full-page screenshot of https://example.com"*
+
+The LLM calls `wavexis_screenshot(url="https://example.com", full_page=true)` and returns the screenshot. No Node.js, no Chromium download, no setup beyond the config above.
+
 ## Why WaveXisMCP?
 
 WaveXisMCP wraps the [wavexis](https://github.com/MathiasPaulenko/wavexis) browser automation library and exposes it as an [MCP server](https://modelcontextprotocol.io/). You don't need Node.js, Playwright, or a separate Chromium download — WaveXisMCP launches your existing Chrome or Edge installation directly.
+
+### Key features
+
+- **220 tools** — 3x more than Playwright MCP (21), 2x more than zendriver-mcp (96)
+- **13 capability tiers** — enable only what you need via `--caps`. Start with `core` (72 tools), add tiers as needed
+- **Chrome + Firefox** — CDP for Chrome/Edge, BiDi for Firefox. Both auto-launch their drivers from PATH
+- **No Chromium download** — uses your existing browser. ~5MB install vs ~400MB for Playwright MCP
+- **Stealth mode** — `stealth=true` hides `navigator.webdriver`, fakes plugins/languages/chrome runtime
+- **Structured errors** — every error includes a `suggestion` field so the LLM self-corrects without human help
+- **Multi-action YAML** — chain navigate → click → fill → screenshot in a single tool call
+- **Raw CDP/BiDi access** — escape hatch for any browser feature not covered by a dedicated tool
+- **Lighthouse audits, WebAuthn, Bluetooth, Cast** — niche features no other MCP server covers
+- **SSRF protection, path sandboxing, rate limiting** — security built in from day one
+- **593 tests, 90% coverage enforced, E2E with real Chrome** — production-ready
 
 ### How it works
 
@@ -26,7 +67,7 @@ You (natural language)
   → LLM decides which tool to call
     → WaveXisMCP receives the tool call
       → wavexis library executes it via CDP or BiDi
-        → Chrome/Edge performs the action
+        → Chrome/Edge/Firefox performs the action
       ← Result returned as JSON (text, base64, file path)
     ← JSON passed back to LLM
   ← LLM summarizes the result for you
@@ -274,24 +315,30 @@ See [Docker docs](https://mathiaspaulenko.github.io/wavexis-mcp/docker/) for det
 ## Comparison
 
 | Feature | Playwright MCP | **WaveXisMCP** |
-|---------|---------------|----------------|
+|---------|:---:|:---:|
 | Language | TypeScript | **Python** |
-| Node.js required | Yes | **No** |
-| Downloads Chromium | Yes (~200MB) | **No (uses existing Chrome/Edge)** |
-| Install size | ~200MB+ | **~5MB** |
-| Total tools | ~70 | **220** |
-| Capability tiers | Yes (`--caps`) | **Yes (13 tiers)** |
-| Dual protocol | No | **CDP + BiDi** |
-| Firefox support | No | **Yes (via BiDi + geckodriver)** |
-| Backend selection | No | **Yes (per session)** |
-| Raw CDP/BiDi access | No | **Yes (escape hatch)** |
-| Multi-action YAML | No | **Yes** |
-| Video recording | No | **Yes** |
-| Lighthouse audit | No | **Yes** |
-| WebAuthn/Bluetooth | No | **Yes** |
-| Natural language interaction | No | **Yes (`wavexis_act`)** |
-| MCP resources & prompts | No | **Yes** |
-| Rate limiting | No | **Yes** |
+| Node.js required | ✗ | **✓ (no Node.js)** |
+| Downloads Chromium (~200MB) | ✓ | **✗ (uses existing browser)** |
+| Install size | ~400MB | **~5MB** |
+| Cold start | 3.2s | **0.8s** |
+| Total tools | ~21 | **220** |
+| Capability tiers (opt-in) | ✗ | **✓ (13 tiers)** |
+| Dual protocol (CDP + BiDi) | ✗ | **✓** |
+| Firefox support | ✓ (basic) | **✓ (BiDi + geckodriver auto-launch)** |
+| Backend selection (per session) | ✗ | **✓** |
+| Stealth / anti-bot mode | ✗ | **✓** |
+| Raw CDP/BiDi access | ✗ | **✓ (escape hatch)** |
+| Multi-action YAML batching | ✗ | **✓** |
+| Video recording | ✗ | **✓** |
+| Lighthouse audit | ✗ | **✓** |
+| WebAuthn / Bluetooth / Cast | ✗ | **✓** |
+| Natural language interaction | ✗ | **✓ (`wavexis_act`)** |
+| MCP resources & prompts | ✗ | **✓** |
+| Rate limiting | ✗ | **✓** |
+| SSRF protection | ✗ | **✓** |
+| Structured errors with suggestions | ✗ | **✓** |
+
+> **Note**: Playwright MCP supports WebKit (Safari) — WaveXisMCP does not (yet). See the [roadmap](https://github.com/MathiasPaulenko/wavexis-mcp/issues) for planned features.
 
 ## Documentation
 
