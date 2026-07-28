@@ -36,7 +36,7 @@ The LLM never sees the browser directly. It only sees tool definitions (name, de
 | Install size | ~200MB+ | **~5MB** |
 | Tool count | ~70 | **220** |
 | Capability tiers | Flat | **13 tiers, opt-in via `--caps`** |
-| Protocol | CDP only | **CDP + BiDi (cross-browser)** |
+| Protocol | CDP only | **CDP (recommended) + BiDi (experimental)** |
 | Raw protocol access | No | **Yes (`wavexis_raw_cdp`, `wavexis_raw_bidi`)** |
 | Video recording | No | **Yes** |
 | Lighthouse audit | No | **Yes** |

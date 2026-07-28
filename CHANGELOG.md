@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.20] - 2026-07-28
+
+### Added
+
+- E2E test job in CI: runs `tests/e2e` with real Chrome on Ubuntu, strict (no `continue-on-error`) (G-2).
+
+### Changed
+
+- BiDi backend (`backend="bidi"`) is now marked as **experimental** in quickstart, configuration, architecture docs, index page, and the server startup instructions message. CDP is recommended for production (G-3).
+
 ## [1.6.19] - 2026-07-28
 
 ### Fixed

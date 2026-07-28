@@ -173,7 +173,7 @@ wavexis_session_close(session_id="abc-123")
 When opening a session, choose your backend:
 
 ```text
-# CDP — Chromium-native, no driver needed (default)
+# CDP — Chromium-native, no driver needed (default, recommended)
 wavexis_session_open(backend="cdp")
 
 # BiDi — W3C cross-browser, needs ChromeDriver/EdgeDriver
@@ -181,6 +181,12 @@ wavexis_session_open(backend="bidi")
 ```
 
 CDP is recommended for Chrome/Edge only. BiDi enables Firefox support but requires a driver binary.
+
+!!! warning "BiDi is experimental"
+    The BiDi backend (`backend="bidi"`) is **experimental**. It has not been
+    fully tested with Firefox in production. CDP is the recommended backend
+    for Chrome/Edge. If you need Firefox, please report any issues on
+    [GitHub](https://github.com/MathiasPaulenko/wavexis-mcp/issues).
 
 ## Natural language interaction
 

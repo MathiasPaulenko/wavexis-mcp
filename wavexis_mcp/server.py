@@ -120,7 +120,9 @@ def create_server(
             f"Enabled tiers: {', '.join(sorted(caps_manager.enabled_tiers()))}. "
             "Use wavexis_session_open for multi-step workflows, "
             "or pass 'url' for stateless one-shot calls. "
-            "Use wavexis_act for natural language interaction."
+            "Use wavexis_act for natural language interaction. "
+            "Note: BiDi backend (backend='bidi') is experimental — "
+            "use CDP (default) for production."
         ),
     )
 
