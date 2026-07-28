@@ -197,10 +197,6 @@ class SessionManager:
         if remote_url is not None:
             validate_websocket_url(remote_url)
 
-        preferred = backend if backend != "auto" else None
-        backend_instance = self._backend_manager.select(preferred)
-        backend_name = backend_instance.__class__.__name__.replace("Backend", "").lower()
-
         # Reserve capacity before the expensive launch so concurrent opens cannot
         # both pass the limit check and exceed _MAX_SESSIONS.
         session_id = str(uuid.uuid4())
@@ -212,6 +208,10 @@ class SessionManager:
             self._pending.add(session_id)
 
         try:
+            preferred = backend if backend != "auto" else None
+            backend_instance = self._backend_manager.select(preferred)
+            backend_name = backend_instance.__class__.__name__.replace("Backend", "").lower()
+
             opts = BrowserOptions(
                 headless=headless,
                 width=width,
@@ -225,7 +225,7 @@ class SessionManager:
                 remote_url=remote_url,
                 stealth=stealth,
             )
-            await backend_instance.launch(opts)
+            await asyncio.wait_for(backend_instance.launch(opts), timeout=30.0)
             self._wrap_backend(backend_instance)
         except Exception:
             async with self._cond:
@@ -483,7 +483,7 @@ class SessionManager:
             stealth=stealth,
         )
         try:
-            await backend_instance.launch(opts)
+            await asyncio.wait_for(backend_instance.launch(opts), timeout=30.0)
             self._wrap_backend(backend_instance)
         except Exception as exc:
             try:

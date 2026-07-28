@@ -188,7 +188,9 @@ async def test_multi_action_unknown_action(
     result = await tool.fn(MultiActionInput(config=yaml_config, session_id=mock_session_id))
     data = json.loads(result)
     assert data["status"] == "ok"
-    assert data["results"][0]["status"] == "unknown"
+    assert len(data["errors"]) == 1
+    assert "Unknown action type" in data["errors"][0]["error"]
+    assert data["errors"][0]["type"] == "scroll"
 
 
 @pytest.mark.unit

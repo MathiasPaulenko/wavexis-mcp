@@ -202,13 +202,19 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                                 )
                                 results.append({"action": i, "type": "fill", "status": "ok"})
                             else:
-                                results.append(
+                                errors.append(
                                     {
                                         "action": i,
                                         "type": action_type,
-                                        "status": "unknown",
+                                        "error": (
+                                            f"Unknown action type '{action_type}'. "
+                                            "Valid types: navigate, screenshot, eval, "
+                                            "click, type, fill."
+                                        ),
                                     }
                                 )
+                                if not input.continue_on_error:
+                                    break
                     except Exception as exc:
                         errors.append({"action": i, "error": str(exc)})
                         if not input.continue_on_error:

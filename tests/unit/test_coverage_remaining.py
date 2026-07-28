@@ -478,9 +478,7 @@ def test_build_a11y_tree_branches() -> None:
 
 
 @pytest.mark.unit
-def test_parse_caps_and_help_request() -> None:
-    assert server_module.parse_caps(["--caps", "network"]) == "network"
-    assert server_module.parse_caps(["--caps=network"]) == "network"
+def test_help_request() -> None:
     assert server_module._is_help_request(["--help"]) is True
     assert server_module._is_help_request(["-h"]) is True
     assert server_module._is_help_request([]) is False

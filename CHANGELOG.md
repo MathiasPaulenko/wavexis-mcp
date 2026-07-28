@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.16] - 2026-07-28
+
+### Fixed
+
+- Removed duplicate `parse_caps()` helper; argparse already handles `--caps` parsing (W-2).
+- `CapsManager` now handles `none` explicitly, warns on duplicate tiers, and preserves user-specified order in `enabled_tiers()` (W-3, W-4).
+- `_validate_header_value` now validates header names (rejecting CRLF, null, colons, spaces, tabs) in addition to values (W-8).
+- `wavexis_multi_action` now reports unknown action types as errors instead of silently marking them as `status: "unknown"` (W-11).
+- `SessionManager.open()` now calls `backend_manager.select()` after the capacity check to avoid wasted work, and wraps `launch()` with a 30-second timeout to prevent hung launches from blocking sessions indefinitely (P2-16).
+- Corrected misleading comment on the `TimeoutError` backwards-compat alias in `errors.py` (P2-17).
+- `secure_output_path` now rejects UNC paths (`\\server\share`) with a clear error message on Windows (P3-18).
+
+### Tests
+
+- Added `test_none_string_defaults_to_core`, `test_duplicate_tier_warned`, `test_enabled_tiers_preserves_order` in `test_caps.py`.
+- Added `test_session_open_rejects_crlf_in_header_name` in `test_security.py`.
+- Updated `test_multi_action_unknown_action` to verify error reporting instead of silent `status: "unknown"`.
+
 ## [1.6.15] - 2026-07-28
 
 ### Changed

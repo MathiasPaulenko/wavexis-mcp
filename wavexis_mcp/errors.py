@@ -72,8 +72,9 @@ class OperationTimeoutError(WaveXisMCPError):
         super().__init__(f"Operation timed out after {timeout_ms}ms.")
 
 
-# Backwards-compatible alias; avoids shadowing the built-in ``TimeoutError``
-# as the primary class name while preserving existing imports.
+# Backwards-compatible alias.  This **does** shadow the built-in
+# ``TimeoutError`` in modules that import it; internal code should use
+# ``OperationTimeoutError`` or the built-in explicitly.
 TimeoutError = OperationTimeoutError
 
 

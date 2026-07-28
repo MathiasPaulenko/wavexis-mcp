@@ -43,34 +43,47 @@ class CapsManager:
                 or the special value ``"all"`` to enable every tier.
                 Defaults to ``"core"``.
         """
-        self._enabled: set[str] = self._parse(caps)
+        self._enabled: list[str] = self._parse(caps)
 
     @staticmethod
-    def _parse(caps: str) -> set[str]:
-        """Parse a caps string into a set of valid tier names.
+    def _parse(caps: str) -> list[str]:
+        """Parse a caps string into an ordered list of valid tier names.
 
-        Invalid tier names are warned about and skipped.
+        Invalid tier names are warned about and skipped.  Duplicate tiers
+        are warned about and deduplicated (preserving first occurrence order).
 
         Args:
             caps: Raw caps string from the CLI.
 
         Returns:
-            A set of validated tier names.  Always includes ``"core"``.
+            An ordered list of validated tier names.  Always includes ``"core"``
+            as the first element.
         """
         if caps.strip().lower() == "all":
-            return set(ALL_TIERS)
+            return sorted(ALL_TIERS)
 
         parts = [p.strip().lower() for p in caps.split(",") if p.strip()]
-        valid: set[str] = set()
+        valid: list[str] = []
+        seen: set[str] = set()
         for p in parts:
+            if p == "none" or p == "":
+                continue
             if p in ALL_TIERS:
-                valid.add(p)
+                if p in seen:
+                    warnings.warn(
+                        f"duplicate capability tier '{p}' ignored.",
+                        stacklevel=2,
+                    )
+                    continue
+                seen.add(p)
+                valid.append(p)
             else:
                 warnings.warn(
                     f"unknown capability tier '{p}'. Valid tiers: {', '.join(sorted(ALL_TIERS))}.",
                     stacklevel=2,
                 )
-        valid.add("core")
+        if "core" not in seen:
+            valid.insert(0, "core")
         return valid
 
     def is_enabled(self, tier: str) -> bool:
@@ -84,10 +97,10 @@ class CapsManager:
         """
         return tier in self._enabled
 
-    def enabled_tiers(self) -> set[str]:
-        """Return a copy of the set of enabled tier names.
+    def enabled_tiers(self) -> list[str]:
+        """Return a copy of the ordered list of enabled tier names.
 
         Returns:
-            Set of enabled tier names.
+            List of enabled tier names in the order they were specified.
         """
-        return set(self._enabled)
+        return list(self._enabled)

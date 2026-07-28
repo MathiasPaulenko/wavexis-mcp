@@ -68,24 +68,6 @@ def _print_startup_info(caps_manager: CapsManager) -> None:
     )
 
 
-def parse_caps(argv: list[str] | None = None) -> str:
-    """Parse ``--caps`` from command line arguments.
-
-    Args:
-        argv: Argument list to parse.  Defaults to ``sys.argv[1:]``.
-
-    Returns:
-        The caps string value, or ``"core"`` if not specified.
-    """
-    args = argv if argv is not None else sys.argv[1:]
-    for i, arg in enumerate(args):
-        if arg == "--caps" and i + 1 < len(args):
-            return args[i + 1]
-        if arg.startswith("--caps="):
-            return arg.split("=", 1)[1]
-    return "core"
-
-
 def _is_help_request(argv: list[str] | None = None) -> bool:
     """Check if --help is in the arguments.
 

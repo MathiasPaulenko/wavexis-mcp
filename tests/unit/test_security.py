@@ -186,6 +186,19 @@ async def test_session_open_rejects_crlf_in_extra_headers(
 
 
 @pytest.mark.unit
+async def test_session_open_rejects_crlf_in_header_name(
+    session_manager_with_mock: SessionManager,
+) -> None:
+    """Header names containing CRLF, colon, or spaces must be rejected."""
+    with pytest.raises(ValueError, match="Header name"):
+        await session_manager_with_mock.open(extra_headers={"X-Test:evil": "value"})
+    with pytest.raises(ValueError, match="Header name"):
+        await session_manager_with_mock.open(extra_headers={"X Test": "value"})
+    with pytest.raises(ValueError, match="Header name"):
+        await session_manager_with_mock.open(extra_headers={"X\r\nTest": "value"})
+
+
+@pytest.mark.unit
 async def test_service_worker_emulate_rejects_internal_url(
     session_manager_with_mock: SessionManager,
     mock_session_id: str,

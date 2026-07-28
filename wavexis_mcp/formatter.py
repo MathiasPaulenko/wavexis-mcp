@@ -63,6 +63,13 @@ def secure_output_path(path: str, base_dir: str | os.PathLike[str] | None = None
         base = Path(base_dir).resolve()
     else:
         base = Path(os.environ.get("WAVEXIS_MCP_OUTPUT_DIR", Path.cwd())).resolve()
+
+    # Reject UNC paths (\\server\share) and extended-length paths (\\?\)
+    # explicitly on Windows — they are absolute and would be rejected by
+    # relative_to() below, but a clear error message improves UX.
+    if os.name == "nt" and (path.startswith("\\\\") or path.startswith("//")):
+        raise ValueError(f"UNC paths are not allowed: {path!r}")
+
     target = Path(path)
     candidate = target if target.is_absolute() else base / target
 
@@ -86,15 +93,23 @@ def secure_output_path(path: str, base_dir: str | os.PathLike[str] | None = None
 
 
 def _validate_header_value(name: str, value: str) -> None:
-    """Validate that a header value does not contain injection characters.
+    """Validate that a header name and value do not contain injection characters.
 
     Args:
-        name: Header name (used in error messages).
+        name: Header name to validate.
         value: Header value to validate.
 
     Raises:
-        ValueError: If *value* contains a carriage return, line feed, or null byte.
+        ValueError: If *name* or *value* contains forbidden characters
+            (CRLF, null, or — for names — colons, spaces, or tabs).
     """
+    # Validate header name: no CRLF, null, colon, space, or tab.
+    forbidden_name = {"\r", "\n", "\x00", ":", " ", "\t"}
+    if any(ch in name for ch in forbidden_name):
+        raise ValueError(
+            f"Header name {name!r} contains forbidden characters (CRLF, null, colon, space, or tab)"
+        )
+    # Validate header value: no CRLF or null.
     if "\r" in value or "\n" in value or "\x00" in value:
         raise ValueError(f"Header value for {name!r} contains forbidden characters (CRLF or null)")
 
