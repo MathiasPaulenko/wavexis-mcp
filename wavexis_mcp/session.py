@@ -39,6 +39,34 @@ DEFAULT_BACKEND_TIMEOUT = 30.0
 _MAX_SESSIONS = 1000
 _logger = logging.getLogger(__name__)
 
+# Minimal web-vitals collection script injected after navigation when
+# auto_web_vitals is enabled.  Stores results in ``window.__wavexis_vitals``.
+_WEB_VITALS_INJECT_SCRIPT = """
+(function() {
+  if (window.__wavexis_vitals_collecting) return;
+  window.__wavexis_vitals_collecting = true;
+  window.__wavexis_vitals = {};
+  const obs = new PerformanceObserver(function(list) {
+    for (const entry of list.getEntries()) {
+      if (entry.entryType === 'largest-contentful-paint')
+        window.__wavexis_vitals.lcp = entry.startTime;
+      if (entry.entryType === 'layout-shift')
+        window.__wavexis_vitals.cls = (window.__wavexis_vitals.cls || 0) + entry.value;
+    }
+  });
+  try { obs.observe({type: 'largest-contentful-paint', buffered: true}); } catch(e) {}
+  try { obs.observe({type: 'layout-shift', buffered: true}); } catch(e) {}
+  try {
+    const inpObs = new PerformanceObserver(function(list) {
+      for (const entry of list.getEntries()) {
+        window.__wavexis_vitals.inp = Math.max(window.__wavexis_vitals.inp || 0, entry.duration);
+      }
+    });
+    inpObs.observe({type: 'event', buffered: true});
+  } catch(e) {}
+})();
+"""
+
 
 class _BackendProxy:
     """Wrap a backend so all awaitable method calls time out.
@@ -132,20 +160,35 @@ class SessionManager:
         self.rate_limiter: RateLimiter | None = None
         self._cond = asyncio.Condition()
         self._shutting_down = False
+        # Global configuration applied to every new session.
+        self.blocked_origins: list[str] = []
+        self.storage_state_path: str | None = None
+        self.auto_web_vitals: bool = False
 
-    @staticmethod
-    def _wrap_backend(backend: AbstractBackend) -> None:
+    def _wrap_backend(self, backend: AbstractBackend) -> None:
         """Wrap ``backend.navigate`` so every URL is validated before use.
 
         Mocks are left untouched so unit tests can continue to inspect calls.
+        When ``auto_web_vitals`` is enabled, a web-vitals collection script
+        is injected after each navigation.
         """
         original = backend.navigate
         if isinstance(original, AsyncMock):
             return
 
+        auto_vitals = self.auto_web_vitals
+
         async def _navigate(url: str, wait: WaitStrategy | None = None) -> None:
             validate_url(url)
             await original(url, wait)
+            if auto_vitals:
+                try:
+                    await asyncio.wait_for(
+                        backend.eval(_WEB_VITALS_INJECT_SCRIPT, await_promise=False),
+                        timeout=2.0,
+                    )
+                except Exception:
+                    _logger.debug("Web Vitals injection failed for %s", url)
 
         backend.navigate = _navigate
 
@@ -227,6 +270,27 @@ class SessionManager:
             )
             await asyncio.wait_for(backend_instance.launch(opts), timeout=30.0)
             self._wrap_backend(backend_instance)
+
+            # Apply global blocked origins if configured.
+            if self.blocked_origins:
+                try:
+                    await backend_instance.block_requests(self.blocked_origins)
+                except Exception:
+                    _logger.warning(
+                        "Failed to apply blocked origins %s to session %s",
+                        self.blocked_origins,
+                        session_id,
+                    )
+
+            # Restore storage state if configured.
+            if self.storage_state_path:
+                try:
+                    await self._restore_storage_state(backend_instance)
+                except Exception:
+                    _logger.warning(
+                        "Failed to restore storage state from %s",
+                        self.storage_state_path,
+                    )
         except Exception:
             async with self._cond:
                 self._pending.discard(session_id)
@@ -259,6 +323,57 @@ class SessionManager:
                 last_used=now,
             )
         return session_id
+
+    async def _restore_storage_state(self, backend: AbstractBackend) -> None:
+        """Restore cookies and storage from a JSON file on *backend*.
+
+        Args:
+            backend: The freshly launched backend to restore state into.
+        """
+        import json
+        from pathlib import Path
+
+        path_str = self.storage_state_path
+        if not path_str:
+            return
+        path = Path(path_str)
+
+        def _read() -> dict[str, Any]:
+            if not path.is_file():
+                return {}
+            result: dict[str, Any] = json.loads(path.read_text(encoding="utf-8"))
+            return result
+
+        data: dict[str, Any] = await asyncio.to_thread(_read)
+        if not data:
+            _logger.warning("Storage state file not found or empty: %s", path)
+            return
+
+        # Restore cookies.
+        cookies = data.get("cookies", [])
+        if cookies:
+            try:
+                await backend.set_cookies(cookies)
+            except Exception:
+                _logger.warning("Failed to restore %d cookies from storage state", len(cookies))
+
+        # Restore localStorage.
+        local_items = data.get("localStorage", {})
+        if local_items:
+            pairs = ", ".join(
+                f"localStorage.setItem({json.dumps(k)}, {json.dumps(v)})"
+                for k, v in local_items.items()
+            )
+            await asyncio.wait_for(backend.eval(pairs, await_promise=False), timeout=5.0)
+
+        # Restore sessionStorage.
+        session_items = data.get("sessionStorage", {})
+        if session_items:
+            pairs = ", ".join(
+                f"sessionStorage.setItem({json.dumps(k)}, {json.dumps(v)})"
+                for k, v in session_items.items()
+            )
+            await asyncio.wait_for(backend.eval(pairs, await_promise=False), timeout=5.0)
 
     async def close(self, session_id: str, *, timeout_s: float = 30.0) -> None:
         """Close a browser session and remove it from the manager.

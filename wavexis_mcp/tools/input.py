@@ -6,7 +6,9 @@ key_press, drag, tap, set_files, check, and uncheck tools.
 
 from __future__ import annotations
 
+import asyncio
 import json
+import logging
 from pathlib import Path
 from typing import Any
 
@@ -41,8 +43,58 @@ from wavexis_mcp.models import (
 )
 from wavexis_mcp.session import SessionManager
 
+_logger = logging.getLogger(__name__)
+
 _MAX_FILE_SIZE = 100 * 1024 * 1024  # 100 MiB per file
 _MAX_TOTAL_FILE_SIZE = 500 * 1024 * 1024  # 500 MiB total
+
+# Stale element retry configuration.
+_STALE_RETRY_COUNT = 2
+_STALE_RETRY_DELAY_S = 0.1
+
+# Keywords that indicate a stale element error from the backend.
+_STALE_KEYWORDS = frozenset(
+    {"stale", "not attached", "element not found", "node not found", "detached"}
+)
+
+
+def _is_stale_error(exc: Exception) -> bool:
+    """Check if *exc* is a stale-element or detached-element error."""
+    msg = str(exc).lower()
+    return any(kw in msg for kw in _STALE_KEYWORDS)
+
+
+async def _with_retry(coro_factory: Any, *, retries: int = _STALE_RETRY_COUNT) -> Any:
+    """Execute a coroutine with auto-retry on stale element errors.
+
+    Args:
+        coro_factory: A zero-argument callable that returns a new coroutine
+            each call (so retries get a fresh attempt).
+        retries: Maximum number of retries on stale errors.
+
+    Returns:
+        The result of the coroutine.
+
+    Raises:
+        The last exception if all retries are exhausted or the error is not stale.
+    """
+    last_exc: Exception | None = None
+    for attempt in range(retries + 1):
+        try:
+            return await coro_factory()
+        except Exception as exc:
+            last_exc = exc
+            if not _is_stale_error(exc) or attempt >= retries:
+                raise
+            _logger.debug(
+                "Stale element detected (attempt %d/%d), retrying in %.2fs",
+                attempt + 1,
+                retries + 1,
+                _STALE_RETRY_DELAY_S,
+            )
+            await asyncio.sleep(_STALE_RETRY_DELAY_S)
+    if last_exc is not None:
+        raise last_exc  # pragma: no cover — unreachable
 
 
 def _validate_files(paths: list[str]) -> list[Path]:
@@ -113,10 +165,12 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                     wait = session_manager.make_wait(timeout=input.wait_timeout)
                     validate_url(input.url)
                     await backend.navigate(input.url, wait)
-                await backend.click(
-                    input.selector,
-                    button=input.button,
-                    click_count=input.click_count,
+                await _with_retry(
+                    lambda: backend.click(
+                        input.selector,
+                        button=input.button,
+                        click_count=input.click_count,
+                    )
                 )
                 return format_json_response({"status": "ok"})
             finally:
@@ -152,7 +206,9 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                     wait = session_manager.make_wait(timeout=input.wait_timeout)
                     validate_url(input.url)
                     await backend.navigate(input.url, wait)
-                await backend.double_click(input.selector, auto_wait=input.auto_wait)
+                await _with_retry(
+                    lambda: backend.double_click(input.selector, auto_wait=input.auto_wait)
+                )
                 return format_json_response({"status": "ok"})
             finally:
                 await session_manager.release_backend(backend, sid)
@@ -257,7 +313,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                     wait = session_manager.make_wait(timeout=input.wait_timeout)
                     validate_url(input.url)
                     await backend.navigate(input.url, wait)
-                await backend.fill(input.selector, input.value)
+                await _with_retry(lambda: backend.fill(input.selector, input.value))
                 return format_json_response({"status": "ok"})
             finally:
                 await session_manager.release_backend(backend, sid)
@@ -327,7 +383,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                     wait = session_manager.make_wait(timeout=input.wait_timeout)
                     validate_url(input.url)
                     await backend.navigate(input.url, wait)
-                await backend.select_option(input.selector, input.value)
+                await _with_retry(lambda: backend.select_option(input.selector, input.value))
                 return format_json_response({"status": "ok"})
             finally:
                 await session_manager.release_backend(backend, sid)
@@ -362,7 +418,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                     wait = session_manager.make_wait(timeout=input.wait_timeout)
                     validate_url(input.url)
                     await backend.navigate(input.url, wait)
-                await backend.hover(input.selector)
+                await _with_retry(lambda: backend.hover(input.selector))
                 return format_json_response({"status": "ok"})
             finally:
                 await session_manager.release_backend(backend, sid)
@@ -456,7 +512,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                     wait = session_manager.make_wait(timeout=input.wait_timeout)
                     validate_url(input.url)
                     await backend.navigate(input.url, wait)
-                await backend.tap(input.selector)
+                await _with_retry(lambda: backend.tap(input.selector))
                 return format_json_response({"status": "ok"})
             finally:
                 await session_manager.release_backend(backend, sid)

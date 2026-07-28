@@ -397,6 +397,28 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=10,
         help="Max burst size for rate limiting (default: 10)",
     )
+    parser.add_argument(
+        "--blocked-origins",
+        default="",
+        help=(
+            "Comma-separated URL patterns to block on every new session "
+            "(e.g. '*.ads.example.com,*tracker*')"
+        ),
+    )
+    parser.add_argument(
+        "--storage-state",
+        default=None,
+        help=(
+            "Path to a JSON file with cookies/localStorage/sessionStorage "
+            "to restore on every new session"
+        ),
+    )
+    parser.add_argument(
+        "--auto-web-vitals",
+        action="store_true",
+        default=False,
+        help="Inject web-vitals collection script after every navigation",
+    )
     return parser.parse_args(argv)
 
 
@@ -420,6 +442,18 @@ def main(argv: list[str] | None = None) -> None:
     )
 
     rate_limiter = getattr(mcp, "_wavexis_rate_limiter", None)
+    session_manager = getattr(mcp, "_wavexis_session_manager", None)
+
+    # Apply global session configuration from CLI flags.
+    if session_manager is not None:
+        if args.blocked_origins:
+            session_manager.blocked_origins = [
+                p.strip() for p in args.blocked_origins.split(",") if p.strip()
+            ]
+        if args.storage_state:
+            session_manager.storage_state_path = args.storage_state
+        if args.auto_web_vitals:
+            session_manager.auto_web_vitals = True
 
     _apply_rate_limiting(mcp, rate_limiter)
 

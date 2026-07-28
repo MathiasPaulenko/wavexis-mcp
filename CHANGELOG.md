@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.17] - 2026-07-28
+
+### Added
+
+- `--blocked-origins` CLI flag to block URL patterns globally on every new session (F-7).
+- `--storage-state` CLI flag to restore cookies/localStorage/sessionStorage from a JSON file on every new session (F-8).
+- `--auto-web-vitals` CLI flag to inject web-vitals collection script (LCP, CLS, INP) after every navigation (F-10).
+- Stale element auto-retry: `wavexis_click`, `wavexis_double_click`, `wavexis_fill`, `wavexis_hover`, `wavexis_select_option`, and `wavexis_tap` now automatically retry on stale/detached element errors (up to 2 retries with 100ms delay) (F-9).
+
+### Tests
+
+- Added `tests/unit/test_sprint4_features.py` with 11 tests covering blocked origins, storage state restore, stale element retry, and auto web vitals injection.
+
 ## [1.6.16] - 2026-07-28
 
 ### Fixed
