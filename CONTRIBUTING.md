@@ -1,6 +1,13 @@
 # Contributing to WaveXisMCP
 
+[![Good First Issues](https://img.shields.io/github/issues/MathiasPaulenko/wavexis-mcp/good%20first%20issue)](https://github.com/MathiasPaulenko/wavexis-mcp/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
+[![Contributors](https://img.shields.io/github/contributors/MathiasPaulenko/wavexis-mcp)](https://github.com/MathiasPaulenko/wavexis-mcp/graphs/contributors)
+
 Thank you for your interest in contributing! This document covers setup, testing, and the PR process.
+
+## Good first issues
+
+New to the codebase? Check out issues labeled [`good first issue`](https://github.com/MathiasPaulenko/wavexis-mcp/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) — these are scoped tasks with detailed instructions and references to get you started quickly.
 
 ## Development Setup
 

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Good first issues
+    url: https://github.com/MathiasPaulenko/wavexis-mcp/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22
+    about: New to the codebase? Start here — scoped tasks with detailed instructions.
+  - name: Documentation
+    url: https://mathiaspaulenko.github.io/wavexis-mcp/
+    about: Read the docs before opening an issue — your question may already be answered.
