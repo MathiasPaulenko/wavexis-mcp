@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.13] - 2026-07-27
+
+### Fixed
+
+- Reformatted `wavexis_mcp/tools/experimental.py` to satisfy `ruff format` in CI.
+
 ## [1.6.12] - 2026-07-27
 
 ### Fixed
