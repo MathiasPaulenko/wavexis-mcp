@@ -28,6 +28,7 @@ from wavexis_mcp.errors import SessionNotFoundError
 from wavexis_mcp.formatter import (
     _validate_header_value,
     secure_output_path,
+    validate_proxy_url,
     validate_url,
     validate_websocket_url,
 )
@@ -239,6 +240,8 @@ class SessionManager:
             validate_websocket_url(connect_endpoint)
         if remote_url is not None:
             validate_websocket_url(remote_url)
+        if proxy is not None:
+            validate_proxy_url(proxy)
 
         # Reserve capacity before the expensive launch so concurrent opens cannot
         # both pass the limit check and exceed _MAX_SESSIONS.
@@ -580,6 +583,8 @@ class SessionManager:
             validate_websocket_url(connect_endpoint)
         if remote_url is not None:
             validate_websocket_url(remote_url)
+        if proxy is not None:
+            validate_proxy_url(proxy)
 
         preferred = backend if backend != "auto" else None
         backend_instance = self._backend_manager.select(preferred)

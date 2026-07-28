@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 from typing import Any
 
 from mcp.server.fastmcp import FastMCP
@@ -37,6 +38,8 @@ from wavexis_mcp.models import (
     StorageStateSaveInput,
 )
 from wavexis_mcp.session import SessionManager
+
+_logger = logging.getLogger(__name__)
 
 _MAX_RESTORE_COOKIES = 1000
 _MAX_RESTORE_STORAGE_ITEMS = 1000
@@ -640,7 +643,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                 )
                 for cookie in cookies
             ]
-            await asyncio.gather(*cookie_tasks, return_exceptions=True)
+            results = await asyncio.gather(*cookie_tasks, return_exceptions=True)
+            failed = sum(1 for r in results if isinstance(r, Exception))
+            if failed:
+                _logger.warning(
+                    "Failed to restore %d/%d cookies from storage state",
+                    failed,
+                    len(cookies),
+                )
 
             local_storage = state.get("localStorage", {})
             if len(local_storage) > _MAX_RESTORE_STORAGE_ITEMS:

@@ -193,3 +193,30 @@ def test_secure_output_path_rejects_symlink_dir_escape(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="Symlinks"):
         secure_output_path("linkdir/file.txt", base_dir=tmp_path)
+
+
+def test_validate_proxy_url_accepts_valid_schemes() -> None:
+    from wavexis_mcp.formatter import validate_proxy_url
+
+    for url in ("http://proxy:8080", "https://proxy:443", "socks5://proxy:1080"):
+        validate_proxy_url(url)  # should not raise
+
+
+def test_validate_proxy_url_rejects_invalid_scheme() -> None:
+    from wavexis_mcp.formatter import validate_proxy_url
+
+    with pytest.raises(ValueError, match="scheme"):
+        validate_proxy_url("ftp://proxy:21")
+
+
+def test_validate_proxy_url_rejects_empty_host() -> None:
+    from wavexis_mcp.formatter import validate_proxy_url
+
+    with pytest.raises(ValueError, match="no host"):
+        validate_proxy_url("http://")
+
+
+def test_validate_proxy_url_allows_empty() -> None:
+    from wavexis_mcp.formatter import validate_proxy_url
+
+    validate_proxy_url("")  # should not raise

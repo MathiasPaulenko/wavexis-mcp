@@ -255,6 +255,31 @@ def validate_websocket_url(url: str, *, allow_internal: bool | None = None) -> N
         )
 
 
+_PROXY_SCHEMES = frozenset({"http", "https", "socks", "socks4", "socks5"})
+
+
+def validate_proxy_url(url: str) -> None:
+    """Validate that a proxy *url* has an acceptable scheme and host.
+
+    Args:
+        url: The proxy URL to validate.
+
+    Raises:
+        ValueError: If the scheme is not allowed or the URL is malformed.
+    """
+    if not url:
+        return
+    parsed = urlparse(url)
+    if parsed.scheme not in _PROXY_SCHEMES:
+        raise ValueError(
+            f"Proxy URL scheme {parsed.scheme!r} is not allowed: {url}. "
+            f"Allowed schemes: {', '.join(sorted(_PROXY_SCHEMES))}."
+        )
+    hostname = (parsed.hostname or "").lower().strip()
+    if not hostname:
+        raise ValueError(f"Proxy URL has no host: {url}")
+
+
 def encode_base64(data: bytes) -> str:
     """Encode raw bytes as a base64 ASCII string.
 
