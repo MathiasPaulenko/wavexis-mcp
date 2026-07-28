@@ -25,7 +25,12 @@ from wavexis.backend.manager import BackendManager
 from wavexis.config import BrowserOptions, WaitStrategy
 
 from wavexis_mcp.errors import SessionNotFoundError
-from wavexis_mcp.formatter import _validate_header_value, secure_output_path, validate_url
+from wavexis_mcp.formatter import (
+    _validate_header_value,
+    secure_output_path,
+    validate_url,
+    validate_websocket_url,
+)
 from wavexis_mcp.rate_limiter import RateLimiter
 
 _T = TypeVar("_T")
@@ -186,6 +191,11 @@ class SessionManager:
         if extra_headers:
             for name, value in extra_headers.items():
                 _validate_header_value(name, value)
+
+        if connect_endpoint is not None:
+            validate_websocket_url(connect_endpoint)
+        if remote_url is not None:
+            validate_websocket_url(remote_url)
 
         preferred = backend if backend != "auto" else None
         backend_instance = self._backend_manager.select(preferred)
@@ -450,6 +460,11 @@ class SessionManager:
         if extra_headers:
             for name, value in extra_headers.items():
                 _validate_header_value(name, value)
+
+        if connect_endpoint is not None:
+            validate_websocket_url(connect_endpoint)
+        if remote_url is not None:
+            validate_websocket_url(remote_url)
 
         preferred = backend if backend != "auto" else None
         backend_instance = self._backend_manager.select(preferred)

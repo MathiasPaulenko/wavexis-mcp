@@ -54,3 +54,4 @@ bug_hunt_report.txt
 # Test outputs
 output/
 scripts/test_*.py
+ref/

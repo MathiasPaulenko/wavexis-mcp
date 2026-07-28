@@ -283,3 +283,97 @@ async def test_set_files_rejects_oversized_file(
         )
     data = json.loads(result)
     assert "error" in data
+
+
+@pytest.mark.unit
+async def test_session_open_rejects_internal_connect_endpoint(
+    session_manager_with_mock: SessionManager,
+) -> None:
+    """connect_endpoint pointing to an internal IP must be rejected."""
+    with pytest.raises(ValueError, match="private/internal"):
+        await session_manager_with_mock.open(connect_endpoint="ws://127.0.0.1:9222")
+
+
+@pytest.mark.unit
+async def test_session_open_rejects_internal_remote_url(
+    session_manager_with_mock: SessionManager,
+) -> None:
+    """remote_url pointing to a cloud metadata endpoint must be rejected."""
+    with pytest.raises(ValueError, match="blocked"):
+        await session_manager_with_mock.open(remote_url="ws://169.254.169.254:9222")
+
+
+@pytest.mark.unit
+async def test_session_open_rejects_non_ws_scheme(
+    session_manager_with_mock: SessionManager,
+) -> None:
+    """connect_endpoint must only accept ws/wss schemes."""
+    with pytest.raises(ValueError, match="scheme"):
+        await session_manager_with_mock.open(connect_endpoint="http://example.com:9222")
+
+
+@pytest.mark.unit
+async def test_session_open_rejects_file_scheme_remote_url(
+    session_manager_with_mock: SessionManager,
+) -> None:
+    """remote_url must reject non-WebSocket schemes."""
+    with pytest.raises(ValueError, match="scheme"):
+        await session_manager_with_mock.open(remote_url="file:///etc/passwd")
+
+
+@pytest.mark.unit
+async def test_session_open_allows_public_wss_endpoint(
+    session_manager_with_mock: SessionManager,
+) -> None:
+    """Public WSS endpoints should be accepted without error."""
+    # Should not raise — public hostname, wss scheme.
+    await session_manager_with_mock.open(remote_url="wss://browsercloud.example.com")
+
+
+@pytest.mark.unit
+async def test_format_error_sanitizes_credentials_in_url() -> None:
+    """Error messages containing URLs with credentials must be masked."""
+    from wavexis_mcp.formatter import format_error
+
+    err = ValueError("Failed to navigate to http://user:secret@example.com/path")
+    result = format_error("wavexis_navigate", err)
+    data = json.loads(result)
+    assert "secret" not in data["error"]
+    assert "secret" not in data["message"]
+    assert "***:***@" in data["error"]
+
+
+@pytest.mark.unit
+async def test_format_error_sanitizes_token_in_message() -> None:
+    """Error messages containing token= values must be masked."""
+    from wavexis_mcp.formatter import format_error
+
+    err = RuntimeError("Backend error: token=abc123secret call failed")
+    result = format_error("wavexis_eval", err)
+    data = json.loads(result)
+    assert "abc123secret" not in data["error"]
+    assert "abc123secret" not in data["message"]
+
+
+@pytest.mark.unit
+async def test_format_error_sanitizes_authorization_header() -> None:
+    """Error messages containing Authorization values must be masked."""
+    from wavexis_mcp.formatter import format_error
+
+    err = ValueError("Request failed: Authorization=eyJhbGciOiJIUzI1")
+    result = format_error("wavexis_navigate", err)
+    data = json.loads(result)
+    assert "eyJhbGciOiJIUzI1" not in data["error"]
+    assert "eyJhbGciOiJIUzI1" not in data["message"]
+
+
+@pytest.mark.unit
+async def test_format_error_preserves_non_sensitive_messages() -> None:
+    """Non-sensitive error messages should pass through unchanged."""
+    from wavexis_mcp.formatter import format_error
+
+    err = ValueError("Selector '#button' not found on page")
+    result = format_error("wavexis_click", err)
+    data = json.loads(result)
+    assert data["error"] == "Selector '#button' not found on page"
+    assert data["message"] == "Selector '#button' not found on page"

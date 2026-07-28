@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.14] - 2026-07-28
+
+### Security
+
+- `SessionManager.open` and `acquire_backend` now validate `connect_endpoint` and `remote_url` WebSocket URLs via `validate_websocket_url`, rejecting non-`ws`/`wss` schemes, private IPs, localhost, and cloud metadata endpoints. Prevents SSRF and data exfiltration via attacker-controlled WebSocket endpoints.
+- `format_error` now sanitizes error messages before logging and returning to clients, masking URLs with embedded credentials (`http://user:pass@host` → `http://***:***@host`) and key/value secret patterns (`token=`, `api_key=`, `authorization=`, `bearer`, `secret`, `password`).
+
+### Added
+
+- `validate_websocket_url` helper in `wavexis_mcp/formatter` with the same IP/scheme blocking logic as `validate_url`.
+
+### Tests
+
+- Added regression tests for WebSocket endpoint validation (internal IP rejection, scheme rejection, public WSS acceptance).
+- Added regression tests for error message sanitization (credential URLs, token values, authorization headers, non-sensitive passthrough).
+
 ## [1.6.13] - 2026-07-27
 
 ### Fixed

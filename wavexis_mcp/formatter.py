@@ -12,12 +12,31 @@ import ipaddress
 import json
 import logging
 import os
+import re
 import socket
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
 _logger = logging.getLogger(__name__)
+
+
+# Patterns that may appear in error messages and leak secrets.
+_CREDENTIAL_URL_RE = re.compile(r"://[^:/@\s]+:[^/@\s]+@")
+_SECRET_KV_RE = re.compile(
+    r"(?i)(token|api[_-]?key|secret|password|authorization|bearer)\s*[=:]\s*\S+"
+)
+
+
+def _sanitize_message(message: str) -> str:
+    """Remove sensitive data from *message* before logging or returning to clients.
+
+    Masks credentials embedded in URLs (``http://user:pass@host``) and
+    key/value secret patterns (``token=abc123``).
+    """
+    sanitized = _CREDENTIAL_URL_RE.sub("://***:***@", message)
+    sanitized = _SECRET_KV_RE.sub(r"\1=***", sanitized)
+    return sanitized
 
 
 def secure_output_path(path: str, base_dir: str | os.PathLike[str] | None = None) -> Path:
@@ -158,6 +177,69 @@ def validate_url(url: str, *, allow_internal: bool | None = None) -> None:
         )
 
 
+def validate_websocket_url(url: str, *, allow_internal: bool | None = None) -> None:
+    """Validate that a WebSocket *url* is safe to connect to.
+
+    Only ``ws`` and ``wss`` schemes are allowed.  Hostname/IP checks reuse the
+    same logic as :func:`validate_url` (blocking private IPs, localhost, cloud
+    metadata endpoints) unless *allow_internal* or the
+    ``WAVEXIS_MCP_ALLOW_INTERNAL_URLS`` environment variable opts in.
+
+    Args:
+        url: The WebSocket URL to validate.
+        allow_internal: Override the default internal-URL policy.
+
+    Raises:
+        ValueError: If the URL is not safe to connect to.
+    """
+    if not url:
+        return
+
+    parsed = urlparse(url)
+    if parsed.scheme not in {"ws", "wss"}:
+        raise ValueError(
+            f"WebSocket URL scheme {parsed.scheme!r} is not allowed: {url}. "
+            "Only 'ws' and 'wss' are accepted."
+        )
+
+    hostname = (parsed.hostname or "").lower().strip()
+    if not hostname:
+        raise ValueError(f"WebSocket URL has no host: {url}")
+
+    if hostname in _BLOCKED_HOSTS:
+        raise ValueError(f"WebSocket URL host {hostname!r} is blocked: {url}")
+
+    if allow_internal is None:
+        allow_internal = os.environ.get("WAVEXIS_MCP_ALLOW_INTERNAL_URLS", "").lower() in {
+            "1",
+            "true",
+            "yes",
+        }
+
+    try:
+        addr = ipaddress.ip_address(hostname)
+    except ValueError:
+        try:
+            packed = socket.inet_aton(hostname)
+            normalized = socket.inet_ntoa(packed)
+            addr = ipaddress.ip_address(normalized)
+        except (OSError, ValueError):
+            try:
+                packed = socket.inet_pton(socket.AF_INET6, hostname)
+                normalized = socket.inet_ntop(socket.AF_INET6, packed)
+                addr = ipaddress.ip_address(normalized)
+            except (OSError, ValueError):
+                return
+
+    if (
+        addr.is_loopback or addr.is_link_local or addr.is_private or addr.is_reserved
+    ) and not allow_internal:
+        raise ValueError(
+            f"WebSocket URL resolves to a private/internal IP ({addr}) and is blocked: {url}. "
+            "Set WAVEXIS_MCP_ALLOW_INTERNAL_URLS=1 to allow internal URLs."
+        )
+
+
 def encode_base64(data: bytes) -> str:
     """Encode raw bytes as a base64 ASCII string.
 
@@ -236,14 +318,14 @@ def format_error(tool: str, error: Exception) -> str:
     """
     from wavexis_mcp.errors import get_suggestion
 
-    safe_message = str(error).replace("\r", "").replace("\n", " ")
+    safe_message = _sanitize_message(str(error)).replace("\r", "").replace("\n", " ")
     _logger.exception("Tool %s failed: %s", tool, safe_message)
     return json.dumps(
         {
-            "error": str(error),
+            "error": safe_message,
             "tool": tool,
             "type": type(error).__name__,
-            "message": str(error),
+            "message": safe_message,
             "suggestion": get_suggestion(error),
         },
         ensure_ascii=False,
