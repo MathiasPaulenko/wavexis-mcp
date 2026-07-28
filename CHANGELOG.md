@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.19] - 2026-07-28
+
+### Fixed
+
+- `wavexis_record` now captures real browser interactions instead of returning hardcoded YAML. Injects a recording script that listens for clicks, input changes, keypresses, scroll, and SPA navigations, then converts the captured events into a multi-action YAML workflow (G-1).
+
+### Tests
+
+- Updated `test_record` to verify real event capture and YAML generation.
+- Added `test_record_no_events` to verify behavior when no interactions occur.
+
 ## [1.6.18] - 2026-07-28
 
 ### Added

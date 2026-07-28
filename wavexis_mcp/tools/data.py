@@ -80,6 +80,175 @@ async def _try_navigate(backend: AbstractBackend, url: str, wait: WaitStrategy) 
     return True
 
 
+# ── wavexis_record helpers ──────────────────────────────────────────
+
+# JavaScript injected into the page to capture user interactions.
+# Events are accumulated in window.__wavexis_recorded_events as a list
+# of {type, selector, value, url, timestamp} dicts.
+_RECORD_INJECT_SCRIPT = """
+(function() {
+  if (window.__wavexis_recording) return;
+  window.__wavexis_recording = true;
+  window.__wavexis_recorded_events = window.__wavexis_recorded_events || [];
+
+  function getSelector(el) {
+    if (!el || el.nodeType !== 1) return null;
+    if (el.id) return '#' + el.id;
+    if (el.getAttribute('data-testid'))
+      return '[data-testid="' + el.getAttribute('data-testid') + '"]';
+    var tag = el.tagName.toLowerCase();
+    if (el.className && typeof el.className === 'string') {
+      var cls = el.className.trim().split(/\\s+/).slice(0, 2).join('.');
+      if (cls) return tag + '.' + cls;
+    }
+    // Fallback: nth-child path.
+    var path = [];
+    var node = el;
+    while (node && node.nodeType === 1 && node !== document.body) {
+      var parent = node.parentNode;
+      if (!parent) break;
+      var siblings = Array.prototype.filter.call(parent.children,
+        function(c) { return c.tagName === node.tagName; });
+      var idx = siblings.indexOf(node) + 1;
+      path.unshift(node.tagName.toLowerCase() + ':nth-child(' + idx + ')');
+      node = parent;
+    }
+    return path.length ? path.join(' > ') : tag;
+  }
+
+  // Click events.
+  document.addEventListener('click', function(e) {
+    var el = e.target;
+    window.__wavexis_recorded_events.push({
+      type: 'click',
+      selector: getSelector(el),
+      text: (el.innerText || '').substring(0, 100),
+      url: location.href,
+      timestamp: Date.now()
+    });
+  }, true);
+
+  // Input/change events (for fill/type).
+  document.addEventListener('change', function(e) {
+    var el = e.target;
+    if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT') {
+      window.__wavexis_recorded_events.push({
+        type: 'fill',
+        selector: getSelector(el),
+        value: el.value,
+        url: location.href,
+        timestamp: Date.now()
+      });
+    }
+  }, true);
+
+  // Keydown events (for key_press).
+  document.addEventListener('keydown', function(e) {
+    if (e.key.length === 1 || ['Enter','Tab','Escape','Backspace','Delete'].includes(e.key)) {
+      window.__wavexis_recorded_events.push({
+        type: 'keypress',
+        key: e.key,
+        selector: getSelector(e.target),
+        url: location.href,
+        timestamp: Date.now()
+      });
+    }
+  }, true);
+
+  // Scroll events (throttled).
+  var scrollTimer = null;
+  window.addEventListener('scroll', function() {
+    if (scrollTimer) return;
+    scrollTimer = setTimeout(function() {
+      window.__wavexis_recorded_events.push({
+        type: 'scroll',
+        scrollX: window.scrollX,
+        scrollY: window.scrollY,
+        url: location.href,
+        timestamp: Date.now()
+      });
+      scrollTimer = null;
+    }, 500);
+  }, true);
+
+  // Navigation events.
+  window.addEventListener('beforeunload', function() {
+    window.__wavexis_recorded_events.push({
+      type: 'navigate',
+      url: location.href,
+      timestamp: Date.now()
+    });
+  });
+
+  // History API (SPA navigations).
+  var origPushState = history.pushState;
+  var origReplaceState = history.replaceState;
+  history.pushState = function() {
+    window.__wavexis_recorded_events.push({
+      type: 'navigate',
+      url: arguments[2] || location.href,
+      timestamp: Date.now()
+    });
+    return origPushState.apply(this, arguments);
+  };
+  history.replaceState = function() {
+    window.__wavexis_recorded_events.push({
+      type: 'navigate',
+      url: arguments[2] || location.href,
+      timestamp: Date.now()
+    });
+    return origReplaceState.apply(this, arguments);
+  };
+})();
+"""
+
+
+def _events_to_actions(events: list[dict[str, Any]], initial_url: str) -> list[dict[str, Any]]:
+    """Convert recorded events to multi-action YAML actions.
+
+    Args:
+        events: Raw events captured by the recording script.
+        initial_url: The URL the recording started on (for the initial navigate).
+
+    Returns:
+        A list of action dicts suitable for ``wavexis_multi_action``.
+    """
+    actions: list[dict[str, Any]] = [{"navigate": {"url": initial_url}}]
+    last_url = initial_url
+
+    for event in events:
+        etype = event.get("type")
+        if etype == "click":
+            selector = event.get("selector")
+            if selector:
+                actions.append({"click": {"selector": selector}})
+        elif etype == "fill":
+            selector = event.get("selector")
+            value = event.get("value", "")
+            if selector:
+                actions.append({"fill": {"selector": selector, "value": value}})
+        elif etype == "keypress":
+            key = event.get("key")
+            if key == "Enter":
+                # Enter is usually a form submit — try clicking the selector.
+                selector = event.get("selector")
+                if selector:
+                    actions.append({"click": {"selector": selector}})
+            elif key and len(key) == 1:
+                # Single char — append as type action.
+                actions.append({"type": {"text": key}})
+        elif etype == "navigate":
+            url = event.get("url")
+            if url and url != last_url:
+                actions.append({"navigate": {"url": url}})
+                last_url = url
+        elif etype == "scroll":
+            # Scroll is not a standard multi-action type; skip.
+            pass
+
+    return actions
+
+
 def register(mcp: FastMCP, session_manager: SessionManager) -> None:
     """Register all data tools on the FastMCP server.
 
@@ -99,6 +268,12 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
     async def wavexis_record(input: RecordInput) -> str:
         """Record browser interactions and generate a YAML workflow.
 
+        Injects a recording script that listens for user interactions
+        (clicks, input, navigation, scroll, keypress) and accumulates them
+        in ``window.__wavexis_recorded_events``.  After the recording
+        window expires, the events are retrieved and converted to a
+        multi-action YAML workflow.
+
         Args:
             input: Recording parameters (url, duration, headless).
 
@@ -112,30 +287,49 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                 headless=input.headless,
             )
             try:
-                from wavexis.config import WaitStrategy
-
                 wait = WaitStrategy(strategy="load", timeout=30000)
                 validate_url(input.url)
                 await backend.navigate(input.url, wait)
 
+                # Inject the recording script.
+                await asyncio.wait_for(
+                    backend.eval(_RECORD_INJECT_SCRIPT, await_promise=False),
+                    timeout=5.0,
+                )
+
+                # Wait for the user to interact (or duration to expire).
                 await asyncio.sleep(input.duration)
+
+                # Retrieve recorded events.
+                raw_events = await asyncio.wait_for(
+                    backend.eval(
+                        "JSON.stringify(window.__wavexis_recorded_events || [])",
+                        await_promise=False,
+                    ),
+                    timeout=5.0,
+                )
+
+                events: list[dict[str, Any]] = []
+                if raw_events:
+                    try:
+                        events = json.loads(str(raw_events))
+                    except (json.JSONDecodeError, TypeError):
+                        events = []
 
                 title = await backend.eval("document.title")
                 title = str(title) if title else "recorded"
 
+                # Convert raw events to multi-action YAML.
+                actions = _events_to_actions(events, input.url)
                 yaml_text = yaml.safe_dump(
-                    {
-                        "actions": [
-                            {"navigate": {"url": input.url}},
-                            {"eval": {"expression": "document.title"}},
-                        ]
-                    }
+                    {"actions": actions}, default_flow_style=False, sort_keys=False
                 )
 
                 return format_json_response(
                     {
                         "yaml": yaml_text,
-                        "events_captured": 2,
+                        "events_captured": len(events),
+                        "actions_generated": len(actions),
                         "duration_s": input.duration,
                         "title": title,
                     }

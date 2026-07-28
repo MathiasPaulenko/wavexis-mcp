@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from typing import Any
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -27,8 +27,50 @@ def _register(mcp, mgr):
 
 
 @pytest.mark.unit
-async def test_record(session_manager_with_mock: SessionManager, mock_session_id: str) -> None:
+@patch("wavexis_mcp.tools.data.asyncio.sleep", new_callable=AsyncMock)
+async def test_record(
+    _mock_sleep: AsyncMock,
+    session_manager_with_mock: SessionManager,
+    mock_session_id: str,
+    mock_backend: AsyncMock,
+) -> None:
+    """wavexis_record captures events and generates YAML."""
     from mcp.server.fastmcp import FastMCP
+
+    # Simulate recorded events returned by the injected script.
+    recorded_events = json.dumps(
+        [
+            {"type": "click", "selector": "#login", "text": "Login", "url": "https://example.com"},
+            {
+                "type": "fill",
+                "selector": "#email",
+                "value": "user@example.com",
+                "url": "https://example.com",
+            },
+            {
+                "type": "fill",
+                "selector": "#password",
+                "value": "secret123",
+                "url": "https://example.com",
+            },
+            {
+                "type": "click",
+                "selector": "#submit",
+                "text": "Submit",
+                "url": "https://example.com",
+            },
+        ]
+    )
+
+    # Mock eval to return events JSON on the retrieval call, and "Test Page" for title.
+    async def _mock_eval(expression, await_promise=True):
+        if "JSON.stringify" in str(expression):
+            return recorded_events
+        if "document.title" in str(expression):
+            return "Test Page"
+        return None
+
+    mock_backend.eval = AsyncMock(side_effect=_mock_eval)
 
     mcp = FastMCP("test")
     _register(mcp, session_manager_with_mock)
@@ -37,7 +79,44 @@ async def test_record(session_manager_with_mock: SessionManager, mock_session_id
     result = await tool.fn(RecordInput(url="https://example.com", duration=5, headless=True))
     data = json.loads(result)
     assert "yaml" in data
-    assert data["events_captured"] == 2
+    assert data["events_captured"] == 4
+    assert data["actions_generated"] >= 5  # navigate + 4 events
+    assert data["title"] == "Test Page"
+    # Verify the YAML contains the expected actions.
+    assert "navigate" in data["yaml"]
+    assert "click" in data["yaml"]
+    assert "fill" in data["yaml"]
+
+
+@pytest.mark.unit
+@patch("wavexis_mcp.tools.data.asyncio.sleep", new_callable=AsyncMock)
+async def test_record_no_events(
+    _mock_sleep: AsyncMock,
+    session_manager_with_mock: SessionManager,
+    mock_session_id: str,
+    mock_backend: AsyncMock,
+) -> None:
+    """wavexis_record with no interactions returns just the navigate action."""
+    from mcp.server.fastmcp import FastMCP
+
+    async def _mock_eval(expression, await_promise=True):
+        if "JSON.stringify" in str(expression):
+            return "[]"
+        if "document.title" in str(expression):
+            return "Empty Page"
+        return None
+
+    mock_backend.eval = AsyncMock(side_effect=_mock_eval)
+
+    mcp = FastMCP("test")
+    _register(mcp, session_manager_with_mock)
+
+    tool = mcp._tool_manager.get_tool("wavexis_record")
+    result = await tool.fn(RecordInput(url="https://example.com", duration=5, headless=True))
+    data = json.loads(result)
+    assert data["events_captured"] == 0
+    assert data["actions_generated"] == 1  # just navigate
+    assert "navigate" in data["yaml"]
 
 
 @pytest.mark.unit
