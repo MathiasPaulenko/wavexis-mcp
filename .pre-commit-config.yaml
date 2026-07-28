@@ -15,3 +15,9 @@ repos:
         additional_dependencies:
           - pydantic>=2.0
           - mcp>=1.0,<2
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.9
+    hooks:
+      - id: bandit
+        args: [-r, wavexis_mcp]
+        files: ^wavexis_mcp/.*\.py$

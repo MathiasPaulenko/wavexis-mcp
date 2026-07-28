@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.15] - 2026-07-28
+
+### Changed
+
+- CI no longer masks integration test failures with `continue-on-error: true`.
+- Unit tests now enforce `--cov-fail-under=90` to prevent coverage regressions.
+- Codecov upload now sets `fail_ci_if_error: true` to block PRs on coverage failures.
+- Pre-commit config now includes `bandit` security scanning hook.
+
+### Tests
+
+- Added `tests/unit/test_convenience.py` with direct tests for `fill_form_composite` (all fields succeed, partial failure, empty list, all fail).
+- Added `tests/unit/test_stabilization.py` with 12 tests covering error handling (session expired, launch failure, backend errors), concurrency (concurrent acquire/release, concurrent close), and edge cases (unicode expressions, empty URLs, extreme/zero viewports, extremely long URLs).
+
 ## [1.6.14] - 2026-07-28
 
 ### Security
