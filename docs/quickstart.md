@@ -25,7 +25,7 @@ With CDP backend (Chromium-native, no driver needed):
 pip install "wavexis-mcp[cdp]"
 ```
 
-With BiDi backend (W3C cross-browser, needs ChromeDriver/EdgeDriver):
+With BiDi backend (W3C cross-browser, supports Firefox + Chrome):
 
 ```bash
 pip install "wavexis-mcp[bidi]"
@@ -176,17 +176,28 @@ When opening a session, choose your backend:
 # CDP — Chromium-native, no driver needed (default, recommended)
 wavexis_session_open(backend="cdp")
 
-# BiDi — W3C cross-browser, needs ChromeDriver/EdgeDriver
-wavexis_session_open(backend="bidi")
+# BiDi with Chrome — auto-launches chromedriver from PATH
+wavexis_session_open(backend="bidi", browser="chrome")
+
+# BiDi with Firefox — auto-launches geckodriver from PATH
+wavexis_session_open(backend="bidi", browser="firefox")
 ```
 
-CDP is recommended for Chrome/Edge only. BiDi enables Firefox support but requires a driver binary.
+CDP is recommended for Chrome/Edge only. BiDi enables Firefox support and auto-launches the appropriate driver (chromedriver or geckodriver) from PATH if one is not already running.
 
-!!! warning "BiDi is experimental"
-    The BiDi backend (`backend="bidi"`) is **experimental**. It has not been
-    fully tested with Firefox in production. CDP is the recommended backend
-    for Chrome/Edge. If you need Firefox, please report any issues on
-    [GitHub](https://github.com/MathiasPaulenko/wavexis-mcp/issues).
+### Connect to existing Chrome
+
+Use `connect_existing=True` to launch Chrome with `--remote-debugging-port` and connect to it via CDP. This is useful for reusing a browser profile with logged-in sessions:
+
+```text
+# Launch Chrome with debug port (uses a temp profile)
+wavexis_session_open(connect_existing=true)
+
+# Reuse an existing Chrome profile (keeps logins, cookies, extensions)
+wavexis_session_open(connect_existing=true, user_data_dir="C:/Users/me/ChromeProfile")
+```
+
+Chrome is launched headed (headless is ignored). The browser subprocess is terminated when the session is closed.
 
 ## Natural language interaction
 

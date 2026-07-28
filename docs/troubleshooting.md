@@ -173,14 +173,21 @@ Common issues and their solutions when using WaveXisMCP.
 
 ## BiDi backend not working with Firefox
 
-**Symptom:** `BackendError: BiDi backend failed to launch`
+**Symptom:** `WavexisError: Could not connect to the BiDi endpoint at ws://localhost:4444/session`
 
 **Solution:**
 
+- Install geckodriver and ensure it is in your PATH. The BiDi backend auto-launches geckodriver from PATH when no driver is running.
+  - **Windows**: `choco install geckodriver` or download from [github.com/mozilla/geckodriver/releases](https://github.com/mozilla/geckodriver/releases)
+  - **macOS**: `brew install geckodriver`
+  - **Linux**: `sudo apt install geckodriver` or download from the releases page
 - Ensure Firefox is installed and up to date.
-- Set `WAVEXIS_BROWSER_PATH` to the Firefox binary path.
-- Use `backend="bidi"` when opening a session: `wavexis_session_open(backend="bidi")`
-- BiDi support depends on the `wavexis` library version. Check [wavexis documentation](https://github.com/MathiasPaulenko/wavexis) for Firefox compatibility.
+- Use `backend="bidi"` and `browser="firefox"` when opening a session:
+  ```text
+  wavexis_session_open(backend="bidi", browser="firefox")
+  ```
+- If you already have geckodriver running on port 4444, the backend will connect to it automatically.
+- Requires `wavexis>=2.18.0` for Firefox support.
 
 ---
 

@@ -69,8 +69,8 @@ The MCP server layer. Built on [FastMCP](https://github.com/jlowin/fastmcp) (Pyt
 
 The browser automation library. Provides a unified `AbstractBackend` interface with ~80 async methods covering all browser capabilities. Two concrete implementations:
 
-- **CDPBackend** (cdpwave) — Connects to Chrome/Edge via Chrome DevTools Protocol over WebSocket. No driver binary needed. Covers 57 CDP domains. **Default and recommended backend.**
-- **BiDiBackend** (bidiwave) — Connects via WebDriver BiDi protocol. W3C standard, works with Firefox, Chrome, and Edge. Requires ChromeDriver/EdgeDriver. **Experimental** — not fully tested with Firefox in production.
+- **CDPBackend** (cdpwave) — Connects to Chrome/Edge via Chrome DevTools Protocol over WebSocket. No driver binary needed. Covers 57 CDP domains. **Default and recommended backend for Chrome/Edge.**
+- **BiDiBackend** (bidiwave) — Connects via WebDriver BiDi protocol. W3C standard, works with Firefox, Chrome, and Edge. Auto-launches chromedriver (Chrome) or geckodriver (Firefox) from PATH. **Recommended for Firefox.**
 
 ### Layer 4: Browser
 

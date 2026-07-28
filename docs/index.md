@@ -36,7 +36,7 @@ The LLM never sees the browser directly. It only sees tool definitions (name, de
 | Install size | ~200MB+ | **~5MB** |
 | Tool count | ~70 | **220** |
 | Capability tiers | Flat | **13 tiers, opt-in via `--caps`** |
-| Protocol | CDP only | **CDP (recommended) + BiDi (experimental)** |
+| Protocol | CDP only | **CDP + BiDi (Firefox + Chrome)** |
 | Raw protocol access | No | **Yes (`wavexis_raw_cdp`, `wavexis_raw_bidi`)** |
 | Video recording | No | **Yes** |
 | Lighthouse audit | No | **Yes** |
@@ -69,7 +69,7 @@ WaveXisMCP (MCP server, 220 tools)
 WaveXisMCP sits at the top of a three-layer ecosystem:
 
 - **cdpwave** — low-level async Python library for the Chrome DevTools Protocol (CDP). Direct WebSocket to Chrome/Edge. No driver binary needed. Covers 57 CDP domains.
-- **bidiwave** — low-level async Python library for the WebDriver BiDi protocol (W3C standard). Works with Firefox, Chrome, and Edge. Requires ChromeDriver/EdgeDriver.
+- **bidiwave** — low-level async Python library for the WebDriver BiDi protocol (W3C standard). Works with Firefox, Chrome, and Edge. Auto-launches chromedriver or geckodriver from PATH.
 - **wavexis** — high-level browser automation library that abstracts cdpwave and bidiwave behind a unified `AbstractBackend` interface. Provides 45+ action files covering navigation, screenshots, DOM, input, network, storage, emulation, accessibility, debugging, and more.
 - **WaveXisMCP** — MCP server wrapping wavexis. Exposes each backend method as an MCP tool with Pydantic v2 input validation, JSON responses, and capability tier filtering.
 

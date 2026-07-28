@@ -65,7 +65,7 @@ uvx wavexis-mcp
 
 - **Python**: 3.11, 3.12, or 3.13
 - **Browser**: Google Chrome, Microsoft Edge, or any Chromium/Chrome-based browser
-- **BiDi backend** (optional): ChromeDriver/EdgeDriver for W3C WebDriver BiDi
+- **BiDi backend** (optional): ChromeDriver/EdgeDriver for Chrome, or geckodriver for Firefox
 
 ## Quick start
 
@@ -158,13 +158,34 @@ The `wavexis_act` tool takes an a11y snapshot, matches the instruction to an ele
 WaveXisMCP supports two backends with full feature parity:
 
 - **CDP** (cdpwave) — default, Chrome DevTools Protocol. Direct WebSocket to Chrome/Edge. No driver needed. 57 CDP domains. `pip install "wavexis-mcp[cdp]"`
-- **BiDi** (bidiwave) — WebDriver BiDi protocol, W3C cross-browser (Firefox, Chrome). Needs ChromeDriver/EdgeDriver. `pip install "wavexis-mcp[bidi]"`
+- **BiDi** (bidiwave) — WebDriver BiDi protocol, W3C cross-browser (Firefox, Chrome). Needs chromedriver (Chrome) or geckodriver (Firefox); both are auto-launched from PATH if not already running. `pip install "wavexis-mcp[bidi]"`
 
 Select per session:
 
 ```text
-wavexis_session_open(backend="bidi")
+# CDP (default, Chrome/Edge only)
+wavexis_session_open(backend="cdp")
+
+# BiDi with Chrome (auto-launches chromedriver)
+wavexis_session_open(backend="bidi", browser="chrome")
+
+# BiDi with Firefox (auto-launches geckodriver)
+wavexis_session_open(backend="bidi", browser="firefox")
 ```
+
+### Connect to existing Chrome
+
+Use `connect_existing=True` to launch Chrome with `--remote-debugging-port` and connect to it. Useful for reusing a browser profile with logged-in sessions:
+
+```text
+# Launch Chrome with debug port and connect via CDP
+wavexis_session_open(connect_existing=true)
+
+# Reuse an existing Chrome profile (keeps logins, cookies, extensions)
+wavexis_session_open(connect_existing=true, user_data_dir="C:/Users/me/ChromeProfile")
+```
+
+Chrome is launched headed (headless is ignored). The browser subprocess is terminated when the session is closed.
 
 ## Multi-action YAML
 
@@ -261,6 +282,7 @@ See [Docker docs](https://mathiaspaulenko.github.io/wavexis-mcp/docker/) for det
 | Total tools | ~70 | **220** |
 | Capability tiers | Yes (`--caps`) | **Yes (13 tiers)** |
 | Dual protocol | No | **CDP + BiDi** |
+| Firefox support | No | **Yes (via BiDi + geckodriver)** |
 | Backend selection | No | **Yes (per session)** |
 | Raw CDP/BiDi access | No | **Yes (escape hatch)** |
 | Multi-action YAML | No | **Yes** |

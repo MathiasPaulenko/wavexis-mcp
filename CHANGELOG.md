@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Firefox support via BiDi** — `SessionOpenInput.browser` field accepts `"chrome"` (default) or `"firefox"`. When `browser="firefox"`, the BiDi backend uses geckodriver on port 4444 instead of chromedriver on port 9222. Requires `wavexis>=2.18.0`.
+- **Auto-launch WebDriver** — chromedriver and geckodriver are now auto-launched from PATH when no driver is running. Previously the BiDi backend required a manually started driver.
+- **`connect_existing` flag** — `SessionOpenInput.connect_existing=True` launches Chrome with `--remote-debugging-port` and connects to it via CDP. Useful for reusing an existing browser profile with logged-in sessions. The Chrome subprocess is terminated when the session is closed.
+
+### Changed
+
+- `wavexis` dependency bumped to `>=2.18.0` for Firefox BiDi support.
+- BiDi backend is no longer marked as experimental in docs. Firefox support is now production-ready via geckodriver auto-launch.
+- README, quickstart, and configuration docs updated with Firefox and `connect_existing` examples.
+
 ## [1.6.21] - 2026-07-28
 
 ### Changed
