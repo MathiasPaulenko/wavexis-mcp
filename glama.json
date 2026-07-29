@@ -1,7 +1,7 @@
 {
   "$schema": "https://glama.ai/mcp/schemas/server.json",
   "name": "wavexis-mcp",
-  "version": "1.6.21",
+  "version": "1.6.24",
   "description": "MCP server exposing 220 browser automation tools across 13 capability tiers. Chrome + Firefox via CDP + BiDi. No Node.js, no Chromium download — uses your existing browser. Stealth mode, Lighthouse audits, multi-action YAML batching, structured errors with LLM-actionable suggestions.",
   "author": "Mathias Paulenko",
   "license": "MIT",
@@ -83,7 +83,7 @@
         "message": 120000
       },
       "metadata": {
-        "version": "1.6.21",
+        "version": "1.6.24",
         "author": "Mathias Paulenko",
         "homepage": "https://mathiaspaulenko.github.io/wavexis-mcp/",
         "license": "MIT",
