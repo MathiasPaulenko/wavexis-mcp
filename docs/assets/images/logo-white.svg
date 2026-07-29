@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Wave (wavexis brand) — white version for dark headers -->
+  <path d="M 112 200 Q 176 140 240 200 T 368 200 T 400 200"
+        fill="none" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" opacity="0.4"/>
+  <path d="M 112 280 Q 176 220 240 280 T 368 280 T 400 280"
+        fill="none" stroke="#FFFFFF" stroke-width="14" stroke-linecap="round"/>
+
+  <!-- MCP node connectors -->
+  <circle cx="160" cy="380" r="16" fill="#FFFFFF" opacity="0.9"/>
+  <circle cx="256" cy="380" r="16" fill="#FFFFFF" opacity="0.9"/>
+  <circle cx="352" cy="380" r="16" fill="#FFFFFF" opacity="0.9"/>
+  <line x1="176" y1="380" x2="240" y2="380" stroke="#FFFFFF" stroke-width="5" opacity="0.5"/>
+  <line x1="272" y1="380" x2="336" y2="380" stroke="#FFFFFF" stroke-width="5" opacity="0.5"/>
+</svg>
