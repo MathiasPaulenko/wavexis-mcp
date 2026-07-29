@@ -1,0 +1,109 @@
+{
+  "$schema": "https://glama.ai/mcp/schemas/server.json",
+  "name": "wavexis-mcp",
+  "version": "1.6.21",
+  "description": "MCP server exposing 220 browser automation tools across 13 capability tiers. Chrome + Firefox via CDP + BiDi. No Node.js, no Chromium download — uses your existing browser. Stealth mode, Lighthouse audits, multi-action YAML batching, structured errors with LLM-actionable suggestions.",
+  "author": "Mathias Paulenko",
+  "license": "MIT",
+  "language": "python",
+  "framework": "fastmcp",
+  "type": "mcp_server",
+  "status": "stable",
+  "transport": ["stdio", "http"],
+  "tools": 220,
+  "keywords": [
+    "browser-automation",
+    "cdp",
+    "bidi",
+    "chrome",
+    "firefox",
+    "scraping",
+    "testing",
+    "stealth",
+    "lighthouse",
+    "playwright-alternative",
+    "selenium-alternative",
+    "model-context-protocol",
+    "mcp",
+    "llm",
+    "agent"
+  ],
+  "categories": [
+    "Browser Automation",
+    "Web Scraping",
+    "Testing",
+    "Developer Tools"
+  ],
+  "homepage": "https://mathiaspaulenko.github.io/wavexis-mcp/",
+  "repository": {
+    "url": "https://github.com/MathiasPaulenko/wavexis-mcp",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "wavexis-mcp",
+      "transport": {
+        "type": "stdio",
+        "command": "uvx",
+        "args": ["wavexis-mcp", "--caps", "all"]
+      }
+    },
+    {
+      "registryType": "github",
+      "identifier": "MathiasPaulenko/wavexis-mcp",
+      "transport": {
+        "type": "stdio",
+        "command": "wavexis-mcp",
+        "args": ["--caps", "all"]
+      }
+    }
+  ],
+  "mcpServers": {
+    "wavexis": {
+      "name": "wavexis-mcp",
+      "command": "uvx",
+      "args": ["wavexis-mcp", "--caps", "all"],
+      "env": {},
+      "description": "220 browser automation tools for Chrome, Edge, and Firefox via CDP + BiDi. 13 capability tiers, stealth mode, Lighthouse audits.",
+      "capabilities": {
+        "tools": {
+          "enabled": true,
+          "listChanged": true
+        },
+        "resources": {
+          "enabled": true
+        },
+        "prompts": {
+          "enabled": true
+        }
+      },
+      "timeout": {
+        "initialize": 30000,
+        "message": 120000
+      },
+      "metadata": {
+        "version": "1.6.21",
+        "author": "Mathias Paulenko",
+        "homepage": "https://mathiaspaulenko.github.io/wavexis-mcp/",
+        "license": "MIT",
+        "tags": [
+          "browser-automation",
+          "cdp",
+          "bidi",
+          "chrome",
+          "firefox",
+          "stealth",
+          "lighthouse",
+          "mcp"
+        ],
+        "categories": [
+          "Browser Automation",
+          "Web Scraping",
+          "Testing"
+        ]
+      }
+    }
+  },
+  "maintainers": ["MathiasPaulenko"]
+}
