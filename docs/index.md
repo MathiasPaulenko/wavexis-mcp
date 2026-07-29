@@ -6,6 +6,10 @@ MCP server that exposes the [wavexis](https://github.com/MathiasPaulenko/wavexis
 
 **220 tools** across **13 capability tiers**. 100% Python, no Node.js, no Chromium download — uses your existing Chrome/Edge.
 
+[![CI](https://github.com/MathiasPaulenko/wavexis-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/MathiasPaulenko/wavexis-mcp/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/wavexis-mcp.svg)](https://pypi.org/project/wavexis-mcp/)
+[![smithery badge](https://smithery.ai/badge/mathias-paulenko/wavexis-mcp)](https://smithery.ai/servers/mathias-paulenko/wavexis-mcp)
+
 ---
 
 ## What is WaveXisMCP?
