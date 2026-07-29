@@ -42,6 +42,8 @@ mkdocs_strict.txt
 *.whl
 *.tar.gz
 site/
+mcpb-build/
+*.mcpb
 
 # OS
 .DS_Store

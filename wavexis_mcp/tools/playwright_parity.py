@@ -45,11 +45,11 @@ class KeyDownInput(BaseInput):
 
     key: str = Field(..., min_length=1, description="Key to press (e.g. 'Enter', 'a', 'ArrowLeft')")
     code: str = Field(default="", description="Optional physical key code")
-    alt: bool = Field(default=False)
-    ctrl: bool = Field(default=False)
-    meta: bool = Field(default=False)
-    shift: bool = Field(default=False)
-    session_id: str = Field(...)
+    alt: bool = Field(default=False, description="Whether to hold the Alt key")
+    ctrl: bool = Field(default=False, description="Whether to hold the Ctrl key")
+    meta: bool = Field(default=False, description="Whether to hold the Meta (Cmd) key")
+    shift: bool = Field(default=False, description="Whether to hold the Shift key")
+    session_id: str = Field(..., description="Active session ID from wavexis_session_open")
 
 
 class KeyUpInput(BaseInput):
@@ -57,11 +57,11 @@ class KeyUpInput(BaseInput):
 
     key: str = Field(..., min_length=1, description="Key to release (e.g. 'Enter', 'a')")
     code: str = Field(default="", description="Optional physical key code")
-    alt: bool = Field(default=False)
-    ctrl: bool = Field(default=False)
-    meta: bool = Field(default=False)
-    shift: bool = Field(default=False)
-    session_id: str = Field(...)
+    alt: bool = Field(default=False, description="Whether to hold the Alt key")
+    ctrl: bool = Field(default=False, description="Whether to hold the Ctrl key")
+    meta: bool = Field(default=False, description="Whether to hold the Meta (Cmd) key")
+    shift: bool = Field(default=False, description="Whether to hold the Shift key")
+    session_id: str = Field(..., description="Active session ID from wavexis_session_open")
 
 
 class PressKeysInput(BaseInput):
@@ -74,44 +74,44 @@ class PressKeysInput(BaseInput):
         description="Text/keys to type character by character",
     )
     delay: int = Field(default=0, ge=0, description="Delay between keystrokes in milliseconds")
-    session_id: str = Field(...)
+    session_id: str = Field(..., description="Active session ID from wavexis_session_open")
 
 
 class MouseDragXYInput(BaseInput):
     """Input for dragging the mouse from one screen coordinate to another."""
 
-    start_x: float = Field(...)
-    start_y: float = Field(...)
-    end_x: float = Field(...)
-    end_y: float = Field(...)
-    button: Literal["left", "right", "middle"] = Field(default="left")
-    steps: int = Field(default=5, ge=1, le=50)
-    session_id: str = Field(...)
+    start_x: float = Field(..., description="Starting X coordinate in CSS pixels")
+    start_y: float = Field(..., description="Starting Y coordinate in CSS pixels")
+    end_x: float = Field(..., description="Ending X coordinate in CSS pixels")
+    end_y: float = Field(..., description="Ending Y coordinate in CSS pixels")
+    button: Literal["left", "right", "middle"] = Field(default="left", description="Mouse button to use")
+    steps: int = Field(default=5, ge=1, le=50, description="Number of intermediate steps for smooth dragging")
+    session_id: str = Field(..., description="Active session ID from wavexis_session_open")
 
 
 class ConsoleClearInput(BaseInput):
     """Input for clearing console messages."""
 
-    session_id: str = Field(...)
+    session_id: str = Field(..., description="Active session ID from wavexis_session_open")
 
 
 class CookieGetInput(BaseInput):
     """Input for getting a specific cookie by name (and optional domain/path)."""
 
-    name: str = Field(..., min_length=1)
-    domain: str | None = Field(default=None)
-    path: str | None = Field(default=None)
-    session_id: str = Field(...)
+    name: str = Field(..., min_length=1, description="Cookie name to retrieve")
+    domain: str | None = Field(default=None, description="Optional domain filter")
+    path: str | None = Field(default=None, description="Optional path filter")
+    session_id: str = Field(..., description="Active session ID from wavexis_session_open")
 
 
 class CookieListInput(BaseInput):
     """Input for listing cookies with optional filters."""
 
-    name: str | None = Field(default=None)
-    domain: str | None = Field(default=None)
-    path: str | None = Field(default=None)
-    limit: int = Field(default=100, ge=1, le=1000)
-    session_id: str = Field(...)
+    name: str | None = Field(default=None, description="Optional cookie name filter")
+    domain: str | None = Field(default=None, description="Optional domain filter")
+    path: str | None = Field(default=None, description="Optional path filter")
+    limit: int = Field(default=100, ge=1, le=1000, description="Maximum number of cookies to return")
+    session_id: str = Field(..., description="Active session ID from wavexis_session_open")
 
 
 class ClosePageInput(BaseInput):
@@ -120,7 +120,7 @@ class ClosePageInput(BaseInput):
     tab_id: str | None = Field(
         default=None, description="Optional tab/target id; current page is closed if omitted"
     )
-    session_id: str = Field(...)
+    session_id: str = Field(..., description="Active session ID from wavexis_session_open")
 
 
 class FindInput(BaseInput):
@@ -132,8 +132,8 @@ class FindInput(BaseInput):
         max_length=500,
         description="Text or regex to search in the a11y snapshot",
     )
-    limit: int = Field(default=20, ge=1, le=100)
-    session_id: str = Field(...)
+    limit: int = Field(default=20, ge=1, le=100, description="Maximum number of matches to return")
+    session_id: str = Field(..., description="Active session ID from wavexis_session_open")
 
 
 class GetConfigInput(BaseInput):

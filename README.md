@@ -20,6 +20,7 @@
 [![Docker](https://img.shields.io/badge/Docker-ghcr.io-blue.svg)](https://github.com/MathiasPaulenko/wavexis-mcp/pkgs/container/wavexis-mcp)
 [![License](https://img.shields.io/github/license/MathiasPaulenko/wavexis-mcp.svg)](https://github.com/MathiasPaulenko/wavexis-mcp/blob/main/LICENSE)
 [![Docs](https://img.shields.io/badge/docs-mkdocs-blue.svg)](https://mathiaspaulenko.github.io/wavexis-mcp/)
+[![smithery badge](https://smithery.ai/badge/mathias-paulenko/wavexis-mcp)](https://smithery.ai/servers/mathias-paulenko/wavexis-mcp)
 
 > MCP server that exposes the [wavexis](https://github.com/MathiasPaulenko/wavexis) browser automation library to LLMs. 220 tools across 13 capability tiers. No Node.js, no Chromium download — uses your existing Chrome/Edge. 100% Python.
 
