@@ -215,7 +215,7 @@ async def main() -> None:
     params_with_desc = 0
     for t in tools_data:
         props = t["inputSchema"].get("properties", {})
-        for pname, pschema in props.items():
+        for _, pschema in props.items():
             total_params += 1
             if isinstance(pschema, dict) and pschema.get("description"):
                 params_with_desc += 1
