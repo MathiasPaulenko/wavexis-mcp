@@ -148,11 +148,13 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
     async def wavexis_click(input: ClickInput) -> str:
         """Click an element matching a CSS selector.
 
-        Args:
-            input: Click parameters (selector, button, count).
+        Use wavexis_double_click for double clicks, wavexis_right_click for
+        context menus, or wavexis_nl_click when you only have a text description.
 
-        Returns:
-            JSON string with status ``"ok"``.
+        Side effects: Triggers a click event on the target element, which may
+        submit forms, toggle controls, or navigate the page.
+        Returns: JSON string with keys: 'status' ('ok'/'error'). On error also
+        'error', 'tool', 'type', 'message', 'suggestion' (all str).
         """
         try:
             backend, sid = await session_manager.acquire_backend(
@@ -189,11 +191,13 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
     async def wavexis_double_click(input: DoubleClickInput) -> str:
         """Double-click an element matching a CSS selector.
 
-        Args:
-            input: Double-click parameters (selector, session, URL).
+        Use wavexis_click for single clicks or wavexis_nl_click when you only
+        have a natural language description of the element.
 
-        Returns:
-            JSON string with status ``"ok"``.
+        Side effects: Fires two rapid click events on the element, which may
+        open files, edit cells, or trigger application-specific actions.
+        Returns: JSON string with keys: 'status' ('ok'/'error'). On error also
+        'error', 'tool', 'type', 'message', 'suggestion' (all str).
         """
         try:
             backend, sid = await session_manager.acquire_backend(
@@ -226,11 +230,13 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
     async def wavexis_right_click(input: RightClickInput) -> str:
         """Right-click an element matching a CSS selector.
 
-        Args:
-            input: Right-click parameters (selector, session, URL).
+        Use wavexis_click for standard left clicks or wavexis_double_click for
+        double clicks.
 
-        Returns:
-            JSON string with status ``"ok"``.
+        Side effects: Fires a contextmenu event on the element, typically
+        opening a context menu in the browser.
+        Returns: JSON string with keys: 'status' ('ok'/'error'). On error also
+        'error', 'tool', 'type', 'message', 'suggestion' (all str).
         """
         try:
             backend, sid = await session_manager.acquire_backend(
@@ -259,13 +265,15 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         )
     )
     async def wavexis_type(input: TypeInput) -> str:
-        """Type text into an element character by character.
+        """Type text into an element character by character with optional delay.
 
-        Args:
-            input: Type parameters (selector, text, delay).
+        Use wavexis_fill instead when you want to set a field's value instantly
+        without per-keystroke delays, or wavexis_fill_form for multiple fields.
 
-        Returns:
-            JSON string with status ``"ok"``.
+        Side effects: Appends characters to the target input/textarea element,
+        firing keydown/keypress/input/keyup events per character.
+        Returns: JSON string with keys: 'status' ('ok'/'error'). On error also
+        'error', 'tool', 'type', 'message', 'suggestion' (all str).
         """
         try:
             backend, sid = await session_manager.acquire_backend(
@@ -294,13 +302,15 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         )
     )
     async def wavexis_fill(input: FillInput) -> str:
-        """Fill an input element with a value (replaces existing content).
+        """Fill an input element with a value, replacing existing content.
 
-        Args:
-            input: Fill parameters (selector, value).
+        Use wavexis_type for character-by-character typing with key events, or
+        wavexis_fill_form when filling multiple fields in one call.
 
-        Returns:
-            JSON string with status ``"ok"``.
+        Side effects: Clears the target input/textarea and sets its value to
+        the provided string, firing a single input event.
+        Returns: JSON string with keys: 'status' ('ok'/'error'). On error also
+        'error', 'tool', 'type', 'message', 'suggestion' (all str).
         """
         try:
             backend, sid = await session_manager.acquire_backend(
@@ -329,13 +339,16 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         )
     )
     async def wavexis_fill_form(input: FillFormInput) -> str:
-        """Fill multiple form fields in one call (convenience tool).
+        """Fill multiple form fields in one call (convenience composite tool).
 
-        Args:
-            input: Form fill parameters (fields list).
+        Use wavexis_fill for a single field or wavexis_type when per-keystroke
+        events are required.
 
-        Returns:
-            JSON string with status ``"ok"`` and ``fields_filled`` count.
+        Side effects: Clears and sets the value of each field in the provided
+        list, firing input events on every targeted element.
+        Returns: JSON string with keys: 'status' ('ok'/'error'), 'fields_filled'
+        (int, number of fields successfully filled). On error also 'error',
+        'tool', 'type', 'message', 'suggestion' (all str).
         """
         try:
             backend, sid = await session_manager.acquire_backend(
@@ -366,11 +379,13 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
     async def wavexis_select_option(input: SelectOptionInput) -> str:
         """Select an option in a ``<select>`` element by value.
 
-        Args:
-            input: Select parameters (selector, value).
+        Use wavexis_fill for text inputs or wavexis_click for custom dropdown
+        widgets that are not native ``<select>`` elements.
 
-        Returns:
-            JSON string with status ``"ok"``.
+        Side effects: Changes the selected option of the ``<select>`` element,
+        firing change and input events.
+        Returns: JSON string with keys: 'status' ('ok'/'error'). On error also
+        'error', 'tool', 'type', 'message', 'suggestion' (all str).
         """
         try:
             backend, sid = await session_manager.acquire_backend(
@@ -401,11 +416,13 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
     async def wavexis_hover(input: HoverInput) -> str:
         """Hover over an element matching a CSS selector.
 
-        Args:
-            input: Hover parameters.
+        Use wavexis_click to actually activate an element; hover only moves the
+        cursor without clicking.
 
-        Returns:
-            JSON string with status ``"ok"``.
+        Side effects: Moves the mouse cursor over the target element, firing
+        mouseover/mouseenter events that may reveal tooltips or menus.
+        Returns: JSON string with keys: 'status' ('ok'/'error'). On error also
+        'error', 'tool', 'type', 'message', 'suggestion' (all str).
         """
         try:
             backend, sid = await session_manager.acquire_backend(
@@ -434,13 +451,15 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         )
     )
     async def wavexis_key_press(input: KeyPressInput) -> str:
-        """Press a keyboard key.
+        """Press a single keyboard key on the focused element.
 
-        Args:
-            input: Key press parameters.
+        Use wavexis_type for typing full strings or wavexis_fill for setting
+        field values without individual key events.
 
-        Returns:
-            JSON string with status ``"ok"``.
+        Side effects: Dispatches a keydown/keypress/keyup sequence for the
+        given key on whatever element currently has focus.
+        Returns: JSON string with keys: 'status' ('ok'/'error'). On error also
+        'error', 'tool', 'type', 'message', 'suggestion' (all str).
         """
         try:
             session = session_manager.get(input.session_id)
@@ -458,13 +477,15 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         )
     )
     async def wavexis_drag(input: DragInput) -> str:
-        """Drag an element from source selector to target selector.
+        """Drag an element from a source selector to a target selector.
 
-        Args:
-            input: Drag parameters (source, target).
+        Use wavexis_drop when you need to drop arbitrary MIME data or files
+        onto an element rather than dragging an existing DOM element.
 
-        Returns:
-            JSON string with status ``"ok"``.
+        Side effects: Performs a drag-and-drop operation between two elements,
+        firing drag/dragstart/dragend and drop events.
+        Returns: JSON string with keys: 'status' ('ok'/'error'). On error also
+        'error', 'tool', 'type', 'message', 'suggestion' (all str).
         """
         try:
             backend, sid = await session_manager.acquire_backend(
@@ -493,13 +514,15 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         )
     )
     async def wavexis_tap(input: TapInput) -> str:
-        """Tap an element (touch emulation click).
+        """Tap an element matching a CSS selector (touch-emulated click).
 
-        Args:
-            input: Tap parameters.
+        Use wavexis_click for mouse-based clicking on desktop contexts or
+        wavexis_nl_click when you only have a natural language description.
 
-        Returns:
-            JSON string with status ``"ok"``.
+        Side effects: Dispatches a touch tap on the target element, which may
+        toggle controls or trigger navigation on mobile-optimised pages.
+        Returns: JSON string with keys: 'status' ('ok'/'error'). On error also
+        'error', 'tool', 'type', 'message', 'suggestion' (all str).
         """
         try:
             backend, sid = await session_manager.acquire_backend(
@@ -528,13 +551,15 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         )
     )
     async def wavexis_set_files(input: SetFilesInput) -> str:
-        """Upload files to a file input element.
+        """Upload files to a file input element (``<input type="file">``).
 
-        Args:
-            input: File upload parameters (selector, file paths).
+        Use wavexis_drop when you need to simulate drag-and-drop of files or
+        MIME data onto a non-file-input element.
 
-        Returns:
-            JSON string with status ``"ok"``.
+        Side effects: Sets the selected files on the target file input element,
+        firing change events that typically trigger upload logic.
+        Returns: JSON string with keys: 'status' ('ok'/'error'). On error also
+        'error', 'tool', 'type', 'message', 'suggestion' (all str).
         """
         try:
             backend, sid = await session_manager.acquire_backend(
@@ -564,13 +589,17 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         )
     )
     async def wavexis_drop(input: DropInput) -> str:
-        """Drop files or MIME-typed data onto an element.
+        """Drop files or MIME-typed data onto an element via drag events.
 
-        Args:
-            input: Drop parameters (selector, data map, file paths).
+        Use wavexis_set_files for standard ``<input type="file">`` uploads or
+        wavexis_drag for dragging an existing DOM element to another element.
 
-        Returns:
-            JSON string with status ``"ok"`` and drop summary.
+        Side effects: Dispatches dragEnter, dragOver, and drop events with the
+        supplied data and files onto the target element's coordinates.
+        Returns: JSON string with keys: 'status' ('ok'/'error'), 'selector'
+        (str), 'x' (float), 'y' (float), 'data_types' (list[str]), 'files'
+        (list[str]). On error also 'error', 'tool', 'type', 'message',
+        'suggestion' (all str).
         """
         try:
             backend, sid = await session_manager.acquire_backend(
@@ -634,13 +663,16 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         )
     )
     async def wavexis_check(input: CheckInput) -> str:
-        """Check a checkbox or radio button.
+        """Check a checkbox or radio button matching a CSS selector.
 
-        Args:
-            input: Check parameters.
+        Use wavexis_uncheck to uncheck a checkbox or wavexis_click for generic
+        element activation.
 
-        Returns:
-            JSON string with status ``"ok"`` and ``checked`` boolean.
+        Side effects: Clicks the target checkbox/radio, toggling its checked
+        state and firing change events.
+        Returns: JSON string with keys: 'status' ('ok'/'error'), 'checked'
+        (bool, the element's checked state after the action). On error also
+        'error', 'tool', 'type', 'message', 'suggestion' (all str).
         """
         try:
             session = session_manager.get(input.session_id)
@@ -661,13 +693,15 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         )
     )
     async def wavexis_uncheck(input: CheckInput) -> str:
-        """Uncheck a checkbox.
+        """Uncheck a checkbox matching a CSS selector by clicking it.
 
-        Args:
-            input: Uncheck parameters.
+        Use wavexis_check to check a checkbox or wavexis_click for generic
+        element activation.
 
-        Returns:
-            JSON string with status ``"ok"``.
+        Side effects: Clicks the target checkbox to toggle it to unchecked,
+        firing change events.
+        Returns: JSON string with keys: 'status' ('ok'/'error'). On error also
+        'error', 'tool', 'type', 'message', 'suggestion' (all str).
         """
         try:
             session = session_manager.get(input.session_id)
@@ -685,13 +719,16 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         )
     )
     async def wavexis_find_by_text(input: FindByTextInput) -> str:
-        """Find element(s) by visible text content.
+        """Find element selector(s) by visible text content without interacting.
 
-        Args:
-            input: Find parameters (query, all).
+        Use this to locate elements before calling wavexis_click or wavexis_fill
+        when you know the visible text but not the CSS selector.
 
-        Returns:
-            JSON string with ``selector`` (first match) or ``selectors`` list.
+        Side effects: None — this is a read-only lookup that does not modify the
+        page or interact with any element.
+        Returns: JSON string with keys: 'selector' (str, first match) when
+        all=False, or 'selectors' (list[str]) and 'count' (int) when all=True.
+        On error also 'error', 'tool', 'type', 'message', 'suggestion' (all str).
         """
         try:
             session = session_manager.get(input.session_id)
@@ -713,11 +750,13 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
     async def wavexis_nl_click(input: NLClickInput) -> str:
         """Click an element described in natural language.
 
-        Args:
-            input: NL click parameters (query, auto_wait).
+        Use wavexis_click when you already know the CSS selector, or
+        wavexis_nl_fill to fill a field described in natural language.
 
-        Returns:
-            JSON string with status ``"ok"``.
+        Side effects: Locates the best-matching element via text/semantic
+        matching and triggers a click event on it.
+        Returns: JSON string with keys: 'status' ('ok'/'error'). On error also
+        'error', 'tool', 'type', 'message', 'suggestion' (all str).
         """
         try:
             session = session_manager.get(input.session_id)
@@ -735,13 +774,15 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         )
     )
     async def wavexis_nl_fill(input: NLFillInput) -> str:
-        """Fill an element described in natural language.
+        """Fill an element described in natural language with a value.
 
-        Args:
-            input: NL fill parameters (query, value, auto_wait).
+        Use wavexis_fill when you already know the CSS selector, or
+        wavexis_nl_click to click an element described in natural language.
 
-        Returns:
-            JSON string with status ``"ok"``.
+        Side effects: Locates the best-matching element via text/semantic
+        matching, clears it, and sets its value to the provided string.
+        Returns: JSON string with keys: 'status' ('ok'/'error'). On error also
+        'error', 'tool', 'type', 'message', 'suggestion' (all str).
         """
         try:
             session = session_manager.get(input.session_id)

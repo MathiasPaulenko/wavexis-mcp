@@ -31,13 +31,17 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         )
     )
     async def wavexis_eval(input: EvalInput) -> str:
-        """Evaluate a JavaScript expression and return the result.
+        """Evaluate a JavaScript expression in the browser context and return the result.
 
-        Args:
-            input: Eval parameters (expression, await_promise).
+        Use ``wavexis_scrape`` when the same expression must run across many
+        pages, or ``wavexis_act`` for natural-language interaction instead of
+        raw JS.
 
-        Returns:
-            JSON string with ``result`` and ``type``.
+        Side effects: launches/acquires a browser backend, navigates to ``url``
+        if provided, executes arbitrary JS in the page (may trigger network
+        requests or DOM mutations).
+        Returns: JSON string with keys: 'status' ('ok'/'error'), 'result'
+        (Any), 'type' (str).
         """
         try:
             backend, sid = await session_manager.acquire_backend(

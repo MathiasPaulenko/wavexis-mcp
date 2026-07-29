@@ -165,7 +165,15 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         )
     )
     async def wavexis_key_down(input: KeyDownInput) -> str:
-        """Dispatch a keyDown event to the page."""
+        """Dispatch a raw keyDown event to the active page via CDP.
+
+        This tool mirrors Playwright's API for compatibility; use
+        ``wavexis_press_keys`` for typing text and ``wavexis_act`` for
+        natural-language interaction.
+
+        Side effects: Sends a key-down input event to the browser page.
+        Returns: JSON string with keys: 'status' ('ok'/'error').
+        """
         try:
             session = session_manager.get(input.session_id)
             await session.backend.input_dispatch_key_event(
@@ -187,7 +195,15 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         )
     )
     async def wavexis_key_up(input: KeyUpInput) -> str:
-        """Dispatch a keyUp event to the page."""
+        """Dispatch a raw keyUp event to the active page via CDP.
+
+        This tool mirrors Playwright's API for compatibility; pair with
+        ``wavexis_key_down`` for low-level key control, or use
+        ``wavexis_press_keys`` for simple text entry.
+
+        Side effects: Sends a key-up input event to the browser page.
+        Returns: JSON string with keys: 'status' ('ok'/'error').
+        """
         try:
             session = session_manager.get(input.session_id)
             await session.backend.input_dispatch_key_event(
@@ -209,7 +225,15 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         )
     )
     async def wavexis_press_keys(input: PressKeysInput) -> str:
-        """Type a sequence of keys at the page level (no element target required)."""
+        """Type a sequence of characters at the page level without targeting an element.
+
+        Use ``wavexis_key_down``/``wavexis_key_up`` instead for individual
+        modifier-key control, or ``wavexis_act`` for natural-language typing.
+
+        Side effects: Dispatches keyDown/keyUp pairs to the browser page; no
+        network requests.
+        Returns: JSON string with keys: 'status' ('ok'/'error'), 'typed' (str).
+        """
         try:
             session = session_manager.get(input.session_id)
             for ch in input.text:
@@ -237,7 +261,15 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         )
     )
     async def wavexis_mouse_drag_xy(input: MouseDragXYInput) -> str:
-        """Drag the mouse from one coordinate to another."""
+        """Drag the mouse from one screen coordinate to another via CDP mouse events.
+
+        This tool mirrors Playwright's API for compatibility; use ``wavexis_act``
+        instead for natural-language drag interactions.
+
+        Side effects: Dispatches mouseMoved, mousePressed, and mouseReleased
+        events to the browser page; may trigger page interactions.
+        Returns: JSON string with keys: 'status' ('ok'/'error').
+        """
         try:
             session = session_manager.get(input.session_id)
             await session.backend.input_dispatch_mouse_event(
@@ -282,7 +314,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         )
     )
     async def wavexis_console_clear(input: ConsoleClearInput) -> str:
-        """Clear all console messages."""
+        """Clear all buffered console messages for the session.
+
+        This tool mirrors Playwright's API for compatibility; use it before
+        capturing a fresh set of console logs to avoid stale entries.
+
+        Side effects: Resets the session's in-memory console message buffer.
+        Returns: JSON string with keys: 'status' ('ok'/'error').
+        """
         try:
             session = session_manager.get(input.session_id)
             await session.backend.console_clear_messages()
@@ -299,7 +338,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         )
     )
     async def wavexis_cookie_get(input: CookieGetInput) -> str:
-        """Get a specific cookie by name."""
+        """Retrieve a single cookie by name (and optional domain/path) from the browser.
+
+        Use ``wavexis_cookie_list`` instead when you need multiple cookies or
+        broad filtering.
+
+        Side effects: None; reads cookie state from the browser session.
+        Returns: JSON string with keys: 'status' ('ok'/'error'), 'cookie' (dict|null).
+        """
         try:
             session = session_manager.get(input.session_id)
             cookies = await session.backend.get_cookies()
@@ -323,7 +369,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         )
     )
     async def wavexis_cookie_list(input: CookieListInput) -> str:
-        """List cookies with optional filters."""
+        """List browser cookies with optional name, domain, and path filters.
+
+        Use ``wavexis_cookie_get`` instead when you need a single named cookie.
+
+        Side effects: None; reads cookie state from the browser session.
+        Returns: JSON string with keys: 'status' ('ok'/'error'),
+        'cookies' (list[dict]), 'count' (int).
+        """
         try:
             session = session_manager.get(input.session_id)
             cookies = await session.backend.get_cookies()
@@ -347,7 +400,15 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         )
     )
     async def wavexis_close_page(input: ClosePageInput) -> str:
-        """Close the current page/tab."""
+        """Close a browser page/tab by target id, or the current page if omitted.
+
+        This tool mirrors Playwright's API for compatibility; use it to free
+        resources. The session itself remains active for other tabs.
+
+        Side effects: Closes the specified browser target; destructive and
+        irreversible.
+        Returns: JSON string with keys: 'status' ('ok'/'error'), 'closed' (str).
+        """
         try:
             session = session_manager.get(input.session_id)
             if input.tab_id:
@@ -373,7 +434,15 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         )
     )
     async def wavexis_find(input: FindInput) -> str:
-        """Find nodes in the accessibility snapshot matching the given text/regex."""
+        """Search the accessibility snapshot for nodes matching text or a regex pattern.
+
+        Use ``wavexis_act`` instead for natural-language element interaction;
+        this tool mirrors Playwright's snapshot search for compatibility.
+
+        Side effects: None; fetches and searches the a11y tree read-only.
+        Returns: JSON string with keys: 'status' ('ok'/'error'),
+        'matches' (list[dict]), 'count' (int).
+        """
         try:
             from wavexis_mcp.tools.a11y import (
                 _build_a11y_tree,
@@ -423,7 +492,15 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         )
     )
     async def wavexis_get_config(input: GetConfigInput) -> str:
-        """Return wavexis-mcp server configuration and available backends."""
+        """Return wavexis-mcp server configuration and available browser backends.
+
+        Use ``wavexis_backends`` instead when you only need the backend list;
+        this tool additionally exposes the server name for introspection.
+
+        Side effects: None; queries the local filesystem only.
+        Returns: JSON string with keys: 'status' ('ok'/'error'), 'name' (str),
+        'available_backends' (list[str]), 'backend_versions' (dict).
+        """
         try:
             from wavexis.backend.manager import BackendManager
 

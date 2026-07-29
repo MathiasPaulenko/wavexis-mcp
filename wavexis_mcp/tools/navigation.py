@@ -33,13 +33,16 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         )
     )
     async def wavexis_navigate(input: NavigateInput) -> str:
-        """Navigate to a URL in the browser.
+        """Navigate the browser to a URL with a configurable wait strategy.
 
-        Args:
-            input: Navigation parameters (URL, wait strategy).
+        Use for direct URL navigation; use wavexis_back/wavexis_forward for
+        history navigation, or wavexis_act for natural-language interaction
+        instead.
 
-        Returns:
-            JSON string with status ``"ok"`` and ``url``.
+        Side effects: Issues a network request to the target URL and replaces
+        the current page content; may auto-create a stateless session if
+        session_id is omitted.
+        Returns: JSON string with keys: 'status' ('ok'/'error'), 'url' (str).
         """
         try:
             backend, sid = await session_manager.acquire_backend(
@@ -71,13 +74,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         )
     )
     async def wavexis_back(input: SimpleNavInput) -> str:
-        """Navigate back in browser history.
+        """Navigate backward one step in the browser history.
 
-        Args:
-            input: Session reference parameters.
+        Use for history navigation instead of wavexis_navigate when the target
+        is the previous page.
 
-        Returns:
-            JSON string with status ``"ok"``.
+        Side effects: Changes the active page to the previous history entry;
+        may trigger network requests if that page was not cached.
+        Returns: JSON string with keys: 'status' ('ok'/'error').
         """
         try:
             session = session_manager.get(input.session_id)
@@ -95,13 +99,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         )
     )
     async def wavexis_forward(input: SimpleNavInput) -> str:
-        """Navigate forward in browser history.
+        """Navigate forward one step in the browser history.
 
-        Args:
-            input: Session reference parameters.
+        Use after wavexis_back to restore a page; use wavexis_navigate for
+        direct URL navigation instead.
 
-        Returns:
-            JSON string with status ``"ok"``.
+        Side effects: Changes the active page to the next history entry; may
+        trigger network requests if that page was not cached.
+        Returns: JSON string with keys: 'status' ('ok'/'error').
         """
         try:
             session = session_manager.get(input.session_id)
@@ -119,13 +124,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         )
     )
     async def wavexis_reload(input: ReloadInput) -> str:
-        """Reload the current page.
+        """Reload the current page, optionally bypassing the cache.
 
-        Args:
-            input: Reload parameters (ignore_cache).
+        Use to refresh stale content or retry a failed load; use
+        wavexis_navigate to go to a different URL instead.
 
-        Returns:
-            JSON string with status ``"ok"``.
+        Side effects: Re-issues network requests for the current page and its
+        resources; discards in-memory page state.
+        Returns: JSON string with keys: 'status' ('ok'/'error').
         """
         try:
             session = session_manager.get(input.session_id)
@@ -143,13 +149,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         )
     )
     async def wavexis_stop(input: SimpleNavInput) -> str:
-        """Stop all pending navigations and resource loads.
+        """Stop all pending navigations and resource loads in the session.
 
-        Args:
-            input: Session reference parameters.
+        Use when a page load is hanging or no longer needed; use wavexis_wait
+        to wait for a load to complete instead.
 
-        Returns:
-            JSON string with status ``"ok"``.
+        Side effects: Aborts in-flight network requests and pending
+        navigations; the page is left in its current partial state.
+        Returns: JSON string with keys: 'status' ('ok'/'error').
         """
         try:
             session = session_manager.get(input.session_id)
@@ -167,13 +174,15 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         )
     )
     async def wavexis_wait(input: WaitInput) -> str:
-        """Wait for a specific condition on the page.
+        """Block until a page condition (load, selector, URL, network idle) is met.
 
-        Args:
-            input: Wait parameters (strategy, selector, timeout).
+        Use after wavexis_navigate when the wait strategy was 'none', or to
+        wait for dynamic content; use wavexis_stop to cancel a load instead.
 
-        Returns:
-            JSON string with status ``"ok"`` and ``elapsed_ms``.
+        Side effects: None — read-only polling with no page mutations; blocks
+        the tool call up to the configured timeout.
+        Returns: JSON string with keys: 'status' ('ok'/'error'),
+        'elapsed_ms' (int).
         """
         try:
             session = session_manager.get(input.session_id)

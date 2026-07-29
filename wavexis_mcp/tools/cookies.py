@@ -37,13 +37,15 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         )
     )
     async def wavexis_cookies_get(input: CookiesGetInput) -> str:
-        """Get all cookies for the current page.
+        """Retrieve all cookies for the current page context.
 
-        Args:
-            input: Cookie query parameters.
+        Use ``wavexis_cookies_set`` to add a cookie, or
+        ``wavexis_cookies_clear`` to remove all cookies at once.
 
-        Returns:
-            JSON string with ``cookies`` list and ``count``.
+        Side effects: launches/acquires a browser backend, navigates to ``url``
+        if provided; read-only with respect to browser state.
+        Returns: JSON string with keys: 'status' ('ok'/'error'), 'cookies'
+        (list[dict]), 'count' (int).
         """
         try:
             backend, sid = await session_manager.acquire_backend(
@@ -72,13 +74,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         )
     )
     async def wavexis_cookies_set(input: CookiesSetInput) -> str:
-        """Set a cookie in the browser.
+        """Set a single cookie in the browser for the current page.
 
-        Args:
-            input: Cookie parameters (name, value, domain, etc.).
+        Use ``wavexis_cookies_get`` to read cookies, or
+        ``wavexis_cookies_delete`` to remove a specific cookie.
 
-        Returns:
-            JSON string with status ``"ok"``.
+        Side effects: launches/acquires a browser backend, navigates to ``url``
+        if provided, mutates browser cookie state.
+        Returns: JSON string with keys: 'status' ('ok'/'error').
         """
         try:
             backend, sid = await session_manager.acquire_backend(
@@ -117,13 +120,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         )
     )
     async def wavexis_cookies_delete(input: CookiesDeleteInput) -> str:
-        """Delete cookies matching name and domain.
+        """Delete cookies matching a name and domain in the browser.
 
-        Args:
-            input: Cookie deletion parameters.
+        Use ``wavexis_cookies_clear`` to remove all cookies, or
+        ``wavexis_cookies_set`` to add a new cookie.
 
-        Returns:
-            JSON string with status ``"ok"``.
+        Side effects: launches/acquires a browser backend, navigates to ``url``
+        if provided, destructively removes matching cookies from browser state.
+        Returns: JSON string with keys: 'status' ('ok'/'error').
         """
         try:
             backend, sid = await session_manager.acquire_backend(
@@ -152,13 +156,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         )
     )
     async def wavexis_cookies_clear(input: CookiesClearInput) -> str:
-        """Clear all browser cookies.
+        """Clear all cookies from the browser session.
 
-        Args:
-            input: Session reference parameters.
+        Use ``wavexis_cookies_delete`` to remove a specific cookie, or
+        ``wavexis_cookies_get`` to inspect cookies before clearing.
 
-        Returns:
-            JSON string with status ``"ok"``.
+        Side effects: uses an existing session backend, destructively removes
+        all cookies from the browser.
+        Returns: JSON string with keys: 'status' ('ok'/'error').
         """
         try:
             session = session_manager.get(input.session_id)

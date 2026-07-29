@@ -64,13 +64,17 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         )
     )
     async def wavexis_screenshot(input: ScreenshotInput) -> str:
-        """Take a screenshot of a web page or element.
+        """Capture a screenshot of a web page or matched element.
 
-        Args:
-            input: Screenshot parameters (URL, selector, format, etc.).
+        Use ``wavexis_pdf`` when a print-ready document is needed, or
+        ``wavexis_annotated_screenshot`` when labelled element markers are
+        required.
 
-        Returns:
-            JSON string with base64 image data or file path.
+        Side effects: launches/acquires a browser backend, navigates to ``url``
+        if provided, optionally evaluates ``js``; writes to ``output_path`` when
+        given.
+        Returns: JSON string with keys: 'status' ('ok'/'error'), 'format'
+        (str), 'base64' (str) or 'path' (str), 'size_bytes' (int).
         """
         try:
             backend, sid = await session_manager.acquire_backend(
@@ -136,13 +140,16 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         )
     )
     async def wavexis_pdf(input: PDFInput) -> str:
-        """Generate a PDF of a web page.
+        """Generate a PDF document from a web page.
 
-        Args:
-            input: PDF parameters (URL, paper size, margins, etc.).
+        Use ``wavexis_screenshot`` for image capture, or ``wavexis_page_pdf``
+        when pixel-level control over paper size and margins is required.
 
-        Returns:
-            JSON string with base64 PDF data or file path.
+        Side effects: launches/acquires a browser backend, navigates to ``url``
+        if provided, optionally evaluates ``js``; writes to ``output_path`` when
+        given.
+        Returns: JSON string with keys: 'status' ('ok'/'error'), 'base64'
+        (str) or 'path' (str), 'size_bytes' (int).
         """
         try:
             backend, sid = await session_manager.acquire_backend(
@@ -196,13 +203,16 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         )
     )
     async def wavexis_scrape(input: ScrapeInput) -> str:
-        """Scrape multiple URLs by evaluating a JS expression on each page.
+        """Scrape data from multiple URLs by evaluating a JS expression on each.
 
-        Args:
-            input: Scrape parameters (URLs, expression, pagination).
+        Use ``wavexis_eval`` for single-page evaluation, or ``wavexis_scrape``
+        when the same expression must run across many pages with pagination.
 
-        Returns:
-            JSON string with paginated results and total count.
+        Side effects: launches/acquires a browser backend, navigates to each
+        URL in ``urls`` sequentially, evaluates ``expression`` in every page
+        context.
+        Returns: JSON string with keys: 'status' ('ok'/'error'), 'results'
+        (list[dict[str, Any]]), 'format' (str), 'count' (int), 'total' (int).
         """
         try:
             backend, sid = await session_manager.acquire_backend(
@@ -248,13 +258,16 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         )
     )
     async def wavexis_screencast(input: ScreencastInput) -> str:
-        """Capture a sequence of screenshots (frame-by-frame).
+        """Capture a frame-by-frame screenshot sequence over a duration.
 
-        Args:
-            input: Screencast parameters (duration, format, output dir).
+        Use ``wavexis_screenshot`` for a single still image, or
+        ``wavexis_screencast`` when animation or time-series capture is needed.
 
-        Returns:
-            JSON string with base64 frames or directory path.
+        Side effects: launches/acquires a browser backend, navigates to ``url``
+        if provided, captures frames for ``duration``; writes frame files to
+        ``output_dir`` when given.
+        Returns: JSON string with keys: 'status' ('ok'/'error'), 'frames'
+        (list[str]) or 'dir' (str), 'count' (int).
         """
         try:
             backend, sid = await session_manager.acquire_backend(
@@ -310,17 +323,20 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         )
     )
     async def wavexis_annotated_screenshot(input: AnnotatedScreenshotInput) -> str:
-        """Take a screenshot with numbered labels overlaid on elements.
+        """Capture a screenshot with numbered labels overlaid on elements.
 
         Injects overlay divs with labels @e1, @e2, ... on each element
         matching the provided selectors, captures a screenshot, removes
         the overlays, and returns the image plus a label-to-selector map.
 
-        Args:
-            input: Annotated screenshot parameters (selectors, format).
+        Use ``wavexis_screenshot`` for plain captures, or this tool when
+        visual element identification is needed for follow-up actions.
 
-        Returns:
-            JSON string with base64 image data or file path, plus ``labels`` map.
+        Side effects: uses an existing session backend, injects and removes
+        temporary overlay DOM nodes; writes to ``output_path`` when given.
+        Returns: JSON string with keys: 'status' ('ok'/'error'), 'format'
+        (str), 'base64' (str) or 'path' (str), 'size_bytes' (int), 'labels'
+        (dict[str, str]).
         """
         try:
             session = session_manager.get(input.session_id)
@@ -355,16 +371,16 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         )
     )
     async def wavexis_page_pdf(input: PagePDFInput) -> str:
-        """Generate a PDF using the low-level Page.printToPDF CDP method.
+        """Generate a PDF via the low-level Page.printToPDF CDP method.
 
         Offers pixel-level control over paper size, margins, and print
-        options beyond ``wavexis_pdf``.
+        options beyond ``wavexis_pdf``. Use ``wavexis_pdf`` for simpler
+        high-level PDF generation.
 
-        Args:
-            input: Page PDF parameters.
-
-        Returns:
-            JSON string with base64 PDF data or saved file path.
+        Side effects: launches/acquires a browser backend, navigates to ``url``
+        if provided; writes to ``output_path`` when given.
+        Returns: JSON string with keys: 'status' ('ok'/'error'), 'type'
+        ('pdf'), 'base64' (str) or 'path' (str), 'size_bytes' (int).
         """
         try:
             backend, sid = await session_manager.acquire_backend(
@@ -420,11 +436,13 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
     async def wavexis_page_snapshot(input: PageSnapshotInput) -> str:
         """Capture the page as MHTML or a plain text document.
 
-        Args:
-            input: Page snapshot parameters (format, URL, output path).
+        Use ``wavexis_scrape`` for structured data extraction, or this tool
+        when a full page archive (MHTML) or text dump is required.
 
-        Returns:
-            JSON string with the snapshot content or saved file path.
+        Side effects: launches/acquires a browser backend, navigates to ``url``
+        if provided; writes to ``output_path`` when given.
+        Returns: JSON string with keys: 'status' ('ok'/'error'), 'format'
+        (str), 'content' (str) or 'path' (str), 'size_bytes' (int).
         """
         try:
             backend, sid = await session_manager.acquire_backend(

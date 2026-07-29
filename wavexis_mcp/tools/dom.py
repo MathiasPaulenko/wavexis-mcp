@@ -48,13 +48,12 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         )
     )
     async def wavexis_dom_get(input: DOMGetInput) -> str:
-        """Get the HTML of an element matching a CSS selector.
+        """Retrieve the HTML of an element matching a CSS selector.
 
-        Args:
-            input: DOM get parameters (selector, outer/inner).
+        Use wavexis_dom_query instead when you need element metadata rather than raw HTML.
 
-        Returns:
-            JSON string with ``html`` and ``selector``.
+        Side effects: None; read-only. May navigate to ``url`` if provided.
+        Returns: JSON string with keys: 'status' ('ok'/'error'), 'html' (str), 'selector' (str).
         """
         try:
             backend, sid = await session_manager.acquire_backend(
@@ -83,13 +82,13 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         )
     )
     async def wavexis_dom_query(input: DOMQueryInput) -> str:
-        """Query elements by CSS selector.
+        """Query elements by CSS selector and return paginated metadata.
 
-        Args:
-            input: Query parameters (selector, all, pagination).
+        Use wavexis_dom_get instead when you only need the raw HTML of a single element.
 
-        Returns:
-            JSON string with paginated ``elements``, ``count``, and ``total``.
+        Side effects: None; read-only. May navigate to ``url`` if provided.
+        Returns: JSON string with keys: 'status' ('ok'/'error'), 'elements' (list[dict]),
+            'count' (int), 'total' (int).
         """
         try:
             backend, sid = await session_manager.acquire_backend(
@@ -128,11 +127,10 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
     async def wavexis_dom_set_attr(input: DOMSetAttrInput) -> str:
         """Set an attribute on an element matching a CSS selector.
 
-        Args:
-            input: Attribute parameters (selector, name, value).
+        Use wavexis_dom_get_attr to read the current value before setting.
 
-        Returns:
-            JSON string with status ``"ok"``.
+        Side effects: Mutates the DOM by writing the attribute on the matched element.
+        Returns: JSON string with keys: 'status' ('ok'/'error').
         """
         try:
             session = session_manager.get(input.session_id)
@@ -150,13 +148,13 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         )
     )
     async def wavexis_dom_get_attr(input: DOMGetAttrInput) -> str:
-        """Get an attribute value from an element matching a CSS selector.
+        """Read an attribute value from an element matching a CSS selector.
 
-        Args:
-            input: Attribute parameters (selector, name).
+        Use wavexis_dom_set_attr to write an attribute value.
 
-        Returns:
-            JSON string with ``value``, ``selector``, and ``name``.
+        Side effects: None; read-only.
+        Returns: JSON string with keys: 'status' ('ok'/'error'), 'value' (str|None),
+            'selector' (str), 'name' (str).
         """
         try:
             session = session_manager.get(input.session_id)
@@ -182,11 +180,10 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
     async def wavexis_dom_remove_attr(input: DOMRemoveAttrInput) -> str:
         """Remove an attribute from an element matching a CSS selector.
 
-        Args:
-            input: Attribute removal parameters (selector, name).
+        Use wavexis_dom_set_attr to restore or change an attribute instead of removing it.
 
-        Returns:
-            JSON string with status ``"ok"``.
+        Side effects: Mutates the DOM by deleting the attribute from the matched element.
+        Returns: JSON string with keys: 'status' ('ok'/'error').
         """
         try:
             session = session_manager.get(input.session_id)
@@ -206,11 +203,10 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
     async def wavexis_dom_remove(input: DOMRemoveInput) -> str:
         """Remove an element matching a CSS selector from the DOM.
 
-        Args:
-            input: Element removal parameters.
+        Use wavexis_dom_set_attr to hide an element (e.g. ``display:none``) instead of deleting it.
 
-        Returns:
-            JSON string with status ``"ok"``.
+        Side effects: Destructive; permanently removes the matched element from the live DOM.
+        Returns: JSON string with keys: 'status' ('ok'/'error').
         """
         try:
             session = session_manager.get(input.session_id)
@@ -230,11 +226,10 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
     async def wavexis_dom_focus(input: DOMFocusInput) -> str:
         """Focus an element matching a CSS selector.
 
-        Args:
-            input: Focus parameters.
+        Use wavexis_dom_click instead when the intent is to activate a control rather than focus it.
 
-        Returns:
-            JSON string with status ``"ok"``.
+        Side effects: Mutates DOM focus state; may trigger focus event handlers on the element.
+        Returns: JSON string with keys: 'status' ('ok'/'error').
         """
         try:
             session = session_manager.get(input.session_id)
@@ -252,13 +247,12 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         )
     )
     async def wavexis_dom_scroll(input: DOMScrollInput) -> str:
-        """Scroll to an element or by offset.
+        """Scroll to an element or by a pixel offset.
 
-        Args:
-            input: Scroll parameters (selector or x/y offset).
+        Use wavexis_dom_get to inspect an element's position before scrolling by offset.
 
-        Returns:
-            JSON string with status ``"ok"``.
+        Side effects: Changes the page scroll position; may trigger scroll event listeners.
+        Returns: JSON string with keys: 'status' ('ok'/'error').
         """
         try:
             session = session_manager.get(input.session_id)
@@ -276,13 +270,13 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         )
     )
     async def wavexis_dom_snapshot(input: DOMSnapshotInput) -> str:
-        """Capture a full DOM snapshot of the page.
+        """Capture a full DOM snapshot of the page including iframes and shadow roots.
 
-        Args:
-            input: Snapshot parameters.
+        Use wavexis_dom_query for lightweight element metadata instead of a full snapshot.
 
-        Returns:
-            JSON string with ``snapshot`` and ``documents`` count.
+        Side effects: None; read-only.
+        Returns: JSON string with keys: 'status' ('ok'/'error'), 'snapshot' (dict),
+            'documents' (int).
         """
         try:
             session = session_manager.get(input.session_id)
@@ -305,11 +299,10 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
     async def wavexis_iframe_eval(input: IframeEvalInput) -> str:
         """Evaluate a JavaScript expression inside an iframe.
 
-        Args:
-            input: iframe eval parameters (iframe_selector, expression).
+        Use wavexis_iframe_click or wavexis_iframe_fill for standard interactions instead of raw JS.
 
-        Returns:
-            JSON string with ``result``.
+        Side effects: Arbitrary; executes user-supplied JavaScript within the iframe context.
+        Returns: JSON string with keys: 'status' ('ok'/'error'), 'result' (any).
         """
         try:
             session = session_manager.get(input.session_id)
@@ -333,11 +326,10 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
     async def wavexis_iframe_click(input: IframeClickInput) -> str:
         """Click an element inside an iframe.
 
-        Args:
-            input: iframe click parameters (iframe_selector, selector).
+        Use wavexis_iframe_eval only for custom JS that click/fill cannot express.
 
-        Returns:
-            JSON string with status ``"ok"``.
+        Side effects: Triggers click handlers and may navigate or mutate the iframe DOM.
+        Returns: JSON string with keys: 'status' ('ok'/'error').
         """
         try:
             session = session_manager.get(input.session_id)
@@ -358,13 +350,12 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         )
     )
     async def wavexis_iframe_fill(input: IframeFillInput) -> str:
-        """Fill an input element inside an iframe.
+        """Fill an input element inside an iframe with a value.
 
-        Args:
-            input: iframe fill parameters (iframe_selector, selector, value).
+        Use wavexis_iframe_click to submit or activate the field after filling.
 
-        Returns:
-            JSON string with status ``"ok"``.
+        Side effects: Mutates the input value within the iframe; may trigger input/change events.
+        Returns: JSON string with keys: 'status' ('ok'/'error').
         """
         try:
             session = session_manager.get(input.session_id)
@@ -390,15 +381,12 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
     async def wavexis_shadow_eval(input: ShadowEvalInput) -> str:
         """Evaluate a JavaScript expression inside a shadow DOM tree.
 
-        Pierces shadow boundaries using the provided selector chain.
-        selectors[0] is in the main document, selectors[1] in
-        selectors[0].shadowRoot, and so on.
+        Pierces shadow boundaries using the provided selector chain: ``selectors[0]`` is in the
+        main document, ``selectors[1]`` in ``selectors[0].shadowRoot``, and so on.
+        Use wavexis_shadow_click or wavexis_shadow_fill for standard interactions instead of raw JS.
 
-        Args:
-            input: Shadow eval parameters (selectors, expression).
-
-        Returns:
-            JSON string with ``result``.
+        Side effects: Arbitrary; executes user-supplied JavaScript within the shadow DOM context.
+        Returns: JSON string with keys: 'status' ('ok'/'error'), 'result' (any).
         """
         try:
             session = session_manager.get(input.session_id)
@@ -423,12 +411,10 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """Click an element inside a shadow DOM tree.
 
         Pierces shadow boundaries using the provided selector chain.
+        Use wavexis_shadow_eval only for custom JS that click/fill cannot express.
 
-        Args:
-            input: Shadow click parameters (selectors).
-
-        Returns:
-            JSON string with status ``"ok"``.
+        Side effects: Triggers click handlers and may navigate or mutate the shadow DOM.
+        Returns: JSON string with keys: 'status' ('ok'/'error').
         """
         try:
             session = session_manager.get(input.session_id)
@@ -446,15 +432,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         )
     )
     async def wavexis_shadow_fill(input: ShadowFillInput) -> str:
-        """Fill an input element inside a shadow DOM tree.
+        """Fill an input element inside a shadow DOM tree with a value.
 
         Pierces shadow boundaries using the provided selector chain.
+        Use wavexis_shadow_click to submit or activate the field after filling.
 
-        Args:
-            input: Shadow fill parameters (selectors, value).
-
-        Returns:
-            JSON string with status ``"ok"``.
+        Side effects: Mutates the input value within the shadow DOM; may trigger
+        input/change events.
+        Returns: JSON string with keys: 'status' ('ok'/'error').
         """
         try:
             session = session_manager.get(input.session_id)

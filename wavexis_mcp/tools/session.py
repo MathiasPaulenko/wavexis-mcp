@@ -32,11 +32,15 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
     async def wavexis_session_open(input: SessionOpenInput) -> str:
         """Launch a persistent browser session for multi-step workflows.
 
-        Args:
-            input: Session parameters (backend, headless, viewport).
+        Call once at the start of a task and reuse the returned session_id for
+        all subsequent calls; use wavexis_navigate with session_id omitted for
+        one-off page fetches instead.
 
-        Returns:
-            JSON string with ``session_id``, ``backend``, and ``status``.
+        Side effects: Launches a browser process (or connects to an existing
+        one) and allocates server-side session state; may open network
+        connections to remote/cloud browsers.
+        Returns: JSON string with keys: 'status' ('ok'/'error'),
+        'session_id' (str), 'backend' (str).
         """
         try:
             session_id = await session_manager.open(
@@ -70,13 +74,16 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         )
     )
     async def wavexis_session_close(input: SessionCloseInput) -> str:
-        """Close a browser session and release resources.
+        """Close a browser session and release all associated resources.
 
-        Args:
-            input: Session close parameters.
+        Call when the session is no longer needed to free memory and browser
+        processes; use wavexis_close_tab to close individual tabs instead.
 
-        Returns:
-            JSON string with ``status`` and ``session_id``.
+        Side effects: Terminates the browser process (or disconnects from a
+        remote one) and frees session state. Destructive — all unsaved page
+        state is lost.
+        Returns: JSON string with keys: 'status' ('ok'/'error'),
+        'session_id' (str).
         """
         try:
             await session_manager.close(input.session_id)
@@ -93,14 +100,16 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         )
     )
     async def wavexis_session_info(input: SessionInfoInput) -> str:
-        """Get information about an active browser session.
+        """Query metadata and current URL of an active browser session.
 
-        Args:
-            input: Session info parameters.
+        Use to inspect session health or retrieve the current page URL; use
+        wavexis_list_tabs for tab-level details instead.
 
-        Returns:
-            JSON string with ``session_id``, ``backend``, ``created_at``,
-            and ``current_url``.
+        Side effects: None — read-only; queries in-memory session state and
+        the browser's current URL.
+        Returns: JSON string with keys: 'status' ('ok'/'error'),
+        'session_id' (str), 'backend' (str), 'created_at' (str),
+        'current_url' (str).
         """
         try:
             info = session_manager.info(input.session_id)

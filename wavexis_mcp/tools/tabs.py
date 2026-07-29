@@ -36,13 +36,15 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         )
     )
     async def wavexis_list_tabs(input: ListTabsInput) -> str:
-        """List all open browser tabs.
+        """List all open browser tabs in the session.
 
-        Args:
-            input: Session reference parameters.
+        Use to discover tab IDs before calling wavexis_activate_tab or
+        wavexis_close_tab; use wavexis_session_info for session-level metadata
+        instead.
 
-        Returns:
-            JSON string with ``tabs`` list and ``count``.
+        Side effects: None — read-only query of the browser's tab list.
+        Returns: JSON string with keys: 'status' ('ok'/'error'),
+        'tabs' (list[dict]), 'count' (int).
         """
         try:
             session = session_manager.get(input.session_id)
@@ -60,13 +62,15 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         )
     )
     async def wavexis_new_tab(input: NewTabInput) -> str:
-        """Create a new browser tab.
+        """Create a new browser tab, optionally navigating to a URL.
 
-        Args:
-            input: New tab parameters (URL).
+        Use to open a parallel page without losing the current tab; use
+        wavexis_navigate to change the current tab's URL instead.
 
-        Returns:
-            JSON string with ``tab_id``.
+        Side effects: Opens a new browser tab; if a URL is provided, issues a
+        network request to it.
+        Returns: JSON string with keys: 'status' ('ok'/'error'),
+        'tab_id' (str), 'url' (str).
         """
         try:
             session = session_manager.get(input.session_id)
@@ -86,13 +90,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         )
     )
     async def wavexis_close_tab(input: CloseTabInput) -> str:
-        """Close a tab by its ID.
+        """Close a browser tab by its ID.
 
-        Args:
-            input: Close tab parameters (tab_id).
+        Use to clean up tabs created with wavexis_new_tab; use
+        wavexis_session_close to terminate the entire session instead.
 
-        Returns:
-            JSON string with status ``"ok"``.
+        Side effects: Closes the specified tab and discards its page state.
+        Destructive — unsaved data in that tab is lost.
+        Returns: JSON string with keys: 'status' ('ok'/'error').
         """
         try:
             session = session_manager.get(input.session_id)
@@ -110,13 +115,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         )
     )
     async def wavexis_activate_tab(input: ActivateTabInput) -> str:
-        """Activate (focus) a tab by its ID.
+        """Focus (bring to front) a browser tab by its ID.
 
-        Args:
-            input: Activate tab parameters (tab_id).
+        Use to switch the active tab before running navigation or interaction
+        tools; use wavexis_list_tabs to obtain tab IDs first.
 
-        Returns:
-            JSON string with status ``"ok"``.
+        Side effects: Changes the browser's active tab; subsequent tool calls
+        operate on the newly focused tab.
+        Returns: JSON string with keys: 'status' ('ok'/'error').
         """
         try:
             session = session_manager.get(input.session_id)

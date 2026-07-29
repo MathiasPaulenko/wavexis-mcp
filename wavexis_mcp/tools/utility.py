@@ -112,13 +112,13 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         )
     )
     async def wavexis_browser_version(input: BrowserVersionInput) -> str:
-        """Get the browser version string.
+        """Query the active browser's version string via the selected backend.
 
-        Args:
-            input: Browser version parameters.
+        Use ``wavexis_backends`` instead when you need a list of all installed
+        backends without launching a browser.
 
-        Returns:
-            JSON string with ``version`` and ``backend``.
+        Side effects: Acquires (and may launch) a browser backend, then releases it.
+        Returns: JSON string with keys: 'status' ('ok'/'error'), 'version' (str), 'backend' (str).
         """
         try:
             backend, sid = await session_manager.acquire_backend(
@@ -142,10 +142,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         )
     )
     async def wavexis_backends() -> str:
-        """List available browser backends and their versions.
+        """List installed browser backends and their versions without launching a browser.
 
-        Returns:
-            JSON string with ``backends`` and ``available`` lists.
+        Use ``wavexis_browser_version`` instead when you need the version of a
+        specific running session's backend.
+
+        Side effects: None; queries the local filesystem only.
+        Returns: JSON string with keys: 'status' ('ok'/'error'),
+        'backends' (dict), 'available' (list[str]).
         """
         try:
             from wavexis.backend.manager import BackendManager
@@ -251,17 +255,17 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         )
     )
     async def wavexis_invoke(input: InvokeInput) -> str:
-        """Invoke any wavexis backend method by name.
+        """Invoke any wavexis backend method by name, the ultimate escape hatch.
 
-        This is the ultimate escape hatch: it exposes the full ``AbstractBackend``
-        API (e.g. ``page_print_to_pdf``, ``perf_trace``, ``runtime_evaluate``,
-        ``pwa_install``, etc.) without needing a dedicated MCP tool per method.
+        Use a dedicated MCP tool (e.g. ``wavexis_act``, ``wavexis_navigate``)
+        instead when one exists for the desired action; this tool exposes the
+        full ``AbstractBackend`` API (e.g. ``page_print_to_pdf``, ``perf_trace``,
+        ``runtime_evaluate``, ``pwa_install``) for methods without a wrapper.
 
-        Args:
-            input: Method name, keyword arguments, and optional session/launch options.
-
-        Returns:
-            JSON string with the method result (base64 for binary outputs).
+        Side effects: May launch an ephemeral browser, navigate to a URL, and
+        execute arbitrary backend methods; potentially destructive.
+        Returns: JSON string with keys: 'status' ('ok'/'error'), 'type' (str),
+        and either 'result' (any), 'base64' (str), or 'path' (str) depending on output.
         """
         ephemeral_sid: str | None = None
         backend: AbstractBackend | None = None
