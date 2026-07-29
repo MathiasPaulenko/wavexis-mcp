@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.24] - 2026-07-29
+
+### Fixed
+
+- MCP Registry ownership verification — added visible `mcp-name:` marker to README (PyPI strips HTML comments during rendering).
+
 ## [1.6.23] - 2026-07-29
 
 ### Added

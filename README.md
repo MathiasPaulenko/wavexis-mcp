@@ -419,3 +419,6 @@ WaveXisMCP is built on the [wavexis](https://github.com/MathiasPaulenko/wavexis)
 ## License
 
 MIT
+
+<!-- mcp-name: io.github.MathiasPaulenko/wavexis-mcp -->
+mcp-name: io.github.MathiasPaulenko/wavexis-mcp
