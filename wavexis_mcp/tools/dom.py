@@ -290,9 +290,9 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
 
     @mcp.tool(
         annotations=ToolAnnotations(
-            readOnlyHint=True,
+            readOnlyHint=False,
             destructiveHint=False,
-            idempotentHint=True,
+            idempotentHint=False,
             openWorldHint=True,
         )
     )
@@ -372,9 +372,9 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
 
     @mcp.tool(
         annotations=ToolAnnotations(
-            readOnlyHint=True,
+            readOnlyHint=False,
             destructiveHint=False,
-            idempotentHint=True,
+            idempotentHint=False,
             openWorldHint=True,
         )
     )
