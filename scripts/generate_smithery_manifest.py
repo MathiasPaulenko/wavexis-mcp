@@ -86,7 +86,14 @@ def generate_icon(path: Path) -> None:
     mdraw.rounded_rectangle([16, 16, size - 16, size - 16], radius=48, fill=255)
     img.putalpha(mask)
 
-    def draw_wave(draw: ImageDraw.ImageDraw, y_mid: int, amplitude: int, color: tuple, width: int, opacity: int) -> None:
+    def draw_wave(
+        draw: ImageDraw.ImageDraw,
+        y_mid: int,
+        amplitude: int,
+        color: tuple,
+        width: int,
+        opacity: int,
+    ) -> None:
         points = []
         for x in range(56, 200):
             t = (x - 56) / 144
@@ -118,11 +125,13 @@ async def main() -> None:
     tools_data = []
     for t in tools:
         flat_schema = flatten_schema(t.inputSchema or {})
-        tools_data.append({
-            "name": t.name,
-            "description": (t.description or "").split("\n")[0][:200],
-            "inputSchema": flat_schema,
-        })
+        tools_data.append(
+            {
+                "name": t.name,
+                "description": (t.description or "").split("\n")[0][:200],
+                "inputSchema": flat_schema,
+            }
+        )
 
     manifest = {
         "manifest_version": "0.4",
@@ -211,8 +220,10 @@ async def main() -> None:
             if isinstance(pschema, dict) and pschema.get("description"):
                 params_with_desc += 1
 
-    print(f"Parameter descriptions: {params_with_desc}/{total_params} "
-          f"= {params_with_desc / total_params * 100:.1f}%")
+    print(
+        f"Parameter descriptions: {params_with_desc}/{total_params} "
+        f"= {params_with_desc / total_params * 100:.1f}%"
+    )
 
     generate_icon(icon_path)
     print(f"Generated {icon_path}")
