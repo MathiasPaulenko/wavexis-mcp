@@ -84,8 +84,13 @@ class MouseDragXYInput(BaseInput):
     start_y: float = Field(..., description="Starting Y coordinate in CSS pixels")
     end_x: float = Field(..., description="Ending X coordinate in CSS pixels")
     end_y: float = Field(..., description="Ending Y coordinate in CSS pixels")
-    button: Literal["left", "right", "middle"] = Field(default="left", description="Mouse button to use")
-    steps: int = Field(default=5, ge=1, le=50, description="Number of intermediate steps for smooth dragging")
+    button: Literal["left", "right", "middle"] = Field(
+        default="left", description="Mouse button to use"
+    )
+    steps: int = Field(
+        default=5, ge=1, le=50,
+        description="Number of intermediate steps for smooth dragging",
+    )
     session_id: str = Field(..., description="Active session ID from wavexis_session_open")
 
 
@@ -110,7 +115,10 @@ class CookieListInput(BaseInput):
     name: str | None = Field(default=None, description="Optional cookie name filter")
     domain: str | None = Field(default=None, description="Optional domain filter")
     path: str | None = Field(default=None, description="Optional path filter")
-    limit: int = Field(default=100, ge=1, le=1000, description="Maximum number of cookies to return")
+    limit: int = Field(
+        default=100, ge=1, le=1000,
+        description="Maximum number of cookies to return",
+    )
     session_id: str = Field(..., description="Active session ID from wavexis_session_open")
 
 
