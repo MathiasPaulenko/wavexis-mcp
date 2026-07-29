@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.23] - 2026-07-29
+
+### Added
+
+- **MCP Registry support** — Added `mcp-name` marker to README for ownership verification on the official MCP Registry (registry.modelcontextprotocol.io). Added `server.json` for registry metadata.
+
 ## [1.6.22] - 2026-07-29
 
 ### Added

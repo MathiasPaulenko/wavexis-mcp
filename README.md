@@ -1,3 +1,5 @@
+<!-- mcp-name: io.github.MathiasPaulenko/wavexis-mcp -->
+
 <p align="center">
   <img src="docs/assets/images/logo-wide.svg" alt="WaveXisMCP" width="480">
 </p>

@@ -13,7 +13,7 @@ from wavexis_mcp.errors import (
 )
 from wavexis_mcp.session import BrowserSession, SessionManager
 
-__version__ = "1.6.22"
+__version__ = "1.6.23"
 
 __all__ = [
     "BackendError",

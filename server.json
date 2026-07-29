@@ -1,0 +1,24 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.MathiasPaulenko/wavexis-mcp",
+  "title": "WaveXisMCP",
+  "description": "MCP server with 220 browser automation tools for Chrome, Edge, and Firefox via CDP + BiDi. 13 capability tiers, stealth mode, Lighthouse audits, multi-action YAML batching. No Node.js, no Chromium download — uses your existing browser. 100% Python.",
+  "repository": {
+    "url": "https://github.com/MathiasPaulenko/wavexis-mcp",
+    "source": "github"
+  },
+  "version": "1.6.22",
+  "homepage": "https://mathiaspaulenko.github.io/wavexis-mcp/",
+  "license": "MIT",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "wavexis-mcp",
+      "version": "1.6.22",
+      "transport": {
+        "type": "stdio"
+      },
+      "runtimeHint": "uvx"
+    }
+  ]
+}
