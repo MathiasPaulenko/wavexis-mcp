@@ -45,6 +45,9 @@ site/
 mcpb-build/
 *.mcpb
 
+# Agent notes (local only)
+AGENTS.md
+
 # OS
 .DS_Store
 Thumbs.db
