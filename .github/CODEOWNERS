@@ -1,2 +1,8 @@
-# Default code owners
+# Default code owner — all files require @MathiasPaulenko review
 * @MathiasPaulenko
+
+# Security-sensitive areas
+.github/ @MathiasPaulenko
+wavexis_mcp/security.py @MathiasPaulenko
+SECURITY.md @MathiasPaulenko
+pyproject.toml @MathiasPaulenko

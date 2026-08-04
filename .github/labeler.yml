@@ -1,0 +1,35 @@
+documentation:
+- changed-files:
+  - any-glob-to-any-file:
+    - "docs/**"
+    - "*.md"
+    - "mkdocs.yml"
+    - "CONTRIBUTING.md"
+    - "SECURITY.md"
+    - "CODE_OF_CONDUCT.md"
+    - "CHANGELOG.md"
+
+enhancement:
+- changed-files:
+  - any-glob-to-any-file:
+    - "wavexis_mcp/**"
+    - "tests/**"
+    - "scripts/**"
+
+dependencies:
+- changed-files:
+  - any-glob-to-any-file:
+    - "pyproject.toml"
+    - ".github/dependabot.yml"
+
+github-actions:
+- changed-files:
+  - any-glob-to-any-file:
+    - ".github/workflows/**"
+
+security:
+- changed-files:
+  - any-glob-to-any-file:
+    - "wavexis_mcp/security.py"
+    - "SECURITY.md"
+    - ".github/CODEOWNERS"
