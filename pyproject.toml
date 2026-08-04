@@ -118,7 +118,6 @@ include = [
     "/CHANGELOG.md",
     "/CONTRIBUTING.md",
     "/SECURITY.md",
-    "/AGENTS.md",
     "/pyproject.toml",
     "/mkdocs.yml",
     "/docker-compose.yml",
