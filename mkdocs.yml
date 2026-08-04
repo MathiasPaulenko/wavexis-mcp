@@ -81,6 +81,7 @@ nav:
       - Screenshot: examples/screenshot.md
       - Scrape: examples/scrape.md
       - Testing: examples/testing.md
+      - Visual Regression: examples/visual-regression.md
       - Multi-Action: examples/multi-action.md
       - Tutorials: tutorials.md
   - API Reference:
