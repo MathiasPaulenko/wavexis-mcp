@@ -422,6 +422,3 @@ WaveXisMCP 基于 [wavexis](https://github.com/MathiasPaulenko/wavexis) 浏览�
 ## 许可证
 
 MIT
-
-<!-- mcp-name: io.github.MathiasPaulenko/wavexis-mcp -->
-mcp-name: io.github.MathiasPaulenko/wavexis-mcp

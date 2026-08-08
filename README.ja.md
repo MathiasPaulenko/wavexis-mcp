@@ -422,6 +422,3 @@ WaveXisMCPは [wavexis](https://github.com/MathiasPaulenko/wavexis) ブラウザ
 ## ライセンス
 
 MIT
-
-<!-- mcp-name: io.github.MathiasPaulenko/wavexis-mcp -->
-mcp-name: io.github.MathiasPaulenko/wavexis-mcp
