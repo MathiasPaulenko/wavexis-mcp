@@ -12,6 +12,8 @@
 
 ---
 
+**English** | [简体中文](README.zh-CN.md) | [日本語](README.ja.md)
+
 [![CI](https://github.com/MathiasPaulenko/wavexis-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/MathiasPaulenko/wavexis-mcp/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/wavexis-mcp.svg)](https://pypi.org/project/wavexis-mcp/)
 [![PyPI Downloads](https://img.shields.io/pypi/dm/wavexis-mcp.svg)](https://pypi.org/project/wavexis-mcp/)
