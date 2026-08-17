@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.25] - 2026-08-17
+
+### Added
+
+- **Simplified Chinese and Japanese README translations** — README.zh-CN.md and README.ja.md with language switchers (thanks @omkarjoshi9).
+
+### Changed
+
+- Bump actions/labeler from 5 to 7
+- Bump actions/download-artifact from 4 to 8
+- Bump actions/upload-pages-artifact from 3 to 5
+- Bump hatchling from >=1.26,<1.27 to >=1.26,<1.33
+
 ## [1.6.24] - 2026-07-29
 
 ### Fixed
