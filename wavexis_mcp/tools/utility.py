@@ -68,6 +68,7 @@ def _resolve_params_type(method: Any) -> Any:
     for methods shipped with the ``wavexis`` package, avoiding evaluation of
     arbitrary code from untrusted sources.
     """
+    method = inspect.unwrap(method)  # resolve _BackendProxy wrappers
     try:
         sig = inspect.signature(method)
         first_param = next(iter(sig.parameters.values()))

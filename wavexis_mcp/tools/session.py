@@ -59,8 +59,9 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                 browser=input.browser,
                 connect_existing=input.connect_existing,
             )
+            backend_name = session_manager.get(session_id).backend_name
             return format_json_response(
-                {"session_id": session_id, "backend": input.backend, "status": "ok"}
+                {"session_id": session_id, "backend": backend_name, "status": "ok"}
             )
         except Exception as e:
             return format_error("wavexis_session_open", e)

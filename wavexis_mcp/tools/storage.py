@@ -639,6 +639,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                         path=cookie.get("path", "/"),
                         secure=cookie.get("secure", False),
                         http_only=cookie.get("httpOnly", False),
+                        same_site=cookie.get("sameSite", "Lax"),
                     )
                 )
                 for cookie in cookies

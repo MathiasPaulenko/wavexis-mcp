@@ -87,6 +87,23 @@ def _find_chrome_binary() -> str | None:
     return None
 
 
+def _find_free_debug_port() -> int:
+    """Return a free localhost port for Chrome's remote debugging endpoint.
+
+    Prefers ``_CONNECT_EXISTING_PORT`` when available so reconnects reuse the
+    conventional port; falls back to an OS-assigned port to avoid collisions.
+    """
+    import socket
+
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        try:
+            s.bind(("127.0.0.1", _CONNECT_EXISTING_PORT))
+            return _CONNECT_EXISTING_PORT
+        except OSError:
+            s.bind(("127.0.0.1", 0))
+            return int(s.getsockname()[1])
+
+
 async def _launch_chrome_with_debug_port(
     port: int, user_data_dir: str | None
 ) -> asyncio.subprocess.Process:
@@ -208,6 +225,8 @@ class _BackendProxy:
 
                 _async_wrapper.__name__ = getattr(attr, "__name__", name)
                 _async_wrapper.__doc__ = getattr(attr, "__doc__", None)
+                _async_wrapper.__module__ = getattr(attr, "__module__", "") or ""
+                _async_wrapper.__wrapped__ = attr  # type: ignore[attr-defined]
                 if sig is not None:
                     cast(Any, _async_wrapper).__signature__ = sig
                 return _async_wrapper
@@ -220,6 +239,8 @@ class _BackendProxy:
 
             _sync_wrapper.__name__ = getattr(attr, "__name__", name)
             _sync_wrapper.__doc__ = getattr(attr, "__doc__", None)
+            _sync_wrapper.__module__ = getattr(attr, "__module__", "") or ""
+            _sync_wrapper.__wrapped__ = attr  # type: ignore[attr-defined]
             if sig is not None:
                 cast(Any, _sync_wrapper).__signature__ = sig
             return _sync_wrapper
@@ -301,7 +322,7 @@ class SessionManager:
                 except Exception:
                     _logger.debug("Web Vitals injection failed for %s", url)
 
-        backend.navigate = _navigate
+        cast(Any, backend).navigate = _navigate
 
     async def open(
         self,
@@ -360,7 +381,7 @@ class SessionManager:
         # and connect to it via CDP. This reuses the user's browser profile.
         chrome_proc: asyncio.subprocess.Process | None = None
         if connect_existing and connect_endpoint is None and remote_url is None:
-            port = _CONNECT_EXISTING_PORT
+            port = _find_free_debug_port()
             chrome_proc = await _launch_chrome_with_debug_port(port, user_data_dir)
             connect_endpoint = f"ws://localhost:{port}"
             # Force CDP backend — BiDi doesn't support this connection mode.
@@ -378,6 +399,7 @@ class SessionManager:
                 raise RuntimeError(f"Maximum number of sessions ({_MAX_SESSIONS}) reached")
             self._pending.add(session_id)
 
+        backend_instance: AbstractBackend | None = None
         try:
             preferred = backend if backend != "auto" else None
             backend_instance = self._backend_manager.select(preferred)
@@ -423,10 +445,11 @@ class SessionManager:
         except Exception:
             async with self._cond:
                 self._pending.discard(session_id)
-            try:
-                await backend_instance.close()
-            except Exception:
-                _logger.exception("Failed to close backend after launch failure")
+            if backend_instance is not None:
+                try:
+                    await backend_instance.close()
+                except Exception:
+                    _logger.exception("Failed to close backend after launch failure")
             raise
 
         async with self._cond:
@@ -479,31 +502,47 @@ class SessionManager:
             _logger.warning("Storage state file not found or empty: %s", path)
             return
 
-        # Restore cookies.
+        # Restore cookies. wavexis exposes Network.setCookies via
+        # ``network_set_cookies`` — there is no ``set_cookies`` method.
         cookies = data.get("cookies", [])
         if cookies:
             try:
-                await backend.set_cookies(cookies)
+                await backend.network_set_cookies(cookies)
             except Exception:
                 _logger.warning("Failed to restore %d cookies from storage state", len(cookies))
 
-        # Restore localStorage.
+        # Restore web storage. localStorage/sessionStorage are origin-scoped,
+        # so they cannot be set on about:blank — instead we register a preload
+        # script that applies the pairs on every new document (i.e. the first
+        # real navigation restores them).
         local_items = data.get("localStorage", {})
-        if local_items:
-            pairs = ", ".join(
-                f"localStorage.setItem({json.dumps(k)}, {json.dumps(v)})"
-                for k, v in local_items.items()
-            )
-            await asyncio.wait_for(backend.eval(pairs, await_promise=False), timeout=5.0)
-
-        # Restore sessionStorage.
         session_items = data.get("sessionStorage", {})
-        if session_items:
-            pairs = ", ".join(
-                f"sessionStorage.setItem({json.dumps(k)}, {json.dumps(v)})"
-                for k, v in session_items.items()
-            )
-            await asyncio.wait_for(backend.eval(pairs, await_promise=False), timeout=5.0)
+        if local_items or session_items:
+            js_parts: list[str] = []
+            if local_items:
+                pairs = "".join(
+                    f"try{{localStorage.setItem({json.dumps(k)}, {json.dumps(v)})}}catch(e){{}}"
+                    for k, v in local_items.items()
+                )
+                js_parts.append(pairs)
+            if session_items:
+                pairs = "".join(
+                    f"try{{sessionStorage.setItem({json.dumps(k)}, {json.dumps(v)})}}catch(e){{}}"
+                    for k, v in session_items.items()
+                )
+                js_parts.append(pairs)
+            script = "(function(){" + "".join(js_parts) + "})()"
+            add_script = getattr(backend, "page_add_script_to_evaluate_on_new_document", None)
+            if add_script is not None:
+                try:
+                    await add_script(script)
+                except Exception:
+                    _logger.warning("Failed to register storage-state preload script")
+            else:
+                _logger.warning(
+                    "Backend does not support preload scripts; "
+                    "localStorage/sessionStorage state was not restored"
+                )
 
     async def close(self, session_id: str, *, timeout_s: float = 30.0) -> None:
         """Close a browser session and remove it from the manager.
@@ -545,14 +584,14 @@ class SessionManager:
             if isinstance(sub_id, str):
                 with contextlib.suppress(Exception):
                     await real_backend.unsubscribe_events(sub_id)
-                popped.backend._network_log_sub_id = None
+                cast(Any, popped.backend)._network_log_sub_id = None
 
             route_handler = getattr(popped.backend, "_route_handler", None)
             if route_handler is not None and not isinstance(route_handler, AsyncMock):
                 with contextlib.suppress(Exception):
-                    cdp_session = real_backend._require_session()
+                    cdp_session = cast(Any, real_backend)._require_session()
                     cdp_session.off("Fetch.requestPaused", route_handler)
-                popped.backend._route_handler = None
+                cast(Any, popped.backend)._route_handler = None
                 route_entries = getattr(popped.backend, "_route_entries", None)
                 if isinstance(route_entries, deque):
                     route_entries.clear()
