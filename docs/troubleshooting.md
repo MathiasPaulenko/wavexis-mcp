@@ -13,14 +13,14 @@ Common issues and their solutions when using WaveXisMCP.
 **Solution:**
 
 1. Install [Google Chrome](https://www.google.com/chrome/) or [Microsoft Edge](https://www.microsoft.com/edge).
-2. If Chrome is installed in a non-standard location, set the `WAVEXIS_BROWSER_PATH` environment variable:
+2. If Chrome is installed in a non-standard location, set the `CDPWAVE_BROWSER_PATH` environment variable:
 
     ```bash
     # Linux/macOS
-    export WAVEXIS_BROWSER_PATH=/usr/bin/google-chrome
+    export CDPWAVE_BROWSER_PATH=/usr/bin/google-chrome
 
     # Windows (PowerShell)
-    $env:WAVEXIS_BROWSER_PATH = "C:\Program Files\Google\Chrome\Application\chrome.exe"
+    $env:CDPWAVE_BROWSER_PATH = "C:\Program Files\Google\Chrome\Application\chrome.exe"
     ```
 
 3. Verify the path is correct by running the browser manually.
@@ -36,8 +36,8 @@ Common issues and their solutions when using WaveXisMCP.
 **Solution:**
 
 - Close unused sessions with `wavexis_session_close`.
-- Use `wavexis_session_list` to see active sessions.
-- Use `wavexis_cleanup_all` (or restart the server) to close all sessions.
+- Use `wavexis_session_info` to inspect a specific session.
+- Restart the server to close all sessions (the lifespan handler cleans them up on shutdown).
 - For long-running workflows, reuse a single session instead of opening new ones.
 - Use stateless mode (pass `url` directly to tools) for one-shot operations — no session needed.
 
@@ -213,7 +213,7 @@ Common issues and their solutions when using WaveXisMCP.
 **Solution:**
 
 - Close sessions when done: `wavexis_session_close`.
-- Use `wavexis_session_list` to check for leaked sessions.
+- There is no "list all sessions" tool; track the session IDs returned by `wavexis_session_open`.
 - Rate limiter buckets are cleaned up on session close. If using stateless mode extensively, restart the server periodically.
 - Check for orphaned Chrome processes: `ps aux | grep chrome` (Linux) or Task Manager (Windows).
 - The lifespan handler cleans up all sessions on shutdown, but hard kills (SIGKILL) may leave orphaned browsers.

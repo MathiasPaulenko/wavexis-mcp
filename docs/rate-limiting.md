@@ -13,8 +13,8 @@ wavexis-mcp
 # Custom: 10 calls/sec, burst of 5
 wavexis-mcp --rate-limit 10 --rate-burst 5
 
-# Disable (not recommended)
-wavexis-mcp --rate-limit 999999 --rate-burst 999999
+# Disable
+wavexis-mcp --rate-limit 0
 ```
 
 | Flag | Default | Description |
@@ -34,24 +34,28 @@ WaveXisMCP uses a **token bucket** algorithm per session:
 
 ## Per-Session Isolation
 
-Rate limiting is **per-session**, not global. This means:
+Rate limiting is **per-session**. Stateless calls (tools invoked without a `session_id`) share a single global bucket. This means:
 
 - Session A making 60 calls/sec does not affect Session B
 - Each session has its own independent token bucket
+- Stateless calls draw from one shared bucket, so bursts of one-shot calls can still be throttled
 - Closing a session cleans up its bucket
 
 ## Rate Limited Response
 
-When the rate limit is exceeded, the tool returns:
+When the rate limit is exceeded, the tool returns the standard structured error:
 
 ```json
 {
-  "error": "rate_limited",
-  "retry_after_ms": 16
+  "error": "Rate limit exceeded. Retry after 16ms.",
+  "tool": "wavexis_screenshot",
+  "type": "RuntimeError",
+  "message": "Rate limit exceeded. Retry after 16ms.",
+  "suggestion": "Wait the indicated duration and retry, or increase --rate-limit."
 }
 ```
 
-The `retry_after_ms` field indicates how long to wait before retrying.
+The `Retry after Nms` hint in the message indicates how long to wait before retrying.
 
 ## Use Cases
 

@@ -63,7 +63,7 @@ WaveXisMCP wraps the [wavexis](https://github.com/MathiasPaulenko/wavexis) brows
 - **Raw CDP/BiDi access** — escape hatch for any browser feature not covered by a dedicated tool
 - **Lighthouse audits, WebAuthn, Bluetooth, Cast** — niche features no other MCP server covers
 - **SSRF protection, path sandboxing, rate limiting** — security built in from day one
-- **593 tests, 90% coverage enforced, E2E with real Chrome** — production-ready
+- **700+ tests, 90% coverage enforced, E2E with real Chrome** — production-ready
 
 ### How it works
 
@@ -95,10 +95,10 @@ The LLM never sees the browser directly. It only sees tool definitions (name, de
 pip install wavexis-mcp
 ```
 
-With CDP backend (Chromium):
+The CDP backend (Chromium) is included by default. For the BiDi backend (Firefox):
 
 ```bash
-pip install "wavexis-mcp[cdp]"
+pip install "wavexis-mcp[bidi]"
 ```
 
 Or run without installing (recommended):
@@ -203,7 +203,7 @@ The `wavexis_act` tool takes an a11y snapshot, matches the instruction to an ele
 
 WaveXisMCP supports two backends with full feature parity:
 
-- **CDP** (cdpwave) — default, Chrome DevTools Protocol. Direct WebSocket to Chrome/Edge. No driver needed. 57 CDP domains. `pip install "wavexis-mcp[cdp]"`
+- **CDP** (cdpwave) — default, Chrome DevTools Protocol. Direct WebSocket to Chrome/Edge. No driver needed. 57 CDP domains. Included by default.
 - **BiDi** (bidiwave) — WebDriver BiDi protocol, W3C cross-browser (Firefox, Chrome). Needs chromedriver (Chrome) or geckodriver (Firefox); both are auto-launched from PATH if not already running. `pip install "wavexis-mcp[bidi]"`
 
 Select per session:
@@ -299,7 +299,7 @@ Per-session token bucket rate limiting:
 wavexis-mcp --rate-limit 10 --rate-burst 5
 ```
 
-When exceeded, returns `{"error": "rate_limited", "retry_after_ms": N}`.
+When exceeded, the tool returns the standard structured error: `{"error": "Rate limit exceeded. Retry after Nms.", "type": "RuntimeError", ...}`. Set `--rate-limit 0` to disable.
 
 ## Docker
 

@@ -10,13 +10,15 @@ All URL-based tools validate against SSRF (Server-Side Request Forgery) attacks:
 - `localhost` and `0.0.0.0` are rejected
 - IPv6 loopback (`::1`) and link-local (`fe80::/10`) are blocked
 - Metadata endpoints (`169.254.169.254`) are blocked
+- Alternate IP spellings (hex, octal, shorthand like `127.1`) are normalized and blocked
+- Hostname-based DNS rebinding is an inherent TOCTOU limitation: the check happens before DNS resolution by the browser
 
 ### Allow private IPs
 
 If you need to access internal services, set the environment variable:
 
 ```bash
-export WAVEXIS_MCP_ALLOW_PRIVATE_IPS=1
+export WAVEXIS_MCP_ALLOW_INTERNAL_URLS=1
 ```
 
 !!! warning "Security risk"
@@ -40,19 +42,19 @@ export WAVEXIS_MCP_OUTPUT_DIR=/tmp/wavexis-output
 
 WaveXisMCP includes built-in rate limiting to prevent runaway tool calls:
 
-- Default: 60 calls/minute
-- Configurable via `WAVEXIS_MCP_RATE_LIMIT=120` (calls per minute)
-- Set to `0` to disable
+- Default: 60 calls/second per session, burst of 10
+- Configurable via CLI flags: `--rate-limit 120 --rate-burst 20`
+- Set `--rate-limit 0` to disable
+- Stateless calls (no `session_id`) share a global bucket
 
 See [Rate Limiting](rate-limiting.md) for details.
 
 ## Raw protocol access
 
-The `experimental` tier provides raw CDP/BiDi access via an allowlist:
+The `workflows` tier provides raw CDP/BiDi access via an allowlist:
 
-- Only domains in the allowlist can be called
-- Default allowlist: `Page`, `DOM`, `Runtime`, `Network`, `Target`
-- Override with `WAVEXIS_MCP_CDP_ALLOWLIST=Page,DOM,Runtime`
+- By default only read-only commands are allowed (`*.get*`, `Page.capture*`, `Page.printToPDF`, and `session.status`)
+- Override with `WAVEXIS_MCP_ALLOW_RAW_COMMANDS=all` to permit arbitrary commands
 
 !!! danger
     Raw protocol access bypasses all abstractions. Only enable `experimental` when you understand the risks.

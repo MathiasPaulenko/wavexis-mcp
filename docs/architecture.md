@@ -132,32 +132,34 @@ wavexis_mcp/
 ├── caps.py              # Capability tier definitions and filtering
 ├── models.py            # Pydantic v2 input models for all tools
 ├── formatter.py         # JSON response formatting (format_json_response, format_error)
-├── convenience.py       # wavexis_act (natural language interaction)
+├── convenience.py       # Composite helpers (e.g. fill_form)
 ├── errors.py            # Custom exception types with suggestions
-├── act.py               # Heuristic element matching for wavexis_act
+├── act.py               # wavexis_act — heuristic element matching + execution
+├── rate_limiter.py      # Per-session token bucket rate limiting
 └── tools/
     ├── __init__.py      # Tool registration entry point
-    ├── session.py       # Session management tools (5)
+    ├── session.py       # Session management tools (3)
     ├── navigation.py    # Navigation tools (6)
-    ├── capture.py       # Screenshot, PDF, scrape, screencast (5)
+    ├── capture.py       # Screenshot, PDF, scrape, screencast (7)
     ├── javascript.py    # JavaScript evaluation (1)
-    ├── dom.py           # DOM manipulation (12)
-    ├── input.py         # User input (12)
+    ├── dom.py           # DOM manipulation (15)
+    ├── input.py         # User input (18)
     ├── cookies.py       # Cookie management (4)
     ├── tabs.py          # Tab management (4)
-    ├── utility.py       # Browser info (2)
-    ├── network.py       # Network control (9)
-    ├── storage.py       # Storage access (13)
+    ├── utility.py       # Browser info, invoke escape hatch (3)
+    ├── playwright_parity.py  # Playwright-parity page actions (10)
+    ├── network.py       # Network control (20)
+    ├── storage.py       # Storage access (18)
     ├── emulation.py     # Device/environment emulation (9)
-    ├── a11y.py          # Accessibility tree (3)
+    ├── a11y.py          # Accessibility tree (4)
     ├── interactions.py  # Dialogs, downloads, permissions (5)
-    ├── devtools.py      # DevTools protocol (23)
-    ├── vision.py        # Coordinate-based mouse (6)
-    ├── video.py         # Video recording (4)
-    ├── testing.py       # Assertions, locators (4)
-    ├── workflows.py     # Multi-action, raw CDP/BiDi (5)
-    ├── data.py          # Codegen, Lighthouse, crawl (6)
-    └── experimental.py  # SW, animations, WebAuthn, etc. (20)
+    ├── devtools.py      # DevTools protocol (31)
+    ├── vision.py        # Coordinate-based mouse (7)
+    ├── video.py         # Screencast/MJPEG recording (4)
+    ├── testing.py       # Assertions, locators (6)
+    ├── workflows.py     # Multi-action, raw CDP/BiDi, contexts (6)
+    ├── data.py          # Codegen record, Lighthouse, crawl (7)
+    └── experimental.py  # SW, animations, WebAuthn, etc. (31)
 ```
 
 ## Key design decisions

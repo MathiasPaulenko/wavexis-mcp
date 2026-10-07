@@ -84,21 +84,29 @@ TIER_DESCRIPTION = {
         "Console messages, performance metrics, CPU throttling, "
         "and raw CDP access. Enable with `--caps=devtools`."
     ),
-    "vision": ("Lighthouse audits, WebAuthn, Bluetooth, and Cast. Enable with `--caps=vision`."),
-    "video": ("Video recording and playback capture. Enable with `--caps=video`."),
+    "vision": (
+        "Coordinate-based mouse: pixel-precise move, click, drag, wheel. "
+        "Enable with `--caps=vision`."
+    ),
+    "video": (
+        "Screencast recording (MJPEG frame stream), chapters, and action overlay. "
+        "Enable with `--caps=video`."
+    ),
     "testing": (
-        "Visual regression, element screenshots, and test helpers. Enable with `--caps=testing`."
+        "Assertions, element locator generation, and test helpers. Enable with `--caps=testing`."
     ),
     "workflows": (
-        "Multi-action YAML batching and natural language interaction. "
+        "Multi-action YAML batching, raw CDP/BiDi commands, and browser contexts. "
         "Enable with `--caps=workflows`."
     ),
     "data": (
-        "Structured data extraction: tables, forms, metadata, OpenGraph. Enable with `--caps=data`."
+        "Data extraction, codegen record, Lighthouse-style audit, WebSocket capture, "
+        "crawl, and visual diff. Enable with `--caps=data`."
     ),
     "experimental": (
-        "Experimental and advanced tools — raw protocol access, "
-        "CDP/BiDi escape hatch. Enable with `--caps=experimental`."
+        "Experimental and advanced tools — service workers, animations, WebAuthn, "
+        "WebAudio, media, Cast, Bluetooth, extensions, browser prefs. "
+        "Enable with `--caps=experimental`."
     ),
 }
 

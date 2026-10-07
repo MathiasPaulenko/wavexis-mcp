@@ -5,10 +5,10 @@ WaveXisMCP organizes its 220 tools into 13 capability tiers. You enable only wha
 ## How tiers work
 
 ```bash
-# All 220 tools (default)
+# All 220 tools
 uvx wavexis-mcp --caps all
 
-# Only core tools (38 tools — minimal footprint)
+# Only core tools (72 tools — minimal footprint)
 uvx wavexis-mcp --caps core
 
 # Comma-separated combination
@@ -21,19 +21,20 @@ The `core` tier is **always enabled** — it provides the essential session, nav
 
 | Tier | Tools | Description |
 | --- | --- | --- |
-| `core` | 38 | Session, navigation, screenshots, DOM, JavaScript, tabs, cookies, utility |
-| `network` | 12 | Request interception, HAR recording, response mocking |
-| `storage` | 10 | localStorage, sessionStorage, IndexedDB, cache management |
-| `emulation` | 8 | Device emulation, geolocation, timezone, viewport |
-| `a11y` | 4 | Accessibility tree, axe-core audits, ARIA node queries |
-| `interactions` | 5 | Dialogs, permissions, download interception |
-| `devtools` | 14 | Console, performance metrics, CPU throttling, raw CDP |
-| `vision` | 7 | Lighthouse, WebAuthn, Bluetooth, Cast |
-| `video` | 4 | Video recording, playback capture |
-| `testing` | 5 | Visual regression, element screenshots, test helpers |
-| `workflows` | 6 | Multi-action YAML batching, natural language interaction |
-| `data` | 8 | Tables, forms, metadata, OpenGraph extraction |
-| `experimental` | 10 | Raw protocol access, CDP/BiDi escape hatch |
+| `core` | 72 | Session, navigation, screenshots, PDF, scrape, eval, DOM, input, cookies, tabs, iframe, shadow DOM, events, natural language interaction |
+| `network` | 20 | Headers, UA, request blocking, throttling, cache, HAR, intercept, mock, modify request/response, request body, replay HAR, request list |
+| `storage` | 18 | localStorage, sessionStorage, cache storage, IndexedDB, state save/restore |
+| `emulation` | 9 | Device, viewport, geolocation, timezone, dark mode, locale, CPU, touch, sensors |
+| `a11y` | 4 | Accessibility tree snapshot, node traversal, axe-core audit |
+| `interactions` | 5 | Dialogs, downloads, permissions |
+| `devtools` | 31 | Performance, CSS, debugging, overlay, console, security, window management, combined trace, annotated screenshot |
+| `vision` | 7 | Coordinate-based mouse (pixel-precise move/click/drag/wheel) |
+| `video` | 4 | Screencast recording (MJPEG frames), chapters, action overlay |
+| `testing` | 6 | Assertions, locator generation |
+| `workflows` | 6 | Multi-action YAML, raw CDP/BiDi, browser context CRUD |
+| `data` | 7 | Codegen record, Lighthouse-style audit, extract, WebSocket capture, crawl, visual diff, Core Web Vitals |
+| `experimental` | 31 | Service workers, animations, WebAuthn, WebAudio, media, Cast, Bluetooth, extensions, prefs |
+| **Total** | **220** | |
 
 ## Recommended combinations
 

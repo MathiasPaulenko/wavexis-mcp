@@ -342,7 +342,7 @@ Returns:
 | Parameter | Type | Required | Default | Description |
 | --- | --- | :---: | --- | --- |
 | `session_id` | string | Yes | — | Active session ID from wavexis_session_open |
-| `ignore` | boolean | No | `true` | Whether to ignore cache |
+| `ignore` | boolean | No | `true` | Whether to ignore certificate errors |
 
 ### wavexis_overlay_clear
 
@@ -540,9 +540,9 @@ Returns:
 Subscribe to real-time browser events (W10).
 
 Event types: console, network_request, network_response,
-dom_mutation, dialog, navigation.  Events are collected
-internally and can be retrieved via console_messages or
-network_requests tools while the subscription is active.
+dom_mutation, dialog, navigation.  Events are buffered
+per session (last 500) and returned by
+``wavexis_unsubscribe_events``.
 
 Args:
     input: Subscription parameters (event_types).

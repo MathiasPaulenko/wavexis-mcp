@@ -2,7 +2,7 @@
 
 Enable with `--caps=testing`.
 
-Visual regression, element screenshots, and test helpers. Enable with `--caps=testing`.
+Assertions, element locator generation, and test helpers. Enable with `--caps=testing`.
 
 ## Summary
 
@@ -10,7 +10,7 @@ Visual regression, element screenshots, and test helpers. Enable with `--caps=te
 | --- | --- | --- |
 | [`wavexis_assert_list`](#wavexis_assert_list) | `session_id, selector, items, timeout?` | Assert that all expected text items are visible inside a list element. |
 | [`wavexis_assert_text_visible`](#wavexis_assert_text_visible) | `session_id, text, timeout?` | Assert that specific text is visible on the page. |
-| [`wavexis_assert_url`](#wavexis_assert_url) | `session_id, url_pattern` | Assert the current URL matches a pattern. |
+| [`wavexis_assert_url`](#wavexis_assert_url) | `session_id, url_pattern` | Assert the current URL contains a substring (case-insensitive). |
 | [`wavexis_assert_value`](#wavexis_assert_value) | `session_id, selector, value, timeout?` | Assert that a form element has the expected value. |
 | [`wavexis_assert_visible`](#wavexis_assert_visible) | `session_id, selector, timeout?` | Assert that an element is visible on the page. |
 | [`wavexis_generate_locator`](#wavexis_generate_locator) | `session_id, selector, description?` | Generate a robust CSS selector for an element. |
@@ -56,10 +56,10 @@ Returns:
 
 ### wavexis_assert_url
 
-Assert the current URL matches a pattern.
+Assert the current URL contains a substring (case-insensitive).
 
 Args:
-    input: Assertion parameters (url_pattern).
+    input: Assertion parameters (url_pattern — substring to match).
 
 Returns:
     JSON string with ``passed``, ``url``, and ``pattern``.

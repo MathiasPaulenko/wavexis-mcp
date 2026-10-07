@@ -63,7 +63,7 @@ WaveXisMCP 封装了 [wavexis](https://github.com/MathiasPaulenko/wavexis) 浏�
 - **直接 CDP/BiDi 访问（逃生舱）** — 覆盖尚未提供专用工具的浏览器功能
 - **Lighthouse 审计、WebAuthn、Bluetooth、Cast** — 其他 MCP 服务器通常不具备的小众能力
 - **SSRF 防护、路径沙盒、速率限制** — 从第一天起就内置安全机制
-- **593 项测试、强制 90% 覆盖率、真实 Chrome 的 E2E** — 可直接用于生产环境
+- **700+ 项测试、强制 90% 覆盖率、真实 Chrome 的 E2E** — 可直接用于生产环境
 
 ### 工作原理
 
@@ -95,10 +95,10 @@ LLM 不会直接看到浏览器。它只能看到工具定义（名称、描述�
 pip install wavexis-mcp
 ```
 
-启用 CDP 后端（Chromium）：
+CDP 后端（Chromium）默认包含。如需 BiDi 后端（支持 Firefox）：
 
 ```bash
-pip install "wavexis-mcp[cdp]"
+pip install "wavexis-mcp[bidi]"
 ```
 
 或不安装直接运行（推荐）：
@@ -203,7 +203,7 @@ wavexis_act(session_id="abc-123", instruction="click the login button")
 
 WaveXisMCP 支持两种后端，并保持完整功能对等：
 
-- **CDP**（cdpwave）— 默认后端，Chrome DevTools Protocol。通过 WebSocket 直连 Chrome/Edge。无需驱动。覆盖 57 个 CDP 域。`pip install "wavexis-mcp[cdp]"`
+- **CDP**（cdpwave）— 默认后端，Chrome DevTools Protocol。通过 WebSocket 直连 Chrome/Edge。无需驱动。覆盖 57 个 CDP 域。默认包含。
 - **BiDi**（bidiwave）— WebDriver BiDi 协议，W3C 跨浏览器（Firefox、Chrome）。Chrome 需要 chromedriver，Firefox 需要 geckodriver；若尚未运行，两者都会从 PATH 自动启动。`pip install "wavexis-mcp[bidi]"`
 
 按会话选择：
@@ -299,7 +299,7 @@ wavexis-mcp --transport http --allow-remote --port 8765
 wavexis-mcp --rate-limit 10 --rate-burst 5
 ```
 
-超限时返回 `{"error": "rate_limited", "retry_after_ms": N}`。
+超限时返回标准错误格式：`{"error": "Rate limit exceeded. Retry after Nms.", "type": "RuntimeError", ...}`。用 `--rate-limit 0` 关闭。
 
 ## Docker
 

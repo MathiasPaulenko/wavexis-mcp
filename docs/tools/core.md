@@ -1290,7 +1290,7 @@ Returns: JSON string with keys: 'status' ('ok'/'error').
 
 Focus an element matching a CSS selector.
 
-Use wavexis_dom_click instead when the intent is to activate a control rather than focus it.
+Use wavexis_click instead when the intent is to activate a control rather than focus it.
 
 Side effects: Mutates DOM focus state; may trigger focus event handlers on the element.
 Returns: JSON string with keys: 'status' ('ok'/'error').

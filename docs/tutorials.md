@@ -134,7 +134,7 @@ wavexis_perf_trace(session_id="abc-123", duration_ms=5000, output_path="trace.js
 → {"path": "trace.json", "events": 1247}
 
 # Check network requests
-wavexis_request_list(session_id="abc-123")
+wavexis_network_requests(session_id="abc-123")
 → {"requests": [...]}
 
 wavexis_session_close(session_id="abc-123")
@@ -201,21 +201,22 @@ Record a video of a reproduction step for a bug report.
 wavexis_session_open(backend="cdp")
 → {"session_id": "abc-123"}
 
-wavexis_video_start(session_id="abc-123")
+wavexis_video_record(session_id="abc-123")
+→ {"recording_id": "rec-..."}
+
 wavexis_navigate(session_id="abc-123", url="https://example.com")
 wavexis_click(session_id="abc-123", selector="#broken-button")
 
 # Add a chapter marker
-wavexis_video_chapter(session_id="abc-123", title="Bug reproduces here")
+wavexis_video_add_chapter(session_id="abc-123", recording_id="rec-...", title="Bug reproduces here")
 
 wavexis_screenshot(session_id="abc-123", output_path="bug-evidence.png")
-wavexis_video_stop(session_id="abc-123", output_path="bug-repro.webm")
-→ {"path": "bug-repro.webm", "duration_s": 12.5, "frames": 375}
-
-wavexis_session_close(session_id="abc-123")
+wavexis_video_stop(session_id="abc-123", output_path="bug-repro.mjpg")
+→ {"path": "bug-repro.mjpg", "format": "mjpeg", "frames": 375, "duration_ms": 12500}
 ```
 
-Requires `--caps=video`.
+The output is a Motion JPEG (MJPEG) stream — concatenated JPEG frames playable
+by VLC/ffmpeg and convertible to mp4/webm. Requires `--caps=video`.
 
 ---
 

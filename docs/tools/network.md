@@ -290,7 +290,7 @@ Returns:
 | Parameter | Type | Required | Default | Description |
 | --- | --- | :---: | --- | --- |
 | `session_id` | string | Yes | — | Active session ID from wavexis_session_open |
-| `disabled` | boolean | No | `true` | Whether the network is disabled |
+| `disabled` | boolean | No | `true` | Whether the browser cache is disabled |
 
 ### wavexis_set_headers
 

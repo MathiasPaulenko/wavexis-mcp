@@ -2,7 +2,7 @@
 
 Enable with `--caps=data`.
 
-Structured data extraction: tables, forms, metadata, OpenGraph. Enable with `--caps=data`.
+Data extraction, codegen record, Lighthouse-style audit, WebSocket capture, crawl, and visual diff. Enable with `--caps=data`.
 
 ## Summary
 

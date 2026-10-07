@@ -2,7 +2,7 @@
 
 Enable with `--caps=workflows`.
 
-Multi-action YAML batching and natural language interaction. Enable with `--caps=workflows`.
+Multi-action YAML batching, raw CDP/BiDi commands, and browser contexts. Enable with `--caps=workflows`.
 
 ## Summary
 

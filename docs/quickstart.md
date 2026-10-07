@@ -19,11 +19,7 @@ This guide walks you through installing WaveXisMCP, configuring it in your LLM c
 pip install wavexis-mcp
 ```
 
-With CDP backend (Chromium-native, no driver needed):
-
-```bash
-pip install "wavexis-mcp[cdp]"
-```
+The CDP backend (Chromium-native, no driver needed) is included by default.
 
 With BiDi backend (W3C cross-browser, supports Firefox + Chrome):
 
@@ -34,7 +30,7 @@ pip install "wavexis-mcp[bidi]"
 With both backends:
 
 ```bash
-pip install "wavexis-mcp[cdp,bidi]"
+pip install "wavexis-mcp[bidi]"
 ```
 
 ### Option B: uvx (zero install, recommended for end users)

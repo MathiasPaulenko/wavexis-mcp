@@ -2,7 +2,7 @@
 
 Enable with `--caps=vision`.
 
-Lighthouse audits, WebAuthn, Bluetooth, and Cast. Enable with `--caps=vision`.
+Coordinate-based mouse: pixel-precise move, click, drag, wheel. Enable with `--caps=vision`.
 
 ## Summary
 

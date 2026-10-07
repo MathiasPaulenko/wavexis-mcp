@@ -1,6 +1,6 @@
 # HTTP Transport
 
-WaveXisMCP supports two transports from a single codebase: **stdio** (default, for local development with LLM clients) and **HTTP** (for CI/CD, shared instances, and Docker deployment).
+WaveXisMCP supports two transports from a single codebase: **stdio** (default, for local development with LLM clients) and **HTTP** (for CI/CD, shared instances, and Docker deployment). The HTTP mode uses the MCP **SSE** transport: clients connect to `/sse` for the event stream and POST to `/messages`.
 
 ## When to use HTTP vs stdio
 

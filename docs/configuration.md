@@ -119,8 +119,7 @@ wavexis-mcp --caps=devtools,a11y
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `WAVEXIS_BROWSER_PATH` | auto-detect | Path to Chrome/Edge binary. If not set, WaveXisMCP auto-detects Chrome then Edge. |
-| `WAVEXIS_BACKEND` | `cdp` | Default backend: `cdp` (recommended for Chrome/Edge) or `bidi` (cross-browser, supports Firefox). Can be overridden per session. |
+| `CDPWAVE_BROWSER_PATH` | auto-detect | Path to Chrome/Edge/Chromium binary for the CDP backend. If not set, cdpwave auto-detects Chrome, Edge, Brave, then Chromium. There are also per-browser overrides: `CDPWAVE_CHROME_PATH`, `CDPWAVE_EDGE_PATH`, `CDPWAVE_BRAVE_PATH`, `CDPWAVE_CHROMIUM_PATH`. |
 | `WAVEXIS_MCP_OUTPUT_DIR` | current directory | Base directory for file outputs (screenshots, PDFs, traces, etc.). All `output_path` parameters are resolved relative to this directory. Paths that escape this base are rejected. |
 | `WAVEXIS_MCP_ALLOW_INTERNAL_URLS` | unset | Set to `1` to allow navigation to private/internal IP addresses (e.g., `localhost`, `10.x.x.x`, `192.168.x.x`). By default, internal URLs are blocked to prevent SSRF. Useful for testing local development servers. |
 | `WAVEXIS_MCP_ALLOW_RAW_COMMANDS` | unset | Set to `all` to allow arbitrary CDP/BiDi commands via `wavexis_raw_cdp` and `wavexis_raw_bidi`. By default, only a read-only allowlist of safe commands is permitted. |
@@ -161,10 +160,10 @@ WaveXisMCP searches for Chrome/Edge in standard install locations:
 - **macOS**: `/Applications/Google Chrome.app/Contents/MacOS/Google Chrome`, `/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge`
 - **Linux**: `/usr/bin/google-chrome`, `/usr/bin/chromium`, `/usr/bin/microsoft-edge`
 
-If your browser is in a non-standard location, set `WAVEXIS_BROWSER_PATH`:
+If your browser is in a non-standard location, set `CDPWAVE_BROWSER_PATH`:
 
 ```bash
-export WAVEXIS_BROWSER_PATH=/opt/chrome/chrome
+export CDPWAVE_BROWSER_PATH=/opt/chrome/chrome
 wavexis-mcp --caps all
 ```
 

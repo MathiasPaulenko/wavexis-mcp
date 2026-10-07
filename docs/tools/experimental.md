@@ -2,7 +2,7 @@
 
 Enable with `--caps=experimental`.
 
-Experimental and advanced tools — raw protocol access, CDP/BiDi escape hatch. Enable with `--caps=experimental`.
+Experimental and advanced tools — service workers, animations, WebAuthn, WebAudio, media, Cast, Bluetooth, extensions, browser prefs. Enable with `--caps=experimental`.
 
 ## Summary
 
@@ -15,7 +15,7 @@ Experimental and advanced tools — raw protocol access, CDP/BiDi escape hatch. 
 | [`wavexis_bluetooth_adapter_state`](#wavexis_bluetooth_adapter_state) | `session_id, state` | Set Bluetooth adapter state (powered on/off). |
 | [`wavexis_bluetooth_device_connect`](#wavexis_bluetooth_device_connect) | `session_id, name, address?` | Emulate a Bluetooth device connection. |
 | [`wavexis_bluetooth_device_disconnect`](#wavexis_bluetooth_device_disconnect) | `session_id` | Stop Bluetooth emulation. |
-| [`wavexis_bluetooth_device_list`](#wavexis_bluetooth_device_list) | `session_id` | List emulated Bluetooth devices. |
+| [`wavexis_bluetooth_device_list`](#wavexis_bluetooth_device_list) | `session_id` | List Bluetooth devices emulated in this session. |
 | [`wavexis_cast_list`](#wavexis_cast_list) | `session_id` | List available cast sinks. |
 | [`wavexis_cast_start`](#wavexis_cast_start) | `session_id, sink_name` | Start tab mirroring to a cast sink. |
 | [`wavexis_cast_stop`](#wavexis_cast_stop) | `session_id` | Stop active cast mirroring. |
@@ -163,13 +163,16 @@ Returns:
 
 ### wavexis_bluetooth_device_list
 
-List emulated Bluetooth devices.
+List Bluetooth devices emulated in this session.
+
+Devices are tracked from ``wavexis_bluetooth_device_connect`` calls;
+CDP does not expose a command to enumerate emulated peripherals.
 
 Args:
     input: List parameters (session_id).
 
 Returns:
-    JSON string with ``devices`` list.
+    JSON string with ``devices`` list and ``count``.
 
 **Parameters:**
 

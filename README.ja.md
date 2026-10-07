@@ -63,7 +63,7 @@ WaveXisMCPは [wavexis](https://github.com/MathiasPaulenko/wavexis) ブラウザ
 - **生のCDP/BiDiアクセス** — 専用ツールがないブラウザ機能のための逃げ道
 - **Lighthouse監査、WebAuthn、Bluetooth、Cast** — 他のMCPサーバーではカバーされないニッチな機能
 - **SSRF保護、パスサンドボックス、レート制限** — 初日から組み込まれたセキュリティ
-- **593テスト、90%カバレッジ強制、実ChromeでのE2E** — 本番利用に耐える品質
+- **700+テスト、90%カバレッジ強制、実ChromeでのE2E** — 本番利用に耐える品質
 
 ### 仕組み
 
@@ -95,10 +95,10 @@ LLMはブラウザを直接見ることはありません。見えるのはツ�
 pip install wavexis-mcp
 ```
 
-CDPバックエンド（Chromium）付き：
+CDPバックエンド（Chromium）はデフォルトで同梱。BiDiバックエンド（Firefox対応）を使う場合：
 
 ```bash
-pip install "wavexis-mcp[cdp]"
+pip install "wavexis-mcp[bidi]"
 ```
 
 またはインストールせずに実行（推奨）：
@@ -203,7 +203,7 @@ wavexis_act(session_id="abc-123", instruction="click the login button")
 
 WaveXisMCPは、機能パリティを保った2つのバックエンドをサポートします。
 
-- **CDP**（cdpwave）— デフォルト。Chrome DevTools Protocol。Chrome/EdgeへWebSocketで直接接続。ドライバー不要。57のCDPドメイン。`pip install "wavexis-mcp[cdp]"`
+- **CDP**（cdpwave）— デフォルト。Chrome DevTools Protocol。Chrome/EdgeへWebSocketで直接接続。ドライバー不要。57のCDPドメイン。デフォルトで同梱。
 - **BiDi**（bidiwave）— WebDriver BiDiプロトコル。W3Cクロスブラウザ（Firefox、Chrome）。Chromeはchromedriver、Firefoxはgeckodriverが必要で、未起動ならPATHから自動起動されます。`pip install "wavexis-mcp[bidi]"`
 
 セッションごとに選択します。
@@ -299,7 +299,7 @@ wavexis-mcp --transport http --allow-remote --port 8765
 wavexis-mcp --rate-limit 10 --rate-burst 5
 ```
 
-上限超過時は `{"error": "rate_limited", "retry_after_ms": N}` を返します。
+上限超過時は標準エラー形式で返します: `{"error": "Rate limit exceeded. Retry after Nms.", "type": "RuntimeError", ...}`。無効化は `--rate-limit 0`。
 
 ## Docker
 

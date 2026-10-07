@@ -26,7 +26,7 @@ services:
     ports:
       - "127.0.0.1:8765:8765"
     environment:
-      - WAVEXIS_BROWSER_PATH=/usr/bin/chromium
+      - CDPWAVE_BROWSER_PATH=/usr/bin/chromium
       - WAVEXIS_MCP_OUTPUT_DIR=/home/wavexis/output
       - CI=true
     volumes:
@@ -43,7 +43,7 @@ docker-compose up
 - **Base**: `python:3.12-slim`
 - **Browser**: Chromium (via apt, ~100MB)
 - **Port**: 8765
-- **Entry point**: `wavexis-mcp --transport=http --host=0.0.0.0 --port=8765 --caps=core` (use `--caps=all` only after reviewing security implications)
+- **Entry point**: `wavexis-mcp --transport=http --allow-remote --port=8765 --caps=core` (use `--caps=all` only after reviewing security implications)
 - **Image size**: ~350MB (Python + Chromium + wavexis-mcp)
 
 The image bundles Chromium so it works out of the box in any environment — no browser installation needed on the host.
@@ -51,14 +51,9 @@ The image bundles Chromium so it works out of the box in any environment — no 
 ## Building from Source
 
 ```bash
-# Build the wheel first
-python -m build --wheel
-
-# Build the Docker image
+# The Dockerfile is multi-stage: it builds the wheel inside the image.
 docker build -t wavexis-mcp .
 ```
-
-The Dockerfile copies the wheel from `dist/` and installs it. Make sure to run `python -m build` before `docker build`.
 
 ## CI/CD
 
@@ -78,8 +73,7 @@ This creates:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `WAVEXIS_BROWSER_PATH` | `/usr/bin/chromium` | Path to Chromium binary inside the container |
-| `WAVEXIS_BACKEND` | `cdp` | Default backend: `cdp` or `bidi` |
+| `CDPWAVE_BROWSER_PATH` | `/usr/bin/chromium` | Path to Chromium binary inside the container |
 | `WAVEXIS_MCP_OUTPUT_DIR` | `/home/wavexis/output` | Base directory for file outputs |
 | `CI` | `true` | Enables Chrome `--no-sandbox` flag for container compatibility |
 
