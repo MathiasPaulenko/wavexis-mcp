@@ -11,7 +11,6 @@ import asyncio
 import base64
 import contextlib
 import inspect
-import json
 import logging
 import time
 import uuid
@@ -35,6 +34,39 @@ _MAX_TOTAL_FRAMES = 10000
 
 _logger = logging.getLogger(__name__)
 _recordings_lock = asyncio.Lock()
+
+_OVERLAY_ENABLE_JS = """(function(){
+if (window.__wavexisOverlayEl) { window.__wavexisOverlayEl.style.display='block'; return; }
+var el = document.createElement('div');
+el.id = '__wavexis_overlay';
+el.style.cssText = 'position:fixed;bottom:12px;right:12px;z-index:2147483647;'
+  + 'background:rgba(0,0,0,.75);color:#0f0;font:12px monospace;padding:6px 10px;'
+  + 'border-radius:4px;pointer-events:none;opacity:0;transition:opacity .3s;';
+document.documentElement.appendChild(el);
+window.__wavexisOverlayEl = el;
+function flash(text){
+  el.textContent = text;
+  el.style.opacity = '1';
+  clearTimeout(window.__wavexisOverlayTimer);
+  window.__wavexisOverlayTimer = setTimeout(function(){ el.style.opacity='0'; }, 1200);
+}
+window.__wavexisOverlayFlash = flash;
+document.addEventListener('click', function(e){
+  var t = e.target; var name = (t.tagName||'') + (t.id ? '#'+t.id : '');
+  flash('click ' + name);
+}, true);
+document.addEventListener('keydown', function(e){ flash('key ' + e.key); }, true);
+document.addEventListener('input', function(e){
+  var t = e.target; var name = (t.name||t.id||t.tagName||'');
+  flash('input ' + name);
+}, true);
+})()"""
+
+_OVERLAY_DISABLE_JS = """(function(){
+var el = window.__wavexisOverlayEl;
+if (el && el.parentNode) { el.parentNode.removeChild(el); }
+window.__wavexisOverlayEl = null;
+})()"""
 
 
 async def _append_frame(
@@ -62,23 +94,42 @@ async def _append_frame(
         total_ref[0] += 1
 
 
+async def _ack_frame(target: Any, session_id: int) -> None:
+    """Send ``Page.screencastFrameAck`` so Chrome keeps emitting frames."""
+    send = getattr(target, "send", None) or getattr(target, "send_command", None)
+    if send is not None:
+        with contextlib.suppress(Exception):
+            result = send("Page.screencastFrameAck", {"sessionId": session_id})
+            if inspect.isawaitable(result):
+                await result
+
+
 def _make_frame_handler(
     recording: dict[str, Any],
     total_ref: list[int],
+    target: Any,
 ) -> Any:
     """Create a CDP ``Page.screencastFrame`` handler for *recording*."""
 
     def handler(params: Any) -> None:
-        """Decode and store a screencast frame while respecting limits."""
+        """Decode, store, and ack a screencast frame while respecting limits."""
         data = params.get("data") if isinstance(params, dict) else None
         if not data:
             return
+        session_id = params.get("sessionId", 0)
         try:
             loop = asyncio.get_running_loop()
         except RuntimeError:
             _logger.warning("No running event loop; dropping screencast frame")
             return
-        future = asyncio.run_coroutine_threadsafe(_append_frame(recording, total_ref, data), loop)
+
+        async def _process() -> None:
+            # Ack must be sent regardless of whether the frame was kept —
+            # Chrome stops emitting frames until each one is acked.
+            await _ack_frame(target, session_id)
+            await _append_frame(recording, total_ref, data)
+
+        future = asyncio.run_coroutine_threadsafe(_process(), loop)
         future.add_done_callback(
             lambda f: (
                 _logger.exception("Frame append failed: %s", f.exception())
@@ -90,7 +141,7 @@ def _make_frame_handler(
     return handler
 
 
-def _attach_screencast_handler(
+async def _attach_screencast_handler(
     backend: Any,
     recording: dict[str, Any],
     total_ref: list[int],
@@ -98,24 +149,28 @@ def _attach_screencast_handler(
     """Attach a ``Page.screencastFrame`` listener to the backend if possible.
 
     CDP backends expose the event through the CDP session.  BiDi backends
-    expose it through the CDP bridge on the BiDi client.  If neither path
-    is available the tool still starts/stops the screencast, but no frames
-    will be captured.
+    expose it through the CDP bridge on the BiDi client.  Returns ``False``
+    when no event-capable target exists — callers must not pretend a
+    recording is running in that case.
     """
     target: Any | None = None
 
     require_session = getattr(backend, "_require_session", None)
-    if require_session is not None and not inspect.iscoroutinefunction(require_session):
+    if require_session is not None:
         try:
             target = require_session()
+            if inspect.isawaitable(target):
+                target = await target
         except Exception:
             target = None
 
     if target is None:
         require_launched = getattr(backend, "_require_launched", None)
-        if require_launched is not None and not inspect.iscoroutinefunction(require_launched):
+        if require_launched is not None:
             try:
                 client = require_launched()
+                if inspect.isawaitable(client):
+                    client = await client
             except Exception:
                 client = None
             if client is not None:
@@ -124,9 +179,11 @@ def _attach_screencast_handler(
     if target is None or not hasattr(target, "on") or not hasattr(target, "off"):
         return False
 
-    handler = _make_frame_handler(recording, total_ref)
+    handler = _make_frame_handler(recording, total_ref, target)
     try:
-        target.on("Page.screencastFrame", handler)
+        res = target.on("Page.screencastFrame", handler)
+        if inspect.isawaitable(res):
+            await res
         recording["_screencast_target"] = target
         recording["_screencast_handler"] = handler
         return True
@@ -134,13 +191,15 @@ def _attach_screencast_handler(
         return False
 
 
-def _detach_screencast_handler(recording: dict[str, Any]) -> None:
+async def _detach_screencast_handler(recording: dict[str, Any]) -> None:
     """Detach the screencast frame handler if one was attached."""
     target = recording.pop("_screencast_target", None)
     handler = recording.pop("_screencast_handler", None)
     if target is not None and handler is not None:
         with contextlib.suppress(Exception):
-            target.off("Page.screencastFrame", handler)
+            res = target.off("Page.screencastFrame", handler)
+            if inspect.isawaitable(res):
+                await res
 
 
 def register(
@@ -190,7 +249,14 @@ def register(
 
             # Attach the frame listener before starting the screencast so the
             # first frame is not lost.
-            _attach_screencast_handler(session.backend, recording, total_frames)
+            if not await _attach_screencast_handler(session.backend, recording, total_frames):
+                return format_error(
+                    "wavexis_video_record",
+                    RuntimeError(
+                        "Frame capture requires a backend that exposes CDP event "
+                        "subscriptions (CDP backend, or BiDi with a CDP bridge)."
+                    ),
+                )
 
             start = getattr(session.backend, "page_start_screencast", None)
             if start is not None:
@@ -213,7 +279,7 @@ def register(
                     oldest = min(recordings, key=lambda rid: recordings[rid]["start_time"])
                     recordings[oldest]["_stopped"] = True
                     oldest_rec = recordings.pop(oldest)
-                    _detach_screencast_handler(oldest_rec)
+                    await _detach_screencast_handler(oldest_rec)
                     total_frames[0] -= len(oldest_rec.get("frames", []))
             return format_json_response(
                 {
@@ -233,14 +299,19 @@ def register(
         )
     )
     async def wavexis_video_stop(input: VideoStopInput) -> str:
-        """Stop recording and return the video as base64 or save to file.
+        """Stop recording and return the captured frames as an MJPEG stream.
+
+        The output is a Motion JPEG stream (concatenated JPEG frames) — a
+        format playable by VLC/ffmpeg and encodable to mp4/webm.  It is not
+        a containerized mp4/webm.
 
         Args:
-            input: Stop parameters (output_path).
+            input: Stop parameters (recording_id, output_path).
 
         Returns:
-            JSON string with ``base64`` video data or file ``path``,
-            plus ``duration_ms`` and ``size_bytes``.
+            JSON string with ``base64`` MJPEG data or file ``path``,
+            plus ``duration_ms``, ``size_bytes``, ``frames``, ``format``
+            and ``chapters``.
         """
         try:
             session = session_manager.get(input.session_id)
@@ -252,14 +323,20 @@ def register(
                 await session.backend.raw("Page.stopScreencast", {})
 
             async with _recordings_lock:
-                recording_id = next(
-                    (
-                        rid
+                if input.recording_id:
+                    recording_id = input.recording_id if input.recording_id in recordings else None
+                else:
+                    # Most recent recording for this session wins.
+                    candidates = [
+                        (rid, rec)
                         for rid, rec in recordings.items()
                         if rec["session_id"] == input.session_id
-                    ),
-                    None,
-                )
+                    ]
+                    recording_id = (
+                        max(candidates, key=lambda kv: kv[1]["start_time"])[0]
+                        if candidates
+                        else None
+                    )
                 if recording_id is None:
                     return format_error(
                         "wavexis_video_stop",
@@ -269,12 +346,13 @@ def register(
                 rec = recordings.pop(recording_id)
                 rec["_stopped"] = True
                 total_frames[0] -= len(rec.get("frames", []))
-                _detach_screencast_handler(rec)
+                await _detach_screencast_handler(rec)
             start_time = rec["start_time"]
             duration_ms = int((time.time() - start_time) * 1000)
 
             frames = rec["frames"]
             video_data = b"".join(frames) if frames else b""
+            chapters = rec.get("chapters", [])
 
             output_path = input.output_path or rec.get("output_path")
             if output_path and video_data:
@@ -282,6 +360,10 @@ def register(
                 return format_json_response(
                     {
                         "path": meta["path"],
+                        "format": "mjpeg",
+                        "recording_id": recording_id,
+                        "frames": len(frames),
+                        "chapters": chapters,
                         "duration_ms": duration_ms,
                         "size_bytes": meta["size_bytes"],
                     }
@@ -292,6 +374,10 @@ def register(
                 return format_json_response(
                     {
                         "base64": b64,
+                        "format": "mjpeg",
+                        "recording_id": recording_id,
+                        "frames": len(frames),
+                        "chapters": chapters,
                         "duration_ms": duration_ms,
                         "size_bytes": len(video_data),
                     }
@@ -299,6 +385,10 @@ def register(
 
             return format_json_response(
                 {
+                    "format": "mjpeg",
+                    "recording_id": recording_id,
+                    "frames": 0,
+                    "chapters": chapters,
                     "duration_ms": duration_ms,
                     "size_bytes": 0,
                 }
@@ -359,7 +449,11 @@ def register(
         )
     )
     async def wavexis_video_action_overlay(input: VideoActionOverlayInput) -> str:
-        """Enable or disable action overlay on the video recording.
+        """Enable or disable the on-page action overlay for recordings.
+
+        When enabled, a small fixed badge is injected into the page that
+        flashes the last user action (click, keypress, input) so it is
+        visible in captured screencast frames.
 
         Args:
             input: Overlay parameters (show).
@@ -369,7 +463,10 @@ def register(
         """
         try:
             session = session_manager.get(input.session_id)
-            await session.backend.eval(f"window.__wavexisOverlay = {json.dumps(input.show)};")
+            await session.backend.eval(
+                _OVERLAY_ENABLE_JS if input.show else _OVERLAY_DISABLE_JS,
+                await_promise=False,
+            )
             return format_json_response(
                 {
                     "status": "ok",

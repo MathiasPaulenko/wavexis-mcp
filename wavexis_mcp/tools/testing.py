@@ -318,10 +318,10 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         )
     )
     async def wavexis_assert_url(input: AssertURLInput) -> str:
-        """Assert the current URL matches a pattern.
+        """Assert the current URL contains a substring (case-insensitive).
 
         Args:
-            input: Assertion parameters (url_pattern).
+            input: Assertion parameters (url_pattern — substring to match).
 
         Returns:
             JSON string with ``passed``, ``url``, and ``pattern``.
@@ -337,13 +337,16 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                     "passed": passed,
                     "url": current_url,
                     "pattern": input.url_pattern,
-                    "message": "URL matches" if passed else "URL does not match pattern",
+                    "message": (
+                        "URL contains pattern" if passed else "URL does not contain pattern"
+                    ),
                 }
             )
         except Exception as e:
             return format_json_response(
                 {
                     "passed": False,
+                    "url": None,
                     "pattern": input.url_pattern,
                     "message": str(e),
                 }
@@ -373,6 +376,8 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         try:
             session = session_manager.get(input.session_id)
             locators = await session.backend.suggest_locator(input.selector, all=True)
+            if isinstance(locators, str):
+                locators = [locators]
             locators = list(locators) if locators else []
 
             if not locators:

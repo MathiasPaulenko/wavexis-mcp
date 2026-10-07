@@ -2,7 +2,8 @@
 
 Provides pixel-precise mouse operations: move by selector, move by
 coordinates, mouse down/up, click by coordinates, and double-click
-by coordinates.  All tools require an active session.
+by coordinates.  All tools require an active session with a CDP
+backend (``Input.dispatchMouseEvent`` is a CDP command).
 """
 
 from __future__ import annotations

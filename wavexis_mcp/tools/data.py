@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import asyncio
 import base64
+import contextlib
+import inspect
 import json
 import logging
 import time
@@ -77,6 +79,208 @@ async def _try_navigate(backend: AbstractBackend, url: str, wait: WaitStrategy) 
         _logger.debug("Crawler navigation failed for %s: %s", url, exc)
         return False
     return True
+
+
+def _score_ms(value_ms: float, good: float, poor: float) -> int:
+    """Map a millisecond metric to a 0-100 score using Lighthouse thresholds."""
+    if value_ms <= good:
+        return 100
+    if value_ms >= poor:
+        return 0
+    return int(round(100 - (value_ms - good) / (poor - good) * 100))
+
+
+_PERF_EVAL_JS = """(function(){
+var nav = performance.getEntriesByType('navigation')[0] || {};
+var paints = performance.getEntriesByType('paint');
+var fcp = 0;
+for (var i=0;i<paints.length;i++){
+  if(paints[i].name==='first-contentful-paint') { fcp=paints[i].startTime; }
+}
+var lcp = 0;
+try {
+  var lcpEntries = performance.getEntriesByType('largest-contentful-paint');
+  if(lcpEntries.length) lcp = lcpEntries[lcpEntries.length-1].startTime;
+} catch(e) {}
+var cls = 0;
+try {
+  var shifts = performance.getEntriesByType('layout-shift');
+  for(var i=0;i<shifts.length;i++){ if(!shifts[i].hadRecentInput) cls += shifts[i].value; }
+} catch(e) {}
+return {
+  ttfb: nav.responseStart||0,
+  fcp: fcp,
+  lcp: lcp,
+  cls: cls,
+  dom_content_loaded: nav.domContentLoadedEventEnd||0,
+  load: nav.loadEventEnd||0,
+  dom_nodes: document.getElementsByTagName('*').length
+};
+})()"""
+
+_A11Y_EVAL_JS = """(function(){
+var imgs = document.querySelectorAll('img');
+var missingAlt = 0;
+for (var i=0;i<imgs.length;i++){ if(!imgs[i].getAttribute('alt')) missingAlt++; }
+var controls = document.querySelectorAll('input,select,textarea');
+var unlabeled = 0;
+for (var i=0;i<controls.length;i++){
+  var c = controls[i];
+  var hasLabel = c.id && document.querySelector('label[for="'+c.id+'"]')
+    || c.getAttribute('aria-label') || c.getAttribute('aria-labelledby')
+    || c.getAttribute('title') || (c.closest && c.closest('label'))
+    || c.type === 'hidden' || c.type === 'submit' || c.type === 'button';
+  if(!hasLabel) unlabeled++;
+}
+return {
+  has_lang: !!document.documentElement.lang,
+  total_imgs: imgs.length,
+  imgs_missing_alt: missingAlt,
+  total_controls: controls.length,
+  unlabeled_controls: unlabeled
+};
+})()"""
+
+_SEO_EVAL_JS = """(function(){
+var desc = document.querySelector('meta[name="description"]');
+var canonical = document.querySelector('link[rel="canonical"]');
+var viewport = document.querySelector('meta[name="viewport"]');
+return {
+  title_length: (document.title||'').length,
+  meta_description_length: desc ? (desc.getAttribute('content')||'').length : 0,
+  h1_count: document.querySelectorAll('h1').length,
+  has_canonical: !!canonical,
+  has_viewport: !!viewport
+};
+})()"""
+
+_BEST_PRACTICES_EVAL_JS = """(function(){
+var mixedContent = 0;
+if (location.protocol === 'https:') {
+  mixedContent = document.querySelectorAll(
+    'img[src^="http:"],script[src^="http:"],link[href^="http:"],iframe[src^="http:"]'
+  ).length;
+}
+return {
+  is_https: location.protocol === 'https:',
+  has_doctype: !!document.doctype,
+  mixed_content_resources: mixedContent,
+  has_console_api_errors: false
+};
+})()"""
+
+
+def _audit_performance(metrics: dict[str, Any]) -> dict[str, Any]:
+    """Compute a performance category from real CDP/raw metrics.
+
+    The returned score interpolates FCP/TTFB/load values against
+    Lighthouse thresholds instead of returning a fixed number.
+    """
+    ttfb = float(metrics.get("TTFB") or metrics.get("ttfb") or 0)
+    fcp = float(metrics.get("FCP") or metrics.get("fcp") or 0)
+    load = float(metrics.get("loadTime") or metrics.get("load") or 0)
+    scores = [
+        _score_ms(ttfb, 800, 1800),
+        _score_ms(fcp, 1800, 3000) if fcp else None,
+        _score_ms(load, 2500, 6000) if load else None,
+    ]
+    valid = [s for s in scores if s is not None]
+    score = int(round(sum(valid) / len(valid))) if valid else 0
+    return {
+        "score": score,
+        "ttfb_ms": ttfb,
+        "fcp_ms": fcp,
+        "load_ms": load,
+        "dom_size": int(metrics.get("dom_nodes") or metrics.get("domNodes") or 0),
+        "raw_metrics": metrics,
+    }
+
+
+async def _audit_accessibility(backend: AbstractBackend) -> dict[str, Any]:
+    """Run real DOM checks for the accessibility category."""
+    result = await backend.eval(_A11Y_EVAL_JS)
+    result = result if isinstance(result, dict) else {}
+
+    issues: list[dict[str, Any]] = []
+    if not result.get("has_lang"):
+        issues.append({"id": "html-has-lang", "impact": "serious"})
+    for _ in range(int(result.get("imgs_missing_alt") or 0)):
+        issues.append({"id": "image-alt", "impact": "critical"})
+    for _ in range(int(result.get("unlabeled_controls") or 0)):
+        issues.append({"id": "label", "impact": "critical"})
+
+    penalty = min(100, len(issues) * 15)
+    return {
+        "score": 100 - penalty,
+        "issues": issues,
+        "issue_count": len(issues),
+        "has_lang": bool(result.get("has_lang")),
+        "total_imgs": int(result.get("total_imgs") or 0),
+        "imgs_missing_alt": int(result.get("imgs_missing_alt") or 0),
+        "unlabeled_controls": int(result.get("unlabeled_controls") or 0),
+    }
+
+
+async def _audit_seo(backend: AbstractBackend, title: str) -> dict[str, Any]:
+    """Run real DOM checks for the SEO category."""
+    result = await backend.eval(_SEO_EVAL_JS)
+    result = result if isinstance(result, dict) else {}
+
+    issues: list[str] = []
+    if not title:
+        issues.append("missing title")
+    elif not (10 <= len(title) <= 60):
+        issues.append("title length outside 10-60 chars")
+    if not result.get("meta_description_length"):
+        issues.append("missing meta description")
+    if not result.get("h1_count"):
+        issues.append("missing h1")
+    if not result.get("has_viewport"):
+        issues.append("missing viewport meta")
+
+    score = max(0, 100 - len(issues) * 20)
+    return {
+        "score": score,
+        "title": title,
+        "title_length": len(title),
+        "h1_count": int(result.get("h1_count") or 0),
+        "meta_description_length": int(result.get("meta_description_length") or 0),
+        "has_canonical": bool(result.get("has_canonical")),
+        "issues": issues,
+    }
+
+
+async def _audit_best_practices(backend: AbstractBackend, url: str) -> dict[str, Any]:
+    """Run real checks for the best-practices category."""
+    result = await backend.eval(_BEST_PRACTICES_EVAL_JS)
+    result = result if isinstance(result, dict) else {}
+
+    console_errors: list[dict[str, Any]] = []
+    try:
+        console_errors = [
+            e for e in (await backend.capture_console(level="error")) if isinstance(e, dict)
+        ]
+    except Exception:
+        console_errors = []
+
+    issues: list[str] = []
+    if not result.get("is_https") and url.startswith("http:"):
+        issues.append("page not served over HTTPS")
+    if not result.get("has_doctype"):
+        issues.append("missing doctype")
+    if result.get("mixed_content_resources"):
+        issues.append(f"{result['mixed_content_resources']} mixed-content resources")
+    if console_errors:
+        issues.append(f"{len(console_errors)} console errors")
+
+    score = max(0, 100 - len(issues) * 20)
+    return {
+        "score": score,
+        "issues": issues,
+        "is_https": bool(result.get("is_https")),
+        "mixed_content_resources": int(result.get("mixed_content_resources") or 0),
+        "console_errors": console_errors,
+    }
 
 
 def register(mcp: FastMCP, session_manager: SessionManager) -> None:
@@ -183,7 +387,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                 validate_url(input.url)
                 await backend.navigate(input.url, wait)
 
-                metrics = await backend.perf_metrics()
+                perf = await backend.eval(_PERF_EVAL_JS)
                 title = await backend.eval("document.title")
                 title = str(title) if title else ""
 
@@ -191,36 +395,13 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                 all_cats = not input.categories
 
                 if all_cats or "performance" in input.categories:
-                    cats["performance"] = {
-                        "score": 85,
-                        "ttfb_ms": metrics.get("TTFB", 0),
-                        "fcp_ms": metrics.get("FCP", 0),
-                        "load_ms": metrics.get("loadTime", 0),
-                        "dom_size": metrics.get("domNodes", 0),
-                        "raw_metrics": metrics,
-                    }
+                    cats["performance"] = _audit_performance(perf if isinstance(perf, dict) else {})
                 if all_cats or "accessibility" in input.categories:
-                    cats["accessibility"] = {
-                        "score": 75,
-                        "issues": [],
-                        "issue_count": 0,
-                        "has_lang": True,
-                        "has_viewport": True,
-                    }
+                    cats["accessibility"] = await _audit_accessibility(backend)
                 if all_cats or "seo" in input.categories:
-                    cats["seo"] = {
-                        "score": 90,
-                        "title": title,
-                        "title_length": len(title),
-                        "h1_count": 1,
-                    }
+                    cats["seo"] = await _audit_seo(backend, title)
                 if all_cats or "best-practices" in input.categories:
-                    cats["best-practices"] = {
-                        "score": 95,
-                        "issues": [],
-                        "is_https": input.url.startswith("https"),
-                        "console_errors": [],
-                    }
+                    cats["best-practices"] = await _audit_best_practices(backend, input.url)
 
                 return format_json_response(
                     {
@@ -320,6 +501,14 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             JSON string with ``sent``, ``received``, and frame counts.
         """
         try:
+            if input.mock_responses:
+                return format_error(
+                    "wavexis_websocket_intercept",
+                    ValueError(
+                        "mock_responses is not supported: WebSocket frames cannot "
+                        "be mocked via CDP/BiDi. Capture-only tool."
+                    ),
+                )
             backend, sid = await session_manager.acquire_backend(
                 input.session_id,
                 backend=input.backend,
@@ -328,21 +517,96 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             try:
                 from wavexis.config import WaitStrategy
 
-                wait = WaitStrategy(strategy="load", timeout=input.wait_timeout)
-                validate_url(input.url)
-                await backend.navigate(input.url, wait)
+                real = getattr(backend, "_backend", backend)
+                require_session = getattr(real, "_require_session", None)
+                if require_session is None:
+                    return format_error(
+                        "wavexis_websocket_intercept",
+                        RuntimeError(
+                            "WebSocket frame capture requires a CDP backend (backend='cdp')."
+                        ),
+                    )
+                cdp_session = require_session()
+                if inspect.isawaitable(cdp_session):
+                    cdp_session = await cdp_session
 
-                await backend.raw("Network.enable", {})
-                await asyncio.sleep(input.duration_ms / 1000)
+                ws_urls: dict[str, str] = {}
+                sent: list[dict[str, Any]] = []
+                received: list[dict[str, Any]] = []
+                errors: list[str] = []
+
+                def _matches(url: str) -> bool:
+                    return _url_matches(url, input.url_pattern or "")
+
+                def on_created(params: Any) -> None:
+                    if isinstance(params, dict):
+                        rid = params.get("requestId", "")
+                        url = params.get("url", "")
+                        if rid:
+                            ws_urls[rid] = url
+
+                def on_frame(params: Any, direction: str) -> None:
+                    if not isinstance(params, dict):
+                        return
+                    rid = params.get("requestId", "")
+                    url = ws_urls.get(rid, "")
+                    if not _matches(url):
+                        return
+                    response = params.get("response", {})
+                    payload = response.get("payloadData", "")
+                    entry = {
+                        "url": url,
+                        "request_id": rid,
+                        "payload": payload,
+                        "opcode": response.get("opcode"),
+                    }
+                    if direction == "sent":
+                        sent.append(entry)
+                    else:
+                        received.append(entry)
+
+                on_sent = lambda p: on_frame(p, "sent")  # noqa: E731
+                on_received = lambda p: on_frame(p, "received")  # noqa: E731
+                on_error = lambda p: (  # noqa: E731
+                    errors.append(str(p.get("errorMessage", "frame error")))
+                    if isinstance(p, dict)
+                    else None
+                )
+
+                handlers = [
+                    ("Network.webSocketCreated", on_created),
+                    ("Network.webSocketFrameSent", on_sent),
+                    ("Network.webSocketFrameReceived", on_received),
+                    ("Network.webSocketFrameError", on_error),
+                ]
+                for event, handler in handlers:
+                    res = cdp_session.on(event, handler)
+                    if inspect.isawaitable(res):
+                        await res
+
+                try:
+                    # Network.enable + handlers antes de navegar: si no,
+                    # webSocketCreated se pierde y los frames quedan sin URL.
+                    await backend.raw("Network.enable", {})
+                    wait = WaitStrategy(strategy="load", timeout=input.wait_timeout)
+                    validate_url(input.url)
+                    await backend.navigate(input.url, wait)
+                    await asyncio.sleep(input.duration_ms / 1000)
+                finally:
+                    for event, handler in handlers:
+                        with contextlib.suppress(Exception):
+                            res = cdp_session.off(event, handler)
+                            if inspect.isawaitable(res):
+                                await res
 
                 return format_json_response(
                     {
                         "url": input.url,
-                        "sent": [],
-                        "received": [],
-                        "errors": [],
-                        "frames_sent": 0,
-                        "frames_received": 0,
+                        "sent": sent,
+                        "received": received,
+                        "errors": errors,
+                        "frames_sent": len(sent),
+                        "frames_received": len(received),
                     }
                 )
             finally:

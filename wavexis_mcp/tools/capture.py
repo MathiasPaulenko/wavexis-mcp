@@ -417,7 +417,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                         "status": "ok",
                         "type": "pdf",
                         "base64": result,
-                        "size_bytes": len(result),
+                        "size_bytes": len(base64.b64decode(result)),
                     }
                 )
             finally:
@@ -467,7 +467,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                         "status": "ok",
                         "format": input.format,
                         "content": snapshot,
-                        "size_bytes": len(snapshot),
+                        "size_bytes": len(snapshot.encode("utf-8")),
                     }
                 )
             finally:

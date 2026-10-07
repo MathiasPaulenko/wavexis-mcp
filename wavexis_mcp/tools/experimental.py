@@ -732,6 +732,11 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         try:
             session = session_manager.get(input.session_id)
             await session.backend.bluetooth_emulate(input.name, input.address)
+            devices = getattr(session.backend, "_ble_devices", None)
+            if not isinstance(devices, list):
+                devices = []
+                cast(Any, session.backend)._ble_devices = devices
+            devices.append({"name": input.name, "address": input.address})
             return format_json_response(
                 {
                     "status": "ok",
@@ -764,6 +769,9 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         try:
             session = session_manager.get(input.session_id)
             await session.backend.bluetooth_stop()
+            devices = getattr(session.backend, "_ble_devices", None)
+            if isinstance(devices, list):
+                devices.clear()
             return format_json_response({"status": "ok"})
         except Exception as e:
             return format_error("wavexis_bluetooth_device_disconnect", e)
@@ -779,18 +787,22 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
     async def wavexis_bluetooth_device_list(
         input: BluetoothDeviceListInput,
     ) -> str:
-        """List emulated Bluetooth devices.
+        """List Bluetooth devices emulated in this session.
+
+        Devices are tracked from ``wavexis_bluetooth_device_connect`` calls;
+        CDP does not expose a command to enumerate emulated peripherals.
 
         Args:
             input: List parameters (session_id).
 
         Returns:
-            JSON string with ``devices`` list.
+            JSON string with ``devices`` list and ``count``.
         """
         try:
             session = session_manager.get(input.session_id)
-            await session.backend.raw("BluetoothEmulation.getDevices", {})
-            return format_json_response({"devices": []})
+            devices = getattr(session.backend, "_ble_devices", None)
+            devices = list(devices) if isinstance(devices, list) else []
+            return format_json_response({"devices": devices, "count": len(devices)})
         except Exception as e:
             return format_error("wavexis_bluetooth_device_list", e)
 

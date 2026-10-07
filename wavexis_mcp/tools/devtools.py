@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+from collections import deque
 from typing import Any, cast
 
 from mcp.server.fastmcp import FastMCP
@@ -637,7 +638,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             session = session_manager.get(input.session_id)
             messages = await session.backend.capture_console(level=input.level)
             if not input.all:
-                messages = messages[-50:]
+                messages = messages[-input.limit :]
             total = len(messages)
             paginated = messages[input.offset : input.offset + input.limit]
             return format_json_response(
@@ -848,9 +849,9 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         """Subscribe to real-time browser events (W10).
 
         Event types: console, network_request, network_response,
-        dom_mutation, dialog, navigation.  Events are collected
-        internally and can be retrieved via console_messages or
-        network_requests tools while the subscription is active.
+        dom_mutation, dialog, navigation.  Events are buffered
+        per session (last 500) and returned by
+        ``wavexis_unsubscribe_events``.
 
         Args:
             input: Subscription parameters (event_types).
@@ -861,10 +862,19 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         try:
             session = session_manager.get(input.session_id)
             backend = cast(Any, session.backend)
+            event_log = getattr(backend, "_event_log", None)
+            if not isinstance(event_log, deque):
+                event_log = deque(maxlen=500)
+                backend._event_log = event_log
+            event_log.clear()
+
+            def _collect(event: dict[str, Any]) -> None:
+                event_log.append(event)
+
             sub_id = await asyncio.wait_for(
                 backend.subscribe_events(
                     input.event_types,
-                    callback=None,
+                    callback=_collect,
                 ),
                 timeout=30.0,
             )
@@ -906,6 +916,12 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             devtools_subs = getattr(backend, "_devtools_sub_ids", None)
             if isinstance(devtools_subs, set):
                 devtools_subs.discard(input.subscription_id)
-            return format_json_response({"status": "ok"})
+            event_log = getattr(backend, "_event_log", None)
+            events = list(event_log) if isinstance(event_log, deque) else []
+            if isinstance(event_log, deque):
+                event_log.clear()
+            return format_json_response(
+                {"status": "ok", "events_captured": len(events), "events": events}
+            )
         except Exception as e:
             return format_error("wavexis_unsubscribe_events", e)

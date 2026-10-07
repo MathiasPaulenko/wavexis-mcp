@@ -1031,7 +1031,7 @@ class SetCacheDisabledInput(BaseInput):
     """Input for enabling or disabling the browser cache."""
 
     session_id: str = Field(..., description="Active session ID from wavexis_session_open")
-    disabled: bool = Field(default=True, description="Whether the network is disabled")
+    disabled: bool = Field(default=True, description="Whether the browser cache is disabled")
 
 
 class CaptureHARInput(BaseInput):
@@ -1608,7 +1608,7 @@ class IgnoreCertErrorsInput(BaseInput):
     """Input for enabling or disabling certificate error ignoring."""
 
     session_id: str = Field(..., description="Active session ID from wavexis_session_open")
-    ignore: bool = Field(default=True, description="Whether to ignore cache")
+    ignore: bool = Field(default=True, description="Whether to ignore certificate errors")
 
 
 # ── DevTools — Window ───────────────────────────────────────────
@@ -1719,7 +1719,14 @@ class VideoStopInput(BaseInput):
     """Input for stopping video recording."""
 
     session_id: str = Field(..., description="Active session ID from wavexis_session_open")
-    output_path: str | None = Field(default=None, description="Output file path")
+    recording_id: str | None = Field(
+        default=None,
+        description=(
+            "Recording ID from wavexis_video_record. "
+            "If omitted, stops the most recent recording for the session."
+        ),
+    )
+    output_path: str | None = Field(default=None, description="Output file path (.mjpg)")
 
 
 class VideoAddChapterInput(BaseInput):
