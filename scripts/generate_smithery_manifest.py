@@ -137,7 +137,7 @@ async def main() -> None:
         "manifest_version": "0.4",
         "name": "wavexis-mcp",
         "display_name": "WaveXisMCP",
-        "version": "1.6.24",
+        "version": "1.7.0",
         "description": (
             "220 browser automation tools for Chrome, Edge, and Firefox via "
             "CDP + BiDi. 100% Python, no Node.js, no Chromium download — "

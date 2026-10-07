@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-10-07
+
+### Fixed
+
+- `--storage-state` restore used the removed wavexis API (`set_cookies`); now uses `network_set_cookies`, and localStorage/sessionStorage are restored via preload script so origin-scoped storage actually persists.
+- `wavexis_invoke` failed for backend methods with dataclass `params` (`screenshot`, `pdf`, `throttle_network`, `capture_har`, `set_sensors`, `set_cookie`, `screencast`, ...) because the timeout proxy hid the real function; the proxy now preserves `__wrapped__`/`__module__` and parameter resolution unwraps it.
+- `wavexis_lighthouse` returned hardcoded scores; it now computes real metrics from DOM, Navigation Timing and paint checks.
+- `wavexis_websocket_intercept` was a stub; it now captures real `webSocketCreated`/`webSocketFrameSent`/`webSocketFrameReceived` events via CDP. `mock_responses` is rejected explicitly (CDP cannot mock WS frames).
+- `wavexis_bluetooth_device_list` was a stub; it now lists devices emulated via `wavexis_bluetooth_device_connect` (CDP exposes no enumeration command).
+- Video: `Page.screencastFrameAck` is sent per frame (Chrome no longer stops streaming), `wavexis_video_stop` accepts `recording_id` and reports `format: "mjpeg"` plus `chapters`, `wavexis_video_action_overlay` injects a real on-page overlay, and `wavexis_video_record` errors when the backend cannot deliver screencast frames instead of recording zero frames silently.
+- `wavexis_subscribe_events` passed `callback=None` (events were lost); events are now buffered per session and `wavexis_unsubscribe_events` returns them.
+- `--rate-limit 0` now disables limiting; stateless calls share a global bucket.
+- SSRF: trailing-dot hostnames (e.g. `localhost.`) are normalized before blocklist checks; `secure_output_path` rejects Windows junctions and UNC paths.
+- `connect_existing` uses a dynamically allocated debug port instead of a fixed 9223.
+- `--help` now shows the extended tier-aware help; a non-loopback `--host` without `--allow-remote` warns.
+- `storage_state_restore` preserves `sameSite`; `size_bytes` reports real byte sizes; `console_messages` honors `limit`; `wavexis_session_open` reports the resolved backend.
+
+### Changed
+
+- Packaging: `wavexis[cdp]` is a base dependency, so `uvx wavexis-mcp` works out of the box; the dev extra adds `wavexis[bidi]` and Pillow.
+- Docker: health check targets `/sse`, entrypoint uses `--allow-remote`, and `CDPWAVE_BROWSER_PATH` replaces the dead `WAVEXIS_BROWSER_PATH` env var.
+- mypy now type-checks wavexis imports (`follow_imports` no longer skipped).
+
+### Removed
+
+- `wavexis_mcp/streaming.py` — dead code never connected to any transport.
+
 ## [1.6.25] - 2026-08-17
 
 ### Added
