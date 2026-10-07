@@ -8,23 +8,19 @@ from __future__ import annotations
 
 import asyncio
 import base64
+import contextlib
 import json
 import os
 import sys
 import tempfile
 from typing import Any
 
-OUTPUT_DIR = tempfile.mkdtemp(prefix="wxmcp-e2e-")
-os.environ.setdefault("WAVEXIS_MCP_OUTPUT_DIR", OUTPUT_DIR)
-# Permite navegar a 127.0.0.1 para el test de WebSocket (página local).
-os.environ.setdefault("WAVEXIS_MCP_ALLOW_INTERNAL_URLS", "1")
+from mcp.server.fastmcp import FastMCP
 
-from mcp.server.fastmcp import FastMCP  # noqa: E402
-
-from wavexis_mcp.models import (  # noqa: E402
+from wavexis_mcp.models import (
     BluetoothDeviceConnectInput,
-    BluetoothDeviceListInput,
     BluetoothDeviceDisconnectInput,
+    BluetoothDeviceListInput,
     InvokeInput,
     LighthouseInput,
     SessionOpenInput,
@@ -37,8 +33,21 @@ from wavexis_mcp.models import (  # noqa: E402
     VideoStopInput,
     WebsocketInterceptInput,
 )
-from wavexis_mcp.session import SessionManager  # noqa: E402
-from wavexis_mcp.tools import data, devtools, experimental, session as tsession, storage, utility, video  # noqa: E402
+from wavexis_mcp.session import SessionManager
+from wavexis_mcp.tools import (
+    data,
+    devtools,
+    experimental,
+    storage,
+    utility,
+    video,
+)
+from wavexis_mcp.tools import session as tsession
+
+OUTPUT_DIR = tempfile.mkdtemp(prefix="wxmcp-e2e-")
+os.environ.setdefault("WAVEXIS_MCP_OUTPUT_DIR", OUTPUT_DIR)
+# Permite navegar a 127.0.0.1 para el test de WebSocket (página local).
+os.environ.setdefault("WAVEXIS_MCP_ALLOW_INTERNAL_URLS", "1")
 
 RESULTS: list[tuple[str, bool, str]] = []
 
@@ -126,7 +135,7 @@ async def main() -> int:
     }
     # secure_output_path exige que el fichero esté dentro de OUTPUT_DIR.
     sf_name = os.path.join(OUTPUT_DIR, "storage-state.json")
-    with open(sf_name, "w") as sf:
+    with open(sf_name, "w") as sf:  # noqa: ASYNC230
         json.dump(state, sf)
     mgr.storage_state_path = sf_name
     sid2 = await mgr.open(backend="cdp", headless=True)
@@ -148,7 +157,9 @@ async def main() -> int:
     sess = mgr.get(sid)
     await sess.backend.navigate("https://example.com")
     r = await tool(
-        mcp, "wavexis_storage_state_restore", StorageStateRestoreInput(session_id=sid, input_path=sf_name)
+        mcp,
+        "wavexis_storage_state_restore",
+        StorageStateRestoreInput(session_id=sid, input_path=sf_name),
     )
     lv2 = await sess.backend.eval("localStorage.getItem('theme')")
     check(
@@ -171,7 +182,8 @@ async def main() -> int:
         and perf.get("ttfb_ms", 0) > 0
         and cats.get("seo", {}).get("h1_count", 0) >= 0
         and "score" in cats.get("accessibility", {}),
-        f"perf_ttfb={perf.get('ttfb_ms')} seo={cats.get('seo', {}).get('score')} a11y={cats.get('accessibility', {}).get('score')}",
+        f"perf_ttfb={perf.get('ttfb_ms')} seo={cats.get('seo', {}).get('score')}"
+        f" a11y={cats.get('accessibility', {}).get('score')}",
     )
 
     # ── 5. WebSocket intercept real ──────────────────────────────
@@ -216,7 +228,8 @@ async def main() -> int:
     check(
         "websocket_intercept captura frames reales",
         frames > 0 and any("127.0.0.1" in str(f.get("url", "")) for f in r.get("sent", [])),
-        f"sent={r.get('frames_sent')} received={r.get('frames_received')} sample={str(r.get('sent', [])[:1])[:80]}",
+        f"sent={r.get('frames_sent')} received={r.get('frames_received')}"
+        f" sample={str(r.get('sent', [])[:1])[:80]}",
     )
 
     # mock_responses debe rechazarse explícitamente
@@ -256,10 +269,8 @@ async def main() -> int:
     n_frames = r.get("frames", 0)
     is_jpeg = False
     if r.get("base64"):
-        try:
+        with contextlib.suppress(Exception):
             is_jpeg = base64.b64decode(r["base64"])[:2] == b"\xff\xd8"
-        except Exception:
-            pass
     check(
         "video frames capturados + mjpeg",
         n_frames > 0 and r.get("format") == "mjpeg" and is_jpeg,
@@ -293,9 +304,7 @@ async def main() -> int:
     )
     connect_ok = r.get("status") == "ok"
     connect_err = r.get("error", "")
-    r2 = await tool(
-        mcp, "wavexis_bluetooth_device_list", BluetoothDeviceListInput(session_id=sid)
-    )
+    r2 = await tool(mcp, "wavexis_bluetooth_device_list", BluetoothDeviceListInput(session_id=sid))
     listed = r2.get("devices", [])
     if connect_ok:
         ok = any(d.get("name") == "TestDev" for d in listed)
@@ -307,10 +316,10 @@ async def main() -> int:
         ok = bool(connect_err) and isinstance(listed, list)
         detail = f"connect_err={connect_err[:60]} list={listed}"
     check("bluetooth connect→list (o error claro)", ok, detail)
-    await tool(mcp, "wavexis_bluetooth_device_disconnect", BluetoothDeviceDisconnectInput(session_id=sid))
-    r3 = await tool(
-        mcp, "wavexis_bluetooth_device_list", BluetoothDeviceListInput(session_id=sid)
+    await tool(
+        mcp, "wavexis_bluetooth_device_disconnect", BluetoothDeviceDisconnectInput(session_id=sid)
     )
+    r3 = await tool(mcp, "wavexis_bluetooth_device_list", BluetoothDeviceListInput(session_id=sid))
     check("bluetooth disconnect limpia", len(r3.get("devices", [])) == 0, str(r3)[:80])
 
     # ── 9. subscribe/unsubscribe events ──────────────────────────
@@ -323,7 +332,9 @@ async def main() -> int:
     await sess.backend.navigate("https://example.org")
     await asyncio.sleep(0.5)
     r = await tool(
-        mcp, "wavexis_unsubscribe_events", UnsubscribeEventsInput(session_id=sid, subscription_id=sub_id)
+        mcp,
+        "wavexis_unsubscribe_events",
+        UnsubscribeEventsInput(session_id=sid, subscription_id=sub_id),
     )
     check(
         "event subscription captura",
@@ -334,9 +345,7 @@ async def main() -> int:
     await mgr.close(sid)
 
     # ── 10. BiDi smoke ───────────────────────────────────────────
-    r = await tool(
-        mcp, "wavexis_session_open", SessionOpenInput(backend="bidi", headless=True)
-    )
+    r = await tool(mcp, "wavexis_session_open", SessionOpenInput(backend="bidi", headless=True))
     if r.get("status") == "ok":
         bsid = r["session_id"]
         check("bidi session abre", r.get("backend") == "bidi", str(r)[:80])
@@ -348,7 +357,9 @@ async def main() -> int:
     else:
         # chromedriver no instalado → BiDi no disponible en este entorno.
         # El error debe ser explícito, no un crash genérico.
-        check("bidi session (no disponible: sin chromedriver)", "chromedriver" in str(r), str(r)[:120])
+        check(
+            "bidi session (no disponible: sin chromedriver)", "chromedriver" in str(r), str(r)[:120]
+        )
 
     # ── 11. Rate limiter 0 = unlimited ───────────────────────────
     from wavexis_mcp.rate_limiter import RateLimiter
@@ -358,7 +369,7 @@ async def main() -> int:
     check("rate_limit 0 desactiva", ok, "50/50 acquires")
 
     passed = sum(1 for _, ok, _ in RESULTS if ok)
-    print(f"\n{'='*60}\nRESULTADO: {passed}/{len(RESULTS)} checks OK")
+    print(f"\n{'=' * 60}\nRESULTADO: {passed}/{len(RESULTS)} checks OK")
     for name, ok, detail in RESULTS:
         if not ok:
             print(f"  FAIL: {name} — {detail}")
