@@ -32,7 +32,7 @@ classifiers = [
 ]
 dependencies = [
     "mcp>=1.0,<2",
-    "wavexis>=2.18.0,<3.0",
+    "wavexis[cdp]>=2.18.0,<3.0",
     "pydantic>=2.0,<3",
     "pyyaml>=6.0,<7.0",
     "regex>=2024.0,<2030.0",
@@ -55,7 +55,9 @@ dev = [
     "mkdocs-material>=9.5",
     "mkdocstrings[python]>=1.0.6",
     "pymdown-extensions>=10.0",
+    "pillow>=10.0",
     "wavexis[cdp]",
+    "wavexis[bidi]",
 ]
 
 [project.scripts]
@@ -87,7 +89,7 @@ strict = true
 python_version = "3.11"
 
 [[tool.mypy.overrides]]
-module = ["wavexis.*", "yaml.*", "regex.*"]
+module = ["yaml.*", "regex.*"]
 follow_imports = "skip"
 ignore_missing_imports = true
 
