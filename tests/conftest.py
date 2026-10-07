@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -217,7 +218,7 @@ def session_manager_with_mock(mock_backend: AsyncMock) -> SessionManager:
 
 
 @pytest.fixture(autouse=True)
-def _wavexis_output_dir(tmp_path: pytest.Any, monkeypatch: pytest.MonkeyPatch) -> None:
+def _wavexis_output_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Sandbox all file operations to the per-test temporary directory."""
     monkeypatch.setenv("WAVEXIS_MCP_OUTPUT_DIR", str(tmp_path))
 

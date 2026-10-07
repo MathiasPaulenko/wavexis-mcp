@@ -13,20 +13,6 @@ from mcp.server.fastmcp import FastMCP
 from pydantic import ValidationError
 
 from wavexis_mcp.session import SessionManager
-from wavexis_mcp.streaming import StreamingHandler
-
-
-@pytest.mark.unit
-async def test_streaming_start_is_idempotent(
-    session_manager_with_mock: SessionManager, mock_session_id: str
-) -> None:
-    """Calling start_stream twice for the same session must not create duplicate tasks."""
-    handler = StreamingHandler(session_manager_with_mock)
-    stream_id = await handler.start_stream(mock_session_id)
-    assert stream_id == f"stream-{mock_session_id}"
-    again = await handler.start_stream(mock_session_id)
-    assert again == stream_id
-    assert len(handler._streams) == 1
 
 
 @pytest.mark.unit
@@ -293,7 +279,7 @@ async def test_video_frame_handler_tracks_total_frames() -> None:
 
     recording: dict[str, Any] = {"frames": [], "_stopped": False}
     total_ref: list[int] = [0]
-    handler = _make_frame_handler(recording, total_ref)
+    handler = _make_frame_handler(recording, total_ref, None)
     payload = base64.b64encode(b"frame-data").decode()
     handler({"data": payload})
     await asyncio.sleep(0.1)

@@ -94,9 +94,15 @@ async def test_vision_video_testing_workflow() -> None:
         data = json.loads(result)
         assert data["passed"] is True
 
+        # example.com serves localized content whose markup varies by locale —
+        # inject a stable marker element so assertions are locale-independent.
+        session = mgr.get(session_id)
+        await session.backend.eval(
+            "document.body.innerHTML += '<h1 id=\"wavexis-marker\">WaveXisMarker</h1>'"
+        )
         assert_text_tool = mcp._tool_manager.get_tool("wavexis_assert_text_visible")
         result = await assert_text_tool.fn(
-            AssertTextVisibleInput(session_id=session_id, text="Example", timeout=5000)
+            AssertTextVisibleInput(session_id=session_id, text="WaveXisMarker", timeout=5000)
         )
         data = json.loads(result)
         assert data["passed"] is True
@@ -110,7 +116,9 @@ async def test_vision_video_testing_workflow() -> None:
 
         locator_tool = mcp._tool_manager.get_tool("wavexis_generate_locator")
         result = await locator_tool.fn(
-            GenerateLocatorInput(session_id=session_id, selector="h1", description="main heading")
+            GenerateLocatorInput(
+                session_id=session_id, selector="#wavexis-marker", description="marker"
+            )
         )
         data = json.loads(result)
         assert "locator" in data

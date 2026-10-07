@@ -802,7 +802,7 @@ def test_server_main_help_branch(monkeypatch) -> None:
 
 
 @pytest.mark.unit
-def test_server_main_guard() -> None:
-    with pytest.raises(SystemExit):
-        sys.argv = ["wavexis-mcp", "--help"]
-        runpy.run_module("wavexis_mcp.server", run_name="__main__")
+def test_server_main_guard(capsys) -> None:
+    sys.argv = ["wavexis-mcp", "--help"]
+    runpy.run_module("wavexis_mcp.server", run_name="__main__")
+    assert "WaveXisMCP" in capsys.readouterr().out

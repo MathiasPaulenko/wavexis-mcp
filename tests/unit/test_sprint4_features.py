@@ -58,8 +58,10 @@ async def test_storage_state_restore_on_open(
     )
     session_manager_with_mock.storage_state_path = str(state_file)
     sid = await session_manager_with_mock.open()
-    mock_backend.set_cookies.assert_awaited_once()
-    assert mock_backend.eval.await_count >= 2  # localStorage + sessionStorage
+    mock_backend.network_set_cookies.assert_awaited_once()
+    # localStorage/sessionStorage are restored via a preload script because
+    # they are origin-scoped and cannot be set on about:blank.
+    mock_backend.page_add_script_to_evaluate_on_new_document.assert_awaited_once()
     await session_manager_with_mock.close(sid)
 
 

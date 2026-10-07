@@ -107,13 +107,16 @@ class TestRateLimiter:
         assert await limiter.acquire("session-1") is True
 
     @pytest.mark.unit
-    async def test_invalid_rate_burst_clamped(self) -> None:
+    async def test_non_positive_rate_disables_limiting(self) -> None:
+        """rate <= 0 disables limiting (documented behavior for --rate-limit 0)."""
         limiter = RateLimiter(rate=-5, burst=0)
-        assert limiter.default_rate == 1.0
+        assert limiter.default_rate == 0.0
         assert limiter.default_burst == 1
-        assert await limiter.acquire("session-1") is True
+        # Unlimited: all acquires succeed regardless of rate.
+        for _ in range(20):
+            assert await limiter.acquire("session-1") is True
         await limiter.configure(rate=0, burst=-1)
-        assert limiter.default_rate == 1.0
+        assert limiter.default_rate == 0.0
         assert limiter.default_burst == 1
 
     @pytest.mark.unit
