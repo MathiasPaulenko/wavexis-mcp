@@ -73,13 +73,15 @@ def secure_output_path(path: str, base_dir: str | os.PathLike[str] | None = None
     target = Path(path)
     candidate = target if target.is_absolute() else base / target
 
-    # Reject any symlink in the path.  resolve() already follows symlinks and
-    # would reject targets that escape the base, but checking explicitly makes
-    # the intent clear and mitigates obvious symlink-based sandbox bypasses.
+    # Reject any symlink or junction in the path.  resolve() already follows
+    # them and would reject targets that escape the base, but checking
+    # explicitly makes the intent clear and mitigates sandbox bypasses —
+    # on Windows, junctions are not detected by ``is_symlink()``.
     for part in [candidate, *candidate.parents]:
         if part == base:
             break
-        if part.is_symlink():
+        is_junction = getattr(os.path, "isjunction", None)
+        if part.is_symlink() or (is_junction is not None and is_junction(part)):
             raise ValueError(f"Symlinks are not allowed in output path: {path!r}")
 
     resolved = candidate.resolve()
@@ -153,7 +155,7 @@ def validate_url(url: str, *, allow_internal: bool | None = None) -> None:
     if parsed.scheme not in {"http", "https"}:
         raise ValueError(f"URL scheme {parsed.scheme!r} is not allowed: {url}")
 
-    hostname = (parsed.hostname or "").lower().strip()
+    hostname = (parsed.hostname or "").lower().strip().rstrip(".")
     if not hostname:
         raise ValueError(f"URL has no host: {url}")
 
@@ -217,7 +219,7 @@ def validate_websocket_url(url: str, *, allow_internal: bool | None = None) -> N
             "Only 'ws' and 'wss' are accepted."
         )
 
-    hostname = (parsed.hostname or "").lower().strip()
+    hostname = (parsed.hostname or "").lower().strip().rstrip(".")
     if not hostname:
         raise ValueError(f"WebSocket URL has no host: {url}")
 
