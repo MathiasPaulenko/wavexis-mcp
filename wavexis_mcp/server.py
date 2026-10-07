@@ -333,14 +333,15 @@ def _apply_rate_limiting(mcp: FastMCP, rate_limiter: RateLimiter | None) -> None
             _orig: Callable[[BaseModel], Awaitable[str]] = typed_fn,
             _tool: Tool = registered_tool,
         ) -> str:
-            session_id = getattr(input, "session_id", None)
-            if session_id:
-                allowed, retry_after_ms = await rate_limiter.check(session_id)
-                if not allowed:
-                    return format_error(
-                        _tool.name,
-                        RuntimeError(f"Rate limit exceeded. Retry after {retry_after_ms}ms."),
-                    )
+            # Stateless calls share a global bucket so they cannot be used
+            # to bypass the per-session rate limit.
+            session_id = getattr(input, "session_id", None) or "_stateless_"
+            allowed, retry_after_ms = await rate_limiter.check(session_id)
+            if not allowed:
+                return format_error(
+                    _tool.name,
+                    RuntimeError(f"Rate limit exceeded. Retry after {retry_after_ms}ms."),
+                )
             return await _orig(input)
 
         registered_tool.fn = _rate_limited_fn
@@ -358,6 +359,14 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         prog="wavexis-mcp",
         description="WaveXisMCP — browser automation MCP server",
+        add_help=False,
+    )
+    parser.add_argument(
+        "-h",
+        "--help",
+        action="store_true",
+        default=False,
+        help="Show the extended help message and exit",
     )
     parser.add_argument(
         "--caps",
@@ -434,6 +443,8 @@ def main(argv: list[str] | None = None) -> None:
 
     args = _parse_args(args_list)
     if _is_help_request(args_list):
+        # argparse's built-in -h handling is disabled (add_help=False);
+        # print the extended help instead.
         _print_help(args.caps)
         return
 
@@ -462,6 +473,12 @@ def main(argv: list[str] | None = None) -> None:
     if args.transport == "http":
         # --allow-remote intentionally binds to all interfaces.
         host = "0.0.0.0" if args.allow_remote else args.host  # nosec B104
+        if not args.allow_remote and host not in ("127.0.0.1", "localhost", "::1"):
+            print(
+                f"WARNING: --host={host} exposes the server beyond localhost "
+                "without --allow-remote. Use behind a reverse proxy with authentication.",
+                file=sys.stderr,
+            )
         if args.allow_remote:
             print(
                 "WARNING: --allow-remote enabled. HTTP server will bind to 0.0.0.0. "

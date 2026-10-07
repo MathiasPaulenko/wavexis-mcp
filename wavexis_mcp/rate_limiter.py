@@ -83,7 +83,7 @@ class RateLimiter:
             rate: Default tokens per second (default: 60).
             burst: Default maximum burst size (default: 10).
         """
-        self.default_rate: float = float(max(rate, 1))
+        self.default_rate: float = float(max(rate, 0))
         self.default_burst: int = max(burst, 1)
         self._buckets: dict[str, _TokenBucket] = {}
         self._lock = asyncio.Lock()
@@ -101,7 +101,7 @@ class RateLimiter:
             burst: New maximum burst size.
         """
         async with self._lock:
-            self.default_rate = float(max(rate, 1))
+            self.default_rate = float(max(rate, 0))
             self.default_burst = max(burst, 1)
             for bucket in self._buckets.values():
                 bucket.rate = self.default_rate
