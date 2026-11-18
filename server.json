@@ -7,14 +7,14 @@
     "url": "https://github.com/MathiasPaulenko/wavexis-mcp",
     "source": "github"
   },
-  "version": "1.7.0",
+  "version": "1.7.1",
   "homepage": "https://mathiaspaulenko.github.io/wavexis-mcp/",
   "license": "MIT",
   "packages": [
     {
       "registryType": "pypi",
       "identifier": "wavexis-mcp",
-      "version": "1.7.0",
+      "version": "1.7.1",
       "transport": {
         "type": "stdio"
       },

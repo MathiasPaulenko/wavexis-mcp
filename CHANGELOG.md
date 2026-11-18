@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.1] - 2026-11-18
+
+### Fixed
+
+- Session lifecycle: Chrome subprocesses launched by `connect_existing` no longer leak when `wavexis_session_open` fails or the manager shuts down, and their temp profile dirs are cleaned up. Sessions now reject new work once `wavexis_session_close` starts, and in-flight backend calls hold a session reference so teardown waits for them.
+- Stateless/ephemeral backend acquisitions now receive the same blocked-origins, storage-state and web-vitals configuration as persistent sessions.
+- `wavexis_check`/`wavexis_uncheck` guarantee the requested state instead of blindly toggling the element; `wavexis_check` reports the resulting checked state.
+- `wavexis_scrape` honors `output_format="csv"`; `wavexis_crawl` validates `start_url` before launching.
+- `wavexis_browser_version` reports the session's real backend name instead of echoing the input (which could be `"auto"`).
+- `wavexis_console_messages` reports `total` before pagination, not after.
+- Event subscriptions get their own bounded buffers (they previously clobbered a shared deque), are capped at 50 per session, and are cleaned up on session close.
+- Concurrent network log subscribers can no longer double-subscribe; route state is snapshotted before iteration and HAR files are written off the event loop.
+- Video recording: screencast handlers are detached on start/stop failure, the shared screencast only stops when the last recording ends, and recording checks hold `_recordings_lock`.
+- `secure_output_path` rejects Windows reserved device names (`NUL`, `COM1-9`, `LPT1-9`, `CON`, `PRN`, `AUX`).
+- `execute_act` no longer runs `match_instruction` twice and clamps `max_retries`; a11y tools honor `input.url` when a `session_id` is given; CLI validates `--port` range; Bluetooth adapter state accepts `"absent"` and emulated BLE device lists are capped at 100.
+- Backend proxy closes coroutines rejected because the session is closing, eliminating "coroutine was never awaited" warnings.
+
 ## [1.7.0] - 2026-10-07
 
 ### Fixed
