@@ -62,6 +62,9 @@ _logger = logging.getLogger(__name__)
 # Lock used to initialize per-backend network log state atomically when
 # callbacks arrive from background threads.
 _NETWORK_LOG_INIT_LOCK = threading.Lock()
+# ``threading.Lock`` is only a real class on 3.13+; compare via its type so
+# isinstance checks work on every supported version.
+_THREAD_LOCK_T = type(threading.Lock())
 
 # Headers that could be used to bypass security controls or perform
 # request smuggling when set by an MCP client.
@@ -151,16 +154,15 @@ def _matches_pattern(pattern: str, url: str) -> bool:
 def _init_network_log(session: BrowserSession) -> None:
     """Attach a per-session network event log to the backend if missing."""
     backend = cast(Any, _backend(session))
-    if (
-        not isinstance(getattr(backend, "_network_log", None), deque)
-        or getattr(backend, "_network_log_lock", None) is None
+    if not isinstance(getattr(backend, "_network_log", None), deque) or not isinstance(
+        getattr(backend, "_network_log_lock", None), _THREAD_LOCK_T
     ):
         with _NETWORK_LOG_INIT_LOCK:
             if not isinstance(getattr(backend, "_network_log", None), deque):
                 backend._network_log = deque(maxlen=_NETWORK_LOG_MAX)
                 backend._network_log_map = {}
                 backend._network_log_sub_id = None
-            if getattr(backend, "_network_log_lock", None) is None:
+            if not isinstance(getattr(backend, "_network_log_lock", None), _THREAD_LOCK_T):
                 backend._network_log_lock = threading.Lock()
 
 
@@ -210,7 +212,7 @@ async def _ensure_network_log(session: BrowserSession) -> list[dict[str, Any]]:
     _init_network_log(session)
     backend = cast(Any, _backend(session))
     sub_lock = getattr(backend, "_network_log_sub_lock", None)
-    if sub_lock is None:
+    if not isinstance(sub_lock, asyncio.Lock):
         sub_lock = backend._network_log_sub_lock = asyncio.Lock()
     async with sub_lock:
         if backend._network_log_sub_id is None:
