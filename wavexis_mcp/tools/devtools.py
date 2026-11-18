@@ -9,6 +9,7 @@ console & browser logs, security state, and window bounds.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 from collections import deque
 from typing import Any, cast
@@ -50,6 +51,7 @@ from wavexis_mcp.models import (
 from wavexis_mcp.session import SessionManager
 
 _LEVEL_ORDER = {"error": 0, "warning": 1, "info": 2, "debug": 3}
+_MAX_DEVTOOLS_SUBS = 50
 
 
 def _write_json(path: str, data: object) -> None:
@@ -637,9 +639,9 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         try:
             session = session_manager.get(input.session_id)
             messages = await session.backend.capture_console(level=input.level)
+            total = len(messages)
             if not input.all:
                 messages = messages[-input.limit :]
-            total = len(messages)
             paginated = messages[input.offset : input.offset + input.limit]
             return format_json_response(
                 {
@@ -862,11 +864,20 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         try:
             session = session_manager.get(input.session_id)
             backend = cast(Any, session.backend)
-            event_log = getattr(backend, "_event_log", None)
-            if not isinstance(event_log, deque):
-                event_log = deque(maxlen=500)
-                backend._event_log = event_log
-            event_log.clear()
+            event_logs = getattr(backend, "_devtools_event_logs", None)
+            if not isinstance(event_logs, dict):
+                event_logs = {}
+                backend._devtools_event_logs = event_logs
+            if len(event_logs) >= _MAX_DEVTOOLS_SUBS:
+                return format_error(
+                    "wavexis_subscribe_events",
+                    RuntimeError(
+                        f"Subscription limit ({_MAX_DEVTOOLS_SUBS}) reached for this session"
+                    ),
+                )
+            # Each subscription gets its own bounded buffer so concurrent
+            # subscriptions do not clobber each other's captured events.
+            event_log: deque[dict[str, Any]] = deque(maxlen=500)
 
             def _collect(event: dict[str, Any]) -> None:
                 event_log.append(event)
@@ -878,6 +889,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                 ),
                 timeout=30.0,
             )
+            event_logs[sub_id] = event_log
             devtools_subs = getattr(backend, "_devtools_sub_ids", None)
             if not isinstance(devtools_subs, set):
                 backend._devtools_sub_ids = set()
@@ -916,10 +928,19 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             devtools_subs = getattr(backend, "_devtools_sub_ids", None)
             if isinstance(devtools_subs, set):
                 devtools_subs.discard(input.subscription_id)
-            event_log = getattr(backend, "_event_log", None)
-            events = list(event_log) if isinstance(event_log, deque) else []
+            event_logs = getattr(backend, "_devtools_event_logs", None)
+            event_log = (
+                event_logs.pop(input.subscription_id, None)
+                if isinstance(event_logs, dict)
+                else None
+            )
+            # Drain via popleft — iterating a deque raises if the (no longer
+            # subscribed) callback appends concurrently from another thread.
+            events: list[dict[str, Any]] = []
             if isinstance(event_log, deque):
-                event_log.clear()
+                while event_log:
+                    with contextlib.suppress(IndexError):
+                        events.append(event_log.popleft())
             return format_json_response(
                 {"status": "ok", "events_captured": len(events), "events": events}
             )

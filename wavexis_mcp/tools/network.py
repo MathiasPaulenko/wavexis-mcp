@@ -209,16 +209,20 @@ async def _ensure_network_log(session: BrowserSession) -> list[dict[str, Any]]:
     """Ensure the backend is subscribed to network events; return a snapshot of the log."""
     _init_network_log(session)
     backend = cast(Any, _backend(session))
-    if backend._network_log_sub_id is None:
-        backend._network_log_sub_id = await asyncio.wait_for(
-            backend.subscribe_events(
-                ["network_request", "network_response"],
-                lambda event: _on_network_event(session, event),
-            ),
-            timeout=10.0,
-        )
-        # Allow a short tick for any already-buffered events to arrive.
-        await asyncio.sleep(0.01)
+    sub_lock = getattr(backend, "_network_log_sub_lock", None)
+    if sub_lock is None:
+        sub_lock = backend._network_log_sub_lock = asyncio.Lock()
+    async with sub_lock:
+        if backend._network_log_sub_id is None:
+            backend._network_log_sub_id = await asyncio.wait_for(
+                backend.subscribe_events(
+                    ["network_request", "network_response"],
+                    lambda event: _on_network_event(session, event),
+                ),
+                timeout=10.0,
+            )
+            # Allow a short tick for any already-buffered events to arrive.
+            await asyncio.sleep(0.01)
     with backend._network_log_lock:
         return list(backend._network_log)
 
@@ -298,7 +302,9 @@ def _build_route_handler(
         request_id = event_params.get("requestId", "")
         request = event_params.get("request", {})
         url = request.get("url", "")
-        for route in backend._route_entries:
+        # Iterate a snapshot — the deque can be mutated by route tools while
+        # this handler awaits CDP calls mid-iteration.
+        for route in list(backend._route_entries):
             if not _matches_pattern(route.pattern, url):
                 continue
             if route.body is not None or route.status is not None:
@@ -588,7 +594,8 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                 entries = len(har.get("log", {}).get("entries", [])) if isinstance(har, dict) else 0
                 if input.path:
                     har_path = secure_output_path(input.path)
-                    har_path.write_text(
+                    await asyncio.to_thread(
+                        har_path.write_text,
                         json.dumps(har, indent=2, ensure_ascii=False, default=str),
                         encoding="utf-8",
                     )

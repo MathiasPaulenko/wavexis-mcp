@@ -31,6 +31,7 @@ from wavexis_mcp.session import SessionManager
 _MAX_VIDEO_RECORDINGS = 100
 _MAX_FRAMES_PER_RECORDING = 1000
 _MAX_TOTAL_FRAMES = 10000
+_MAX_CHAPTERS_PER_RECORDING = 500
 
 _logger = logging.getLogger(__name__)
 _recordings_lock = asyncio.Lock()
@@ -258,20 +259,26 @@ def register(
                     ),
                 )
 
-            start = getattr(session.backend, "page_start_screencast", None)
-            if start is not None:
-                await start("jpeg", 80, input.width, input.height)
-            else:
-                await session.backend.raw(
-                    "Page.startScreencast",
-                    {
-                        "format": "jpeg",
-                        "quality": 80,
-                        "maxWidth": input.width,
-                        "maxHeight": input.height,
-                        "everyNthFrame": 1,
-                    },
-                )
+            try:
+                start = getattr(session.backend, "page_start_screencast", None)
+                if start is not None:
+                    await start("jpeg", 80, input.width, input.height)
+                else:
+                    await session.backend.raw(
+                        "Page.startScreencast",
+                        {
+                            "format": "jpeg",
+                            "quality": 80,
+                            "maxWidth": input.width,
+                            "maxHeight": input.height,
+                            "everyNthFrame": 1,
+                        },
+                    )
+            except Exception:
+                # The frame listener is already attached — detach it so it
+                # is not leaked on a session where no screencast started.
+                await _detach_screencast_handler(recording)
+                raise
 
             async with _recordings_lock:
                 recordings[recording_id] = recording
@@ -314,14 +321,6 @@ def register(
             and ``chapters``.
         """
         try:
-            session = session_manager.get(input.session_id)
-
-            stop = getattr(session.backend, "page_stop_screencast", None)
-            if stop is not None:
-                await stop()
-            else:
-                await session.backend.raw("Page.stopScreencast", {})
-
             async with _recordings_lock:
                 if input.recording_id:
                     recording_id = input.recording_id if input.recording_id in recordings else None
@@ -347,6 +346,24 @@ def register(
                 rec["_stopped"] = True
                 total_frames[0] -= len(rec.get("frames", []))
                 await _detach_screencast_handler(rec)
+                # The screencast is shared per page — only stop it when no
+                # other recording on the same session is still consuming
+                # frames.  This must be evaluated under the lock: concurrent
+                # stop calls mutate the dict.
+                others_remain = any(
+                    r["session_id"] == rec["session_id"] for r in recordings.values()
+                )
+
+            # The session may already be closed; frame data is still returned.
+            if not others_remain:
+                with contextlib.suppress(Exception):
+                    rec_session = session_manager.get(rec["session_id"])
+                    stop = getattr(rec_session.backend, "page_stop_screencast", None)
+                    if stop is not None:
+                        await stop()
+                    else:
+                        await rec_session.backend.raw("Page.stopScreencast", {})
+
             start_time = rec["start_time"]
             duration_ms = int((time.time() - start_time) * 1000)
 
@@ -422,12 +439,21 @@ def register(
                         RuntimeError(f"Recording {input.recording_id} not found"),
                     )
 
+                chapters: list[Any] = rec.get("chapters", [])
+                if len(chapters) >= _MAX_CHAPTERS_PER_RECORDING:
+                    return format_error(
+                        "wavexis_video_add_chapter",
+                        RuntimeError(
+                            f"Chapter limit ({_MAX_CHAPTERS_PER_RECORDING}) reached "
+                            "for this recording"
+                        ),
+                    )
+
                 timestamp_ms = input.timestamp_ms
                 if timestamp_ms is None:
                     timestamp_ms = int((time.time() - rec["start_time"]) * 1000)
 
                 chapter = {"title": input.title, "timestamp_ms": timestamp_ms}
-                chapters: list[Any] = rec.get("chapters", [])
                 chapters.append(chapter)
                 rec["chapters"] = chapters
 
