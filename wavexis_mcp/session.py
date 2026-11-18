@@ -20,7 +20,7 @@ import time
 import urllib.request
 import uuid
 from collections import deque
-from collections.abc import Awaitable
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from typing import Any, TypeVar, cast
 from unittest.mock import AsyncMock
@@ -132,19 +132,29 @@ async def _launch_chrome_with_debug_port(
         "--no-first-run",
         "--no-default-browser-check",
     ]
+    profile_dir: str | None = None
     if user_data_dir:
         args.append(f"--user-data-dir={user_data_dir}")
     else:
         # Use a temp profile to avoid clashing with the user's real profile.
-        tmp = tempfile.mkdtemp(prefix="wavexis-mcp-chrome-")
-        args.append(f"--user-data-dir={tmp}")
+        profile_dir = tempfile.mkdtemp(prefix="wavexis-mcp-chrome-")
+        args.append(f"--user-data-dir={profile_dir}")
 
-    proc = await asyncio.create_subprocess_exec(
-        *args,
-        stdout=asyncio.subprocess.DEVNULL,
-        stderr=asyncio.subprocess.DEVNULL,
-    )
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            *args,
+            stdout=asyncio.subprocess.DEVNULL,
+            stderr=asyncio.subprocess.DEVNULL,
+        )
+    except Exception:
+        if profile_dir:
+            shutil.rmtree(profile_dir, ignore_errors=True)
+        raise
     _logger.info("Launched Chrome (PID %d) with debug port %d", proc.pid, port)
+    # Track the temp profile on the process so callers can remove it after
+    # the browser exits (it is owned by us, not the user).
+    if profile_dir:
+        proc._wavexis_profile_dir = profile_dir  # type: ignore[attr-defined]
 
     # Wait for the debug port to become available by polling /json/version.
     def _check_port() -> bool:
@@ -161,8 +171,20 @@ async def _launch_chrome_with_debug_port(
         if await asyncio.to_thread(_check_port):
             return proc
 
-    proc.terminate()
+    await _terminate_chrome(proc)
     raise RuntimeError(f"Chrome did not expose its debug port on {port} within 10 seconds.")
+
+
+async def _terminate_chrome(proc: asyncio.subprocess.Process | None) -> None:
+    """Terminate a Chrome subprocess and remove its temp profile dir."""
+    if proc is None:
+        return
+    with contextlib.suppress(Exception):
+        proc.terminate()
+        await asyncio.wait_for(proc.wait(), timeout=5.0)
+    profile_dir = getattr(proc, "_wavexis_profile_dir", None)
+    if isinstance(profile_dir, str):
+        await asyncio.to_thread(lambda: shutil.rmtree(profile_dir, ignore_errors=True))
 
 
 # Minimal web-vitals collection script injected after navigation when
@@ -202,13 +224,49 @@ class _BackendProxy:
     ``asyncio.wait_for`` using the configured default timeout.  The proxy
     skips ``AsyncMock`` instances so unit tests that inspect mock methods
     continue to work.
+
+    When bound to a ``BrowserSession`` the proxy also holds a session
+    reference for the duration of each awaited call, so ``close()``
+    cannot tear down the backend underneath an in-flight operation.
     """
 
-    __slots__ = ("_backend", "_timeout")
+    __slots__ = ("_backend", "_timeout", "_session", "_manager")
 
-    def __init__(self, backend: AbstractBackend, timeout: float = DEFAULT_BACKEND_TIMEOUT) -> None:
+    def __init__(
+        self,
+        backend: AbstractBackend,
+        timeout: float = DEFAULT_BACKEND_TIMEOUT,
+        session: BrowserSession | None = None,
+        manager: SessionManager | None = None,
+    ) -> None:
         object.__setattr__(self, "_backend", backend)
         object.__setattr__(self, "_timeout", timeout)
+        object.__setattr__(self, "_session", session)
+        object.__setattr__(self, "_manager", manager)
+
+    async def _await_guarded(self, call: Callable[[], Awaitable[Any]], pending: Any = None) -> Any:
+        """Await *call* holding a session reference so close() waits for it.
+
+        *pending* is an already-created awaitable (sync methods returning
+        coroutines) that must be closed when the call is rejected to avoid
+        "coroutine was never awaited" warnings.
+        """
+        session = self._session
+        if session is None:
+            return await call()
+        session.ref_count += 1
+        try:
+            if session.closing:
+                if inspect.iscoroutine(pending):
+                    pending.close()
+                raise SessionNotFoundError(session.session_id)
+            return await call()
+        finally:
+            session.ref_count -= 1
+            manager = self._manager
+            if manager is not None:
+                async with manager._cond:
+                    manager._cond.notify_all()
 
     def __getattr__(self, name: str) -> Any:
         attr = getattr(self._backend, name)
@@ -221,7 +279,10 @@ class _BackendProxy:
             if inspect.iscoroutinefunction(attr):
 
                 async def _async_wrapper(*args: Any, **kwargs: Any) -> Any:
-                    return await asyncio.wait_for(attr(*args, **kwargs), timeout=self._timeout)
+                    async def _call() -> Any:
+                        return await asyncio.wait_for(attr(*args, **kwargs), timeout=self._timeout)
+
+                    return await self._await_guarded(_call)
 
                 _async_wrapper.__name__ = getattr(attr, "__name__", name)
                 _async_wrapper.__doc__ = getattr(attr, "__doc__", None)
@@ -232,9 +293,17 @@ class _BackendProxy:
                 return _async_wrapper
 
             def _sync_wrapper(*args: Any, **kwargs: Any) -> Any:
+                session = self._session
+                if session is not None and session.closing:
+                    # Fail before dispatching so no stray awaitable is created.
+                    raise SessionNotFoundError(session.session_id)
                 result = attr(*args, **kwargs)
                 if inspect.isawaitable(result):
-                    return asyncio.wait_for(result, timeout=self._timeout)
+
+                    async def _call() -> Any:
+                        return await asyncio.wait_for(result, timeout=self._timeout)
+
+                    return self._await_guarded(_call, pending=result)
                 return result
 
             _sync_wrapper.__name__ = getattr(attr, "__name__", name)
@@ -274,6 +343,7 @@ class BrowserSession:
     last_used: float = field(default_factory=time.time)
     ref_count: int = 0
     chrome_proc: asyncio.subprocess.Process | None = None
+    closing: bool = False
 
 
 class SessionManager:
@@ -394,8 +464,10 @@ class SessionManager:
         session_id = str(uuid.uuid4())
         async with self._cond:
             if self._shutting_down:
+                await _terminate_chrome(chrome_proc)
                 raise RuntimeError("SessionManager is shutting down")
             if len(self._sessions) + len(self._pending) >= _MAX_SESSIONS:
+                await _terminate_chrome(chrome_proc)
                 raise RuntimeError(f"Maximum number of sessions ({_MAX_SESSIONS}) reached")
             self._pending.add(session_id)
 
@@ -450,6 +522,7 @@ class SessionManager:
                     await backend_instance.close()
                 except Exception:
                     _logger.exception("Failed to close backend after launch failure")
+            await _terminate_chrome(chrome_proc)
             raise
 
         async with self._cond:
@@ -459,12 +532,14 @@ class SessionManager:
                     await backend_instance.close()
                 except Exception:
                     _logger.exception("Failed to close backend during shutdown")
+                await _terminate_chrome(chrome_proc)
                 raise RuntimeError("SessionManager is shutting down")
             if len(self._sessions) >= _MAX_SESSIONS:
                 try:
                     await backend_instance.close()
                 except Exception:
                     _logger.exception("Failed to close backend after session limit reached")
+                await _terminate_chrome(chrome_proc)
                 raise RuntimeError(f"Maximum number of sessions ({_MAX_SESSIONS}) reached")
             now = time.time()
             self._sessions[session_id] = BrowserSession(
@@ -561,6 +636,9 @@ class SessionManager:
             session = self._sessions.get(session_id)
             if session is None:
                 raise SessionNotFoundError(session_id)
+            # Reject new operations before waiting so nothing can attach to a
+            # session that is about to be destroyed.
+            session.closing = True
             if session.ref_count > 0:
                 try:
                     await asyncio.wait_for(
@@ -604,15 +682,19 @@ class SessionManager:
                 devtools_subs.clear()
 
             try:
-                await popped.backend.close()
+                # Bypass the proxy — it rejects calls on a closing session.
+                raw_backend = (
+                    popped.backend._backend
+                    if isinstance(popped.backend, _BackendProxy)
+                    else popped.backend
+                )
+                await raw_backend.close()
             except Exception:
                 _logger.exception("Failed to close backend for session %s", session_id)
 
             # Terminate the Chrome subprocess if it was launched by connect_existing.
             if popped.chrome_proc is not None:
-                with contextlib.suppress(Exception):
-                    popped.chrome_proc.terminate()
-                    await asyncio.wait_for(popped.chrome_proc.wait(), timeout=5.0)
+                await _terminate_chrome(popped.chrome_proc)
                 popped.chrome_proc = None
 
         if self.rate_limiter is not None:
@@ -628,14 +710,17 @@ class SessionManager:
             The ``BrowserSession`` associated with *session_id*.
 
         Raises:
-            SessionNotFoundError: If *session_id* is not registered.
+            SessionNotFoundError: If *session_id* is not registered or is
+                being closed.
         """
         session = self._sessions.get(session_id)
-        if session is None:
+        if session is None or session.closing:
             raise SessionNotFoundError(session_id)
         session.last_used = time.time()
         if not isinstance(session.backend, (AsyncMock, _BackendProxy)):
-            session.backend = cast(AbstractBackend, _BackendProxy(session.backend))
+            session.backend = cast(
+                AbstractBackend, _BackendProxy(session.backend, session=session, manager=self)
+            )
         return session
 
     @staticmethod
@@ -781,6 +866,23 @@ class SessionManager:
         try:
             await asyncio.wait_for(backend_instance.launch(opts), timeout=30.0)
             self._wrap_backend(backend_instance)
+
+            # Apply the same global configuration as open() so stateless calls
+            # honor --blocked-origins and --storage-state too.
+            if self.blocked_origins:
+                try:
+                    await backend_instance.block_requests(self.blocked_origins)
+                except Exception:
+                    _logger.warning("Failed to apply blocked origins to ephemeral backend")
+
+            if self.storage_state_path:
+                try:
+                    await self._restore_storage_state(backend_instance)
+                except Exception:
+                    _logger.warning(
+                        "Failed to restore storage state from %s",
+                        self.storage_state_path,
+                    )
         except Exception as exc:
             try:
                 await backend_instance.close()
