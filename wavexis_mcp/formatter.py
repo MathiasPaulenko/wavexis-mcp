@@ -91,7 +91,19 @@ def secure_output_path(path: str, base_dir: str | os.PathLike[str] | None = None
         raise ValueError(
             f"Output path {path!r} is outside the allowed output directory {base}"
         ) from exc
+
+    # On Windows, bare device names (NUL, CON, COM1, ...) open device handles
+    # instead of regular files even with an extension or inside a directory.
+    if os.name == "nt" and resolved.name.split(".")[0].upper() in _WINDOWS_DEVICE_NAMES:
+        raise ValueError(f"Reserved device name is not allowed: {path!r}")
     return resolved
+
+
+_WINDOWS_DEVICE_NAMES = frozenset(
+    {"CON", "PRN", "AUX", "NUL"}
+    | {f"COM{i}" for i in range(1, 10)}
+    | {f"LPT{i}" for i in range(1, 10)}
+)
 
 
 def _validate_header_value(name: str, value: str) -> None:
