@@ -2231,7 +2231,11 @@ class BluetoothAdapterStateInput(BaseInput):
     """Input for setting Bluetooth adapter state."""
 
     session_id: str = Field(..., description="Active session ID from wavexis_session_open")
-    state: str = Field(..., description="Adapter state: 'powered-on' or 'powered-off'")
+    state: str = Field(
+        ...,
+        pattern=r"^(powered-on|powered-off|absent)$",
+        description="Adapter state: 'powered-on', 'powered-off', or 'absent'",
+    )
 
 
 class BluetoothDeviceConnectInput(BaseInput):

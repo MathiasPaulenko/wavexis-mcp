@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import base64
+import json
 
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
@@ -238,6 +239,28 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                 paginated = results[input.offset : input.offset + input.limit]
             finally:
                 await session_manager.release_backend(backend, sid)
+
+            if input.output_format == "csv":
+                import csv
+                import io
+
+                buf = io.StringIO()
+                writer = csv.writer(buf)
+                writer.writerow(["url", "data"])
+                for row in paginated:
+                    cell = row["data"]
+                    if not isinstance(cell, str | int | float | bool) and cell is not None:
+                        cell = json.dumps(cell, ensure_ascii=False, default=str)
+                    writer.writerow([row["url"], cell])
+                return format_json_response(
+                    {
+                        "csv": buf.getvalue(),
+                        "format": "csv",
+                        "count": len(paginated),
+                        "total": len(results),
+                    }
+                )
+
             return format_json_response(
                 {
                     "results": paginated,

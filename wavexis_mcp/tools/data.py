@@ -632,6 +632,9 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             JSON string with ``pages`` list and counts.
         """
         try:
+            # Fail fast on an unsafe/malformed start URL instead of silently
+            # returning an empty page list.
+            validate_url(input.start_url)
             backend, sid = await session_manager.acquire_backend(
                 input.session_id,
                 backend=input.backend,

@@ -54,6 +54,9 @@ from wavexis_mcp.models import (
 )
 from wavexis_mcp.session import SessionManager
 
+_BLUETOOTH_ADAPTER_STATES = frozenset({"powered-on", "powered-off", "absent"})
+_MAX_BLE_DEVICES = 100
+
 
 def register(mcp: FastMCP, session_manager: SessionManager) -> None:
     """Register all experimental tools on the FastMCP server.
@@ -701,6 +704,11 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             JSON string with status ``"ok"`` and ``state``.
         """
         try:
+            if input.state not in _BLUETOOTH_ADAPTER_STATES:
+                raise ValueError(
+                    f"Invalid Bluetooth adapter state {input.state!r}; "
+                    f"expected one of {sorted(_BLUETOOTH_ADAPTER_STATES)}"
+                )
             session = session_manager.get(input.session_id)
             await session.backend.raw(
                 "BluetoothEmulation.setState",
@@ -736,7 +744,8 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             if not isinstance(devices, list):
                 devices = []
                 cast(Any, session.backend)._ble_devices = devices
-            devices.append({"name": input.name, "address": input.address})
+            if len(devices) < _MAX_BLE_DEVICES:
+                devices.append({"name": input.name, "address": input.address})
             return format_json_response(
                 {
                     "status": "ok",

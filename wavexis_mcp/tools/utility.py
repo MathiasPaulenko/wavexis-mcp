@@ -128,7 +128,16 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
             )
             try:
                 version = await backend.browser_version()
-                return format_json_response({"version": version, "backend": input.backend})
+                if sid is not None:
+                    # Sessions report their registered backend — the input's
+                    # "backend" field may not match the running session.
+                    backend_name = session_manager.get(sid).backend_name
+                elif input.backend != "auto":
+                    backend_name = input.backend
+                else:
+                    real = getattr(backend, "_backend", backend)
+                    backend_name = type(real).__name__.replace("Backend", "").lower()
+                return format_json_response({"version": version, "backend": backend_name})
             finally:
                 await session_manager.release_backend(backend, sid)
         except Exception as e:

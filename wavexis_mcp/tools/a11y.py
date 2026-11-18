@@ -270,7 +270,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                 headless=input.headless,
             )
             try:
-                if input.url and not input.session_id:
+                if input.url:
                     validate_url(input.url)
                     await session_manager.call_backend(backend.navigate(input.url))
                 raw = await session_manager.call_backend(backend.a11y_tree())
@@ -365,7 +365,7 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
                 headless=input.headless,
             )
             try:
-                if input.url and not input.session_id:
+                if input.url:
                     validate_url(input.url)
                     await session_manager.call_backend(backend.navigate(input.url))
                 result = await session_manager.call_backend(backend.axe_audit())

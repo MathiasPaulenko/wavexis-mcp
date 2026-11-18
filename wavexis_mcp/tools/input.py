@@ -64,6 +64,15 @@ def _is_stale_error(exc: Exception) -> bool:
     return any(kw in msg for kw in _STALE_KEYWORDS)
 
 
+def _is_truthy(value: object) -> bool:
+    """Normalize a JavaScript truthiness result to a Python bool."""
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.lower() in ("true", "1", "yes")
+    return bool(value)
+
+
 async def _with_retry(coro_factory: Any, *, retries: int = _STALE_RETRY_COUNT) -> Any:
     """Execute a coroutine with auto-retry on stale element errors.
 
@@ -668,19 +677,20 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         Use wavexis_uncheck to uncheck a checkbox or wavexis_click for generic
         element activation.
 
-        Side effects: Clicks the target checkbox/radio, toggling its checked
-        state and firing change events.
+        Side effects: Clicks the target checkbox/radio only if it is not
+        already checked, firing change events when the state changes.
         Returns: JSON string with keys: 'status' ('ok'/'error'), 'checked'
         (bool, the element's checked state after the action). On error also
         'error', 'tool', 'type', 'message', 'suggestion' (all str).
         """
         try:
             session = session_manager.get(input.session_id)
-            await session.backend.click(input.selector)
-            checked = await session.backend.eval(
-                f"document.querySelector({json.dumps(input.selector)})?.checked"
-            )
-            return format_json_response({"status": "ok", "checked": bool(checked)})
+            checked_js = f"!!document.querySelector({json.dumps(input.selector)})?.checked"
+            checked = _is_truthy(await session.backend.eval(checked_js))
+            if not checked:
+                await session.backend.click(input.selector)
+                checked = _is_truthy(await session.backend.eval(checked_js))
+            return format_json_response({"status": "ok", "checked": checked})
         except Exception as e:
             return format_error("wavexis_check", e)
 
@@ -698,15 +708,20 @@ def register(mcp: FastMCP, session_manager: SessionManager) -> None:
         Use wavexis_check to check a checkbox or wavexis_click for generic
         element activation.
 
-        Side effects: Clicks the target checkbox to toggle it to unchecked,
-        firing change events.
-        Returns: JSON string with keys: 'status' ('ok'/'error'). On error also
+        Side effects: Clicks the target checkbox only if it is currently
+        checked, firing change events when the state changes.
+        Returns: JSON string with keys: 'status' ('ok'/'error'), 'checked'
+        (bool, the element's checked state after the action). On error also
         'error', 'tool', 'type', 'message', 'suggestion' (all str).
         """
         try:
             session = session_manager.get(input.session_id)
-            await session.backend.click(input.selector)
-            return format_json_response({"status": "ok"})
+            checked_js = f"!!document.querySelector({json.dumps(input.selector)})?.checked"
+            checked = _is_truthy(await session.backend.eval(checked_js))
+            if checked:
+                await session.backend.click(input.selector)
+                checked = _is_truthy(await session.backend.eval(checked_js))
+            return format_json_response({"status": "ok", "checked": checked})
         except Exception as e:
             return format_error("wavexis_uncheck", e)
 

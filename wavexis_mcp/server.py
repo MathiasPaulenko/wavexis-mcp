@@ -264,6 +264,7 @@ def _register_act_tool(mcp: FastMCP, session_manager: SessionManager) -> None:
                 tree,
                 max_retries=input.max_retries,
                 value=input.value,
+                match=match,
             )
             return format_json_response(result)
         except Exception as e:
@@ -447,6 +448,10 @@ def main(argv: list[str] | None = None) -> None:
         # print the extended help instead.
         _print_help(args.caps)
         return
+
+    if not 1 <= args.port <= 65535:
+        print(f"error: --port must be between 1 and 65535 (got {args.port})", file=sys.stderr)
+        sys.exit(2)
 
     mcp = create_server(
         caps=args.caps,

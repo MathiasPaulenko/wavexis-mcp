@@ -618,6 +618,7 @@ async def execute_act(
     tree: list[dict[str, Any]],
     max_retries: int = 3,
     value: str | None = None,
+    match: MatchResult | None = None,
 ) -> dict[str, Any]:
     """Execute a natural language instruction against the browser.
 
@@ -631,12 +632,15 @@ async def execute_act(
         max_retries: Maximum retry attempts if action fails.
         value: Optional explicit value for ``type`` or ``fill`` actions.
             When omitted, the value is extracted from the instruction.
+        match: Optional pre-computed ``MatchResult`` to reuse instead of
+            running ``match_instruction`` again.
 
     Returns:
         Dict with ``action``, ``element``, ``score``, ``status`` and
         ``value`` when applicable.
     """
-    match = match_instruction(instruction, tree)
+    if match is None:
+        match = match_instruction(instruction, tree)
     if match is None:
         return {
             "status": "no_match",
@@ -662,7 +666,7 @@ async def execute_act(
         result["value"] = text_value
 
     last_error: Exception | None = None
-    for attempt in range(max_retries):
+    for attempt in range(max(1, max_retries)):
         try:
             if match.action == "click":
                 await asyncio.wait_for(backend.click(selector), timeout=_ACT_ACTION_TIMEOUT)
